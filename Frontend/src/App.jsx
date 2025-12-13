@@ -1,16 +1,23 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import './App.css'
+import Home from './Pages/Home.jsx'
+import Login from './Pages/Login.jsx'
+import Register from './Pages/Register.jsx'
 
 
 
 function App() {
-  
+
 
   return (
     <>
-     
-        
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+    <BrowserRouter>
+      <Routes>
+        <Route path='/' element={<Home />} />
+        <Route path='/login' element={<Login />} />
+      
+      </Routes>
+    </BrowserRouter>
     </>
   )
 }
