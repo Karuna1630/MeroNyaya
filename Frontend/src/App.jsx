@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './App.css'
-import Home from './Pages/Home.jsx'
-import Login from './Pages/Login.jsx'
-import Register from './Pages/Register.jsx'
+import Home from './Pages/Public/Home.jsx'
+import Login from './Pages/Auth/Login.jsx'
+import Register from './Pages/Auth/Register.jsx'
 
 
 
@@ -15,7 +15,7 @@ function App() {
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/login' element={<Login />} />
-      
+        <Route path='/register' element={<Register />} />
       </Routes>
     </BrowserRouter>
     </>
