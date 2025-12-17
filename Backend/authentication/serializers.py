@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from .models import User
 
-class UserSerializer(serializers.ModelSerializer):
+class UserResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'name', 'phone', 'is_lawyer', 'date_joined', 'is_active']
         read_only_fields = ['id', 'date_joined', 'is_active']
 
-class RegisterSerializer(serializers.ModelSerializer):
+class RegisterUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -36,27 +36,27 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             name=validated_data.get('name', ''),
             phone=validated_data.get('phone', ''),
+            password=validated_data['password'],
             is_lawyer=validated_data.get('is_lawyer', False)
         )
-        user.set_password(validated_data['password'])
-        user.save()
         return user
-    
-class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
 
-    def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError({"email": "User with this email does not exist."})
-        
-        if not user.check_password(password):
-            raise serializers.ValidationError({"password": "Incorrect password."})
-        
-        attrs['user'] = user
-        return attrs
+class LoginUserSerializer(serializers.Serializer):
+        email = serializers.EmailField(required=True)
+        password = serializers.CharField(write_only=True, required=True)
+
+        def validate(self, attrs):
+            email = attrs.get('email')
+            password = attrs.get('password')
+
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                raise serializers.ValidationError("Invalid email or password.")
+            
+            if not user.check_password(password):
+                raise serializers.ValidationError("Invalid email or password.")
+            
+            attrs['user'] = user
+            return attrs

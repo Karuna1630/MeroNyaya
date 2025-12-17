@@ -11,16 +11,16 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth import authenticate
 from django.db import transaction
 
-from myproject.responses import api_response
+from meronaya.resonses import api_response
 
-from .serializers import (UserCreateSerializer, UserLoginSerializer, UserResponseSerializer)
+from .serializers import (UserResponseSerializer, RegisterUserSerializer, LoginUserSerializer)
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 class RegisterUserView(generics.CreateAPIView):
    permission_classes = [AllowAny]
-   serializer_class = UserCreateSerializer
+   serializer_class = RegisterUserSerializer
 
    @transaction.atomic
    def perform_create(self, serializer):
@@ -29,7 +29,7 @@ class RegisterUserView(generics.CreateAPIView):
    
    @swagger_auto_schema(
        operation_description="Register a new user.",
-       request_body=UserCreateSerializer,
+       request_body=RegisterUserSerializer,
        responses={
            201: openapi.Response(description="User registered successfully."),
            400: openapi.Response(description="Bad request."),
@@ -63,26 +63,26 @@ class RegisterUserView(generics.CreateAPIView):
 class LoginUserView(TokenObtainPairView):
     permission_classes = [AllowAny]
     authentication_classes = [JWTAuthentication]
-    serializer_class = UserLoginSerializer
+    serializer_class = LoginUserSerializer
 
     @swagger_auto_schema(
         operation_description="User login to obtain JWT tokens.",
-        request_body=UserLoginSerializer,
+        request_body= LoginUserSerializer,
         responses={
             200: openapi.Response(description="Login successful."),
             400: openapi.Response(description="Bad request."),
             401: openapi.Response(description="Unauthorized."),
             500: openapi.Response(description="Internal server error."),
         },
-        tags=["Authentication"],
+        tags=["User"],
     )
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         try:
             serializer = self.get_serializer(data=request.data)
             if serializer.is_valid():
-               email = serializer.validated_data('email')
-               password = serializer.validated_data('password')
+               email = serializer.validated_data['email']
+               password = serializer.validated_data['password']
 
                user = authenticate(request, email=email, password=password)
                if user is not None:
@@ -114,6 +114,6 @@ class LoginUserView(TokenObtainPairView):
         except Exception as e:
             return api_response(
                 is_success=False,
-                error_message="Internal server error.",
+                error_message="An error occurred during login.",
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

@@ -41,7 +41,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'authentication',
+    
+
+    # Third party apps
+    'rest_framework',
+    'drf_yasg',
+    'corsheaders',
+    'rest_framework_simplejwt.token_blacklist',
+    
+    #My apps
+    'authentication', 
 ]
 
 MIDDLEWARE = [
@@ -154,14 +163,17 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
 }
 
-# swagger settings
+# Swagger settings
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
         "Bearer": {
             "type": "apiKey",
             "name": "Authorization",
             "in": "header",
-            "description": "Enter **Bearer <your-token>**",
+            "description": "Enter *Bearer <your-token>*",
         }
-    }
+    },
+    "USE_SESSION_AUTH": False,
+    "JSON_EDITOR": True,
+    "SHOW_REQUEST_HEADERS": True,
 }
