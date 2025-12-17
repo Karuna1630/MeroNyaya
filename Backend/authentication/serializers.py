@@ -4,8 +4,8 @@ from .models import User
 class UserResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'is_lawyer', 'date_joined', 'is_active']
-        read_only_fields = ['id', 'date_joined', 'is_active']
+        fields = ['id', 'email', 'name', 'phone', 'is_lawyer', 'role', 'date_joined']
+        read_only_fields = ['id', 'date_joined', 'role']
 
 class RegisterUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -16,7 +16,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email is already in use.")
+            raise serializers.ValidationError("Email is already exist.")
         return value
     
     def validate_password(self, value):
