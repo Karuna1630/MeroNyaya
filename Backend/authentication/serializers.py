@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User
+from .otp import create_and_send_otp
 
 class UserResponseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,6 +32,11 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Name must be at least 2 characters long.")   
         return value
     
+    def validate_phone_number(self, value):
+        if value and not value.isdigit():
+            raise serializers.ValidationError("Phone number must contain only digits.")
+        return value
+    
     def create(self, validated_data):
         user = User.objects.create_user(
             email=validated_data['email'],
@@ -39,9 +45,23 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             is_lawyer=validated_data.get('is_lawyer', False)
         )
+        # Send OTP for email verification
+        try:
+            create_and_send_otp(user.email)
+        except Exception as e:
+            print(f"Error sending OTP: {e}")
+
         return user
 
+# Verify OTP Serializer
+class VerifyOTPSerializer(serializers.Serializer):
+    otp = serializers.CharField(max_length=6, min_length=6, required=True)
 
+# Resend OTP Serializer
+class ResendOTPSerializer(serializers.Serializer):
+    pass
+
+# Login Serializer
 class LoginUserSerializer(serializers.Serializer):
         email = serializers.EmailField(required=True)
         password = serializers.CharField(write_only=True, required=True)
@@ -57,6 +77,11 @@ class LoginUserSerializer(serializers.Serializer):
             
             if not user.check_password(password):
                 raise serializers.ValidationError("Invalid email or password.")
+            
+            # Check if user is verified
+            if not user.is_verified:
+                raise serializers.ValidationError("Email not verified. Please verify OTP first.")
+
             
             attrs['user'] = user
             return attrs
