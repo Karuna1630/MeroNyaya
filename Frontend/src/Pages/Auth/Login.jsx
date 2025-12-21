@@ -1,114 +1,164 @@
-import { useState } from "react"
-import { useNavigate } from 'react-router-dom'
+import React from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useFormik } from 'formik';
+import { loginValidationSchema } from '../Utils/LoginValidation';
+import { GoLaw } from 'react-icons/go';
 
-export default function Login() {
-  const [showPassword, setShowPassword] = useState(false)
-  const navigate = useNavigate()
+const Login = () => {
+  const navigate = useNavigate();
+
+  const formik = useFormik({
+    initialValues: {
+      email: '',
+      password: '',
+      remember: false,
+    },
+    validationSchema: loginValidationSchema,
+    onSubmit: (values) => {
+      console.log('Login submitted:', values);
+    },
+  });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="w-full max-w-5xl bg-white rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-2 overflow-hidden">
-
-        {/* Left Section */}
-        <div className="p-10">
-          {/* Logo */}
-          <div className="flex items-center gap-2 mb-10">
-            <div className="bg-primary text-white p-2 rounded-md">⚖️</div>
-            <h1 className="text-xl font-bold">
-              Mero<span className="text-accent">Naya</span>
-            </h1>
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ backgroundColor: '#FFFAFA' }}
+    >
+      <div className="w-full max-w-5xl">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 mb-6">
+            <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl font-bold">
+              <GoLaw className="size-8" />
+            </div>
+            <span className="text-2xl font-bold">
+              <span className="text-blue-900">Mero</span>
+              <span className="text-yellow-500">Naya</span>
+            </span>
           </div>
+        </div>
 
-          <h2 className="text-2xl font-semibold mb-1">Welcome Back</h2>
-          <p className="text-gray-500 mb-6">
-            Enter your credentials to access your account
-          </p>
+        {/* Main Card */}
+        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            {/* Left Form */}
+            <div className="p-8 lg:p-12">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Welcome Back
+              </h1>
+              <p className="text-gray-600 mb-8">
+                Enter your credentials to access your account
+              </p>
 
-          {/* Email */}
-          <div className="mb-4">
-            <label className="text-sm font-medium">Email</label>
-            <input
-              type="email"
-              placeholder="example@gmail.com"
-              className="w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+              <form onSubmit={formik.handleSubmit}>
+                {/* Email */}
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Email
+                  </label>
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder="example@gmail.com"
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
+                      formik.touched.email && formik.errors.email
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:ring-blue-900'
+                    }`}
+                  />
+                  {formik.touched.email && formik.errors.email && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formik.errors.email}
+                    </p>
+                  )}
+                </div>
 
-          {/* Password */}
-          <div className="mb-2">
-            <label className="text-sm font-medium">Password</label>
-            <div className="relative mt-1">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
-                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                {/* Password */}
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Password
+                    </label>
+                    <Link
+                      to="#"
+                      className="text-sm text-yellow-500 hover:underline"
+                    >
+                      forgot password ?
+                    </Link>
+                  </div>
+                  <input
+                    name="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={formik.values.password}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
+                      formik.touched.password && formik.errors.password
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:ring-blue-900'
+                    }`}
+                  />
+                  {formik.touched.password && formik.errors.password && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formik.errors.password}
+                    </p>
+                  )}
+                </div>
+
+                {/* Remember me */}
+                <div className="flex items-center gap-2 mb-6">
+                  <input
+                    type="checkbox"
+                    name="remember"
+                    checked={formik.values.remember}
+                    onChange={formik.handleChange}
+                    className="w-4 h-4 rounded border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">Remember me</span>
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  className="w-full py-3 px-6 rounded-lg font-semibold text-white bg-blue-900 hover:bg-blue-800 transition-all"
+                >
+                  Login →
+                </button>
+              </form>
+
+              {/* Register link */}
+              <p className="text-center text-gray-600 text-sm mt-6">
+                Don't have an account?{' '}
+                <span
+                  onClick={() => navigate('/register')}
+                  className="text-yellow-500 hover:underline cursor-pointer font-semibold"
+                >
+                  Create account
+                </span>
+              </p>
+
+              <p className="text-xs text-center text-gray-500 mt-6">
+                By continuing, you agree to our Terms of Service and Privacy Policy
+              </p>
+            </div>
+
+            {/* Right Image */}
+            <div className="hidden lg:flex">
+              <img
+                src="https://images.unsplash.com/photo-1589994965851-a8f479c573a9"
+                alt="Justice Scale"
+                className="w-full h-full object-cover"
               />
-              <button
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-500"
-                type="button"
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
             </div>
           </div>
-
-          <div className="text-right mb-6">
-            <a href="#" className="text-sm text-accent hover:underline">
-              Forgot password?
-            </a>
-          </div>
-
-          {/* Login Button */}
-          <button className="w-full bg-primary text-white py-2 rounded-md hover:bg-opacity-90 transition">
-            Login →
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center my-6">
-            <div className="flex-grow h-px bg-gray-300"></div>
-            <span className="px-3 text-sm text-gray-500">
-              Or continue with
-            </span>
-            <div className="flex-grow h-px bg-gray-300"></div>
-          </div>
-
-          {/* Social Login */}
-          <div className="flex gap-4">
-            <button className="flex-1 border py-2 rounded-md hover:bg-gray-50">
-              Google
-            </button>
-            <button className="flex-1 border py-2 rounded-md hover:bg-gray-50">
-              Facebook
-            </button>
-          </div>
-
-          {/* Signup */}
-          <p className="text-sm text-center mt-6">
-            Don’t have an account?{' '}
-            <span onClick={() => navigate('/register')} className="text-accent font-medium cursor-pointer">
-              Create account
-            </span>
-          </p>
-
-          {/* Footer */}
-          <p className="text-xs text-center text-gray-400 mt-6">
-            By continuing, you agree to our{" "}
-            <span className="underline">Terms of Service</span> and{" "}
-            <span className="underline">Privacy Policy</span>
-          </p>
         </div>
-
-        {/* Right Section */}
-        <div className="hidden md:block">
-          <img
-            src="/login-law.jpg"
-            alt="Law"
-            className="h-full w-full object-cover"
-          />
-        </div>
-
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default Login;
