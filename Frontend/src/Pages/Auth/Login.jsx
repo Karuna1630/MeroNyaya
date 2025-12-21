@@ -33,7 +33,7 @@ const Login = () => {
             </div>
             <span className="text-2xl font-bold">
               <span className="text-blue-900">Mero</span>
-              <span className="text-yellow-500">Naya</span>
+              <span className="text-yellow-500">Nyaya</span>
             </span>
           </div>
         </div>
