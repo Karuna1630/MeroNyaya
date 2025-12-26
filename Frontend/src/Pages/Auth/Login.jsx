@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useFormik } from 'formik';
-import { loginValidationSchema } from '../Utils/LoginValidation';
+import { loginValidationSchema } from '../utils/LoginValidation';
 import { GoLaw } from 'react-icons/go';
 
 const Login = () => {

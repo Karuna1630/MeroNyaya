@@ -1,9 +1,9 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { GoLaw } from "react-icons/go";
-import { Search, CalendarCheck, ShieldCheck, FileText } from "lucide-react";
+import { Link } from 'react-router-dom';
+import { GoLaw } from 'react-icons/go';
+import { Search, CalendarCheck, ShieldCheck, FileText } from 'lucide-react';
 
-const Landing = () => {
+const Home = () => {
   return (
     <div className="bg-[#F9FAFB] text-gray-900">
 
@@ -208,4 +208,4 @@ const Landing = () => {
   );
 };
 
-export default Landing;
+export default Home;

@@ -1,48 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFormik } from 'formik';
-import { clientValidationSchema, lawyerValidationSchema } from '../Utils/RegisterValidation';
-import { GoLaw } from "react-icons/go";
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import { GoLaw } from 'react-icons/go';
+
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { registerUser, clearError } from '../slices/auth';
+
+import {
+  clientValidationSchema,
+  lawyerValidationSchema,
+} from '../utils/RegisterValidation';
 
 const Register = () => {
   const navigate = useNavigate();
-  const [userType, setUserType] = useState('Client');
+  const dispatch = useAppDispatch();
+
+  const { registerLoading, registerError } = useAppSelector(
+    (state) => state.auth
+  );
+
+  const [userType, setUserType] = useState("Client");
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Formik
-  const formik = useFormik({
-    initialValues: {
-      name: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: ''
-    },
-    validationSchema: userType === 'Client' ? clientValidationSchema : lawyerValidationSchema,
-    onSubmit: (values) => {
-      console.log('Form Submitted:', { userType, ...values });
-    },
-  });
+  const validationSchema =
+    userType === "Client"
+      ? clientValidationSchema
+      : lawyerValidationSchema;
 
-  // Handlers
-  const handleUserTypeChange = (type) => {
-    setUserType(type);
-    setCurrentStep(1);
-    formik.resetForm();
+  const initialValues = {
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    terms: false,
   };
 
-  const handleContinue = () => {
-    formik.setTouched({
-      name: true,
-      email: true,
-      phone: true
-    });
+  const handleSubmit = async (values, actions) => {
+    const payload = {
+      name: values.name,
+      email: values.email,
+      phone_number: values.phone,
+      password: values.password,
+      role: userType.toLowerCase(),
+    };
 
-    const hasErrors = formik.errors.name || formik.errors.email || formik.errors.phone;
-    if (!hasErrors) {
-      setCurrentStep(2);
+    const result = await dispatch(registerUser(payload));
+
+    if (registerUser.fulfilled.match(result)) {
+      actions.resetForm();
+      navigate("/verify-otp");
     }
   };
+
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch, userType]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -77,23 +90,35 @@ const Register = () => {
                 Create Account
               </h1>
               <p className="text-gray-600 mb-6">
-                Join as a{' '}
+                Join as a{" "}
                 <span className="text-yellow-500 font-semibold">
                   {userType}
                 </span>
               </p>
 
+              {/* Error from Redux */}
+              {registerError && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <p className="text-red-600 text-sm">
+                    {registerError}
+                  </p>
+                </div>
+              )}
+
               {/* Role Switch */}
               <div className="flex gap-4 mb-8">
-                {['Client', 'Lawyer'].map(type => (
+                {["Client", "Lawyer"].map((type) => (
                   <button
                     key={type}
                     type="button"
-                    onClick={() => handleUserTypeChange(type)}
-                    className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
+                    onClick={() => {
+                      setUserType(type);
+                      setCurrentStep(1);
+                    }}
+                    className={`flex-1 py-3 px-6 rounded-lg font-semibold ${
                       userType === type
-                        ? 'bg-white text-gray-900 border-2 border-blue-900'
-                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-blue-900'
+                        ? "bg-white border-2 border-blue-900"
+                        : "bg-gray-100"
                     }`}
                   >
                     {type}
@@ -101,198 +126,100 @@ const Register = () => {
                 ))}
               </div>
 
-              {/* Step Indicator */}
-              <div className="flex items-center gap-4 mb-8">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                    currentStep >= 1
-                      ? 'bg-blue-900 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  1
-                </div>
-                <div
-                  className={`flex-1 h-1 ${
-                    currentStep >= 2 ? 'bg-blue-900' : 'bg-gray-200'
-                  }`}
-                />
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                    currentStep >= 2
-                      ? 'bg-blue-900 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  2
-                </div>
-              </div>
+              <Formik
+                initialValues={initialValues}
+                validationSchema={validationSchema}
+                onSubmit={handleSubmit}
+              >
+                {({ values, setTouched, errors }) => (
+                  <Form>
+                    {/* STEP 1 */}
+                    {currentStep === 1 && (
+                      <>
+                        {["name", "email", "phone"].map((field) => (
+                          <div className="mb-4" key={field}>
+                            <label className="block font-semibold mb-2">
+                              {field === "name"
+                                ? userType === "Client"
+                                  ? "Full Name"
+                                  : "Lawyer Name"
+                                : field.charAt(0).toUpperCase() +
+                                  field.slice(1)}
+                            </label>
+                            <Field
+                              name={field}
+                              className="w-full px-4 py-3 border rounded-lg"
+                            />
+                            <ErrorMessage
+                              name={field}
+                              component="p"
+                              className="text-red-500 text-sm mt-1"
+                            />
+                          </div>
+                        ))}
 
-              {/* Step 1 */}
-              {currentStep === 1 && (
-                <div className="mb-8">
-                  {/* Name Field */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {userType === 'Client' ? 'Full Name' : 'Lawyer Name'}
-                    </label>
-                    <input
-                      name="name"
-                      type="text"
-                      placeholder="Enter your name"
-                      value={formik.values.name}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
-                        formik.touched.name && formik.errors.name
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                          : 'border-gray-300 focus:border-blue-900 focus:ring-blue-900'
-                      }`}
-                    />
-                    {formik.touched.name && formik.errors.name && (
-                      <p className="text-red-500 text-sm mt-1">{formik.errors.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTouched({
+                              name: true,
+                              email: true,
+                              phone: true,
+                            });
+                            if (!errors.name && !errors.email && !errors.phone) {
+                              setCurrentStep(2);
+                            }
+                          }}
+                          className="w-full py-3 bg-blue-900 text-white rounded-lg"
+                        >
+                          Continue →
+                        </button>
+                      </>
                     )}
-                  </div>
 
-                  {/* Email Field */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      name="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={formik.values.email}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
-                        formik.touched.email && formik.errors.email
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                          : 'border-gray-300 focus:border-blue-900 focus:ring-blue-900'
-                      }`}
-                    />
-                    {formik.touched.email && formik.errors.email && (
-                      <p className="text-red-500 text-sm mt-1">{formik.errors.email}</p>
+                    {/* STEP 2 */}
+                    {currentStep === 2 && (
+                      <>
+                        {["password", "confirmPassword"].map((field) => (
+                          <div className="mb-4" key={field}>
+                            <label className="block font-semibold mb-2">
+                              {field === "password"
+                                ? "Password"
+                                : "Confirm Password"}
+                            </label>
+                            <Field
+                              name={field}
+                              type="password"
+                              className="w-full px-4 py-3 border rounded-lg"
+                            />
+                            <ErrorMessage
+                              name={field}
+                              component="p"
+                              className="text-red-500 text-sm mt-1"
+                            />
+                          </div>
+                        ))}
+
+                        <button
+                          type="submit"
+                          disabled={registerLoading}
+                          className="w-full py-3 bg-blue-900 text-white rounded-lg"
+                        >
+                          {registerLoading
+                            ? "Creating Account..."
+                            : "Create Account →"}
+                        </button>
+                      </>
                     )}
-                  </div>
-
-                  {/* Phone Field */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      name="phone"
-                      type="tel"
-                      placeholder="+977 9845656421"
-                      value={formik.values.phone}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
-                        formik.touched.phone && formik.errors.phone
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                          : 'border-gray-300 focus:border-blue-900 focus:ring-blue-900'
-                      }`}
-                    />
-                    {formik.touched.phone && formik.errors.phone && (
-                      <p className="text-red-500 text-sm mt-1">{formik.errors.phone}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2 */}
-              {currentStep === 2 && (
-                <div className="mb-8">
-                  {/* Password Field */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Password
-                    </label>
-                    <input
-                      name="password"
-                      type="password"
-                      placeholder="Create a strong password"
-                      value={formik.values.password}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
-                        formik.touched.password && formik.errors.password
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                          : 'border-gray-300 focus:border-blue-900 focus:ring-blue-900'
-                      }`}
-                    />
-                    {formik.touched.password && formik.errors.password && (
-                      <p className="text-red-500 text-sm mt-1">{formik.errors.password}</p>
-                    )}
-                  </div>
-
-                  {/* Confirm Password Field */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Confirm Password
-                    </label>
-                    <input
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="Confirm your password"
-                      value={formik.values.confirmPassword}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${
-                        formik.touched.confirmPassword && formik.errors.confirmPassword
-                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                          : 'border-gray-300 focus:border-blue-900 focus:ring-blue-900'
-                      }`}
-                    />
-                    {formik.touched.confirmPassword && formik.errors.confirmPassword && (
-                      <p className="text-red-500 text-sm mt-1">{formik.errors.confirmPassword}</p>
-                    )}
-                  </div>
-
-                  <div className="flex items-start gap-3 pt-2">
-                    <input type="checkbox" className="mt-1 w-4 h-4 rounded border-gray-300" />
-                    <span className="text-sm text-gray-700">
-                      I agree to the{' '}
-                      <span className="text-yellow-500 hover:underline cursor-pointer">
-                        Terms of Service
-                      </span>{' '}
-                      and{' '}
-                      <span className="text-yellow-500 hover:underline cursor-pointer">
-                        Privacy Policy
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Buttons */}
-              <div className="flex gap-4">
-                {currentStep === 2 && (
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(1)}
-                    className="flex-1 py-3 px-6 border-2 border-gray-300 text-gray-900 rounded-lg font-semibold"
-                  >
-                    ← Back
-                  </button>
+                  </Form>
                 )}
-                <button
-                  type="button"
-                  onClick={currentStep === 1 ? handleContinue : formik.handleSubmit}
-                  className="flex-1 py-3 px-6 rounded-lg font-semibold text-white bg-blue-900 hover:bg-blue-800"
-                >
-                  {currentStep === 1 ? 'Continue →' : 'Create Account →'}
-                </button>
-              </div>
+              </Formik>
 
-              {/* Login */}
               <p className="text-center text-gray-600 text-sm mt-6">
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <span
-                  onClick={() => navigate('/login')}
-                  className="text-yellow-500 hover:underline cursor-pointer font-semibold"
+                  onClick={() => navigate("/login")}
+                  className="text-yellow-500 cursor-pointer font-semibold"
                 >
                   Login here
                 </span>
