@@ -33,6 +33,32 @@ export const registerUser = createAsyncThunk(
   }
 );
 
+export const verifyOtp = createAsyncThunk(
+  "auth/verifyOtp",
+  async (payload, { rejectWithValue }) => {
+    try {
+      console.log("Verify OTP payload:", payload);
+      const response = await axiosInstance.post(
+        "/authentications/verify-otp/",
+        payload
+      );
+      console.log("Verify OTP response:", response.data);
+
+      // clear temporary registration data on success
+      localStorage.removeItem("registeredData");
+
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Verify OTP error:",
+        error.response?.data || error.message
+      );
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+
 /* ================= LOGIN ================= */
 export const loginUser = createAsyncThunk(
   "auth/login",
@@ -86,6 +112,11 @@ const getInitialState = () => {
 
     registerLoading: false,
     registerError: null,
+
+     // verify otp state
+    verifyLoading: false,
+    verifyError: null,
+    verifySuccess: false,
   };
 };
 
@@ -120,6 +151,23 @@ const authSlice = createSlice({
     builder.addCase(registerUser.rejected, (state, action) => {
       state.registerLoading = false;
       state.registerError = action.payload;
+    });
+
+     /* Verify OTP */
+    builder.addCase(verifyOtp.pending, (state) => {
+      state.verifyLoading = true;
+      state.verifyError = null;
+      state.verifySuccess = false;
+    });
+
+    builder.addCase(verifyOtp.fulfilled, (state) => {
+      state.verifyLoading = false;
+      state.verifySuccess = true;
+    });
+
+    builder.addCase(verifyOtp.rejected, (state, action) => {
+      state.verifyLoading = false;
+      state.verifyError = action.payload;
     });
 
     /* Login */
