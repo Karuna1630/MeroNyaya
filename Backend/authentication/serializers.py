@@ -55,6 +55,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
 # Verify OTP Serializer
 class VerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
     otp = serializers.CharField(max_length=6, min_length=6, required=True)
 
 # Resend OTP Serializer

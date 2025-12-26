@@ -80,17 +80,18 @@ class VerifyOTPView(APIView):
         request_body=VerifyOTPSerializer,
         responses={
             200: openapi.Response(description="OTP verified successfully."),
+            400: openapi.Response(description="Invalid or expired OTP"),
+            500: openapi.Response(description="Internal Server Error"),
         },
         tags=["OTP"],
     )
     def post(self, request):
         try:
-            email = request.session.get('otp_email')
-
-            if not email:
+            serializer = VerifyOTPSerializer(data=request.data)
+            if not serializer.is_valid():
                  return api_response(
                     is_success=False,  
-                    error_message={"error": "Session expired. Please register again."},
+                    error_message=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             
@@ -103,15 +104,13 @@ class VerifyOTPView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             
+            email = serializer.validated_data['email']
             otp = serializer.validated_data['otp']
+
             is_valid, message = verify_otp(email, otp)
             
             if is_valid:
-                # Clear session after successful verification
-                if 'otp_email' in request.session:
-                    del request.session['otp_email']
-                
-                return api_response(
+                    return api_response(
                     is_success=True,
                     status_code=status.HTTP_200_OK,
                     result={"message": "OTP verified successfully. You can now log in."}
