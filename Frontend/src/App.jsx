@@ -5,6 +5,9 @@ import Register from './Pages/Auth/Register.jsx';
 import VerifyOtp from './Pages/auth/VerifyOtp.jsx';
 import { Provider } from 'react-redux';
 import {store} from './Pages/store/store.js'
+import Header from './components/Header.jsx';
+import Footer from './components/Footer.jsx';
+import Dashboard from './Pages/Dashboard/Dashboard.jsx';
 
 
 function App() {
@@ -19,11 +22,14 @@ function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         <Route path='/verify-otp' element={<VerifyOtp />} />
+        <Route path='/header' element={<Header />} />
+        <Route path='/footer' element={<Footer />} />
+        <Route path='/dashboard' element={<Dashboard />} />
       </Routes>
     </BrowserRouter>
     </Provider>
     </>
-  )
-}
+
+  );}
 
 export default App

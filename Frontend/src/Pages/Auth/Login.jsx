@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useFormik } from 'formik';
-import { GoLaw } from 'react-icons/go';
-
-import { loginValidationSchema } from '../utils/LoginValidation';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { loginUser, clearError } from '../slices/auth';
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useFormik } from "formik";
+import { GoLaw } from "react-icons/go";
+import loginImage from "../../assets/login image.jpg";
+import { loginValidationSchema } from "../utils/LoginValidation";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { loginUser, clearError } from "../slices/auth";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,8 +21,8 @@ const Login = () => {
 
   const formik = useFormik({
     initialValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
       remember: false,
     },
     validationSchema: loginValidationSchema,
@@ -32,110 +34,118 @@ const Login = () => {
 
       const result = await dispatch(loginUser(payload));
 
-      // ✅ SAME FORMAT AS REGISTER / VERIFY OTP
       if (loginUser.fulfilled.match(result)) {
-        navigate('/');
+        navigate("/");
       }
     },
   });
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ backgroundColor: '#FFFAFA' }}
-    >
-      <div className="w-full max-w-5xl">
+    <>
+      <Header />
 
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-6">
-            <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl">
-              <GoLaw className="size-8" />
-            </div>
-            <span className="text-2xl font-bold">
-              <span className="text-blue-900">Mero</span>
-              <span className="text-yellow-500">Nyaya</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+      {/* MAIN WRAPPER */}
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        {/* CARD */}
+        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl/30 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2">
 
-            {/* Form */}
+            {/* IMAGE */}
+            <div className="hidden lg:block">
+              <img
+                src={loginImage}
+                alt="Login"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* FORM SIDE */}
             <div className="p-8 lg:p-12">
-              <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
-              <p className="text-gray-600 mb-6">
+
+              {/* LOGO */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl mb-3">
+                  <GoLaw className="size-8" />
+                </div>
+                <h1 className="text-2xl font-bold">
+                  <span className="text-blue-900">Mero</span>
+                  <span className="text-yellow-500">Nyaya</span>
+                </h1>
+              </div>
+
+              {/* TITLE */}
+              <h2 className="text-xl font-semibold text-center mb-2">
+                Welcome Back
+              </h2>
+              <p className="text-sm text-gray-600 text-center mb-6">
                 Enter your credentials to access your account
               </p>
 
-              {/* Redux Error */}
+              {/* ERROR */}
               {error && (
                 <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-red-600 text-sm">{error}</p>
+                  <p className="text-red-600 text-sm text-center">{error}</p>
                 </div>
               )}
 
+              {/* FORM */}
               <form onSubmit={formik.handleSubmit}>
-                {/* Email */}
+                {/* EMAIL */}
                 <div className="mb-4">
-                  <label className="font-semibold block mb-2">Email</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Email
+                  </label>
                   <input
                     name="email"
                     type="email"
                     value={formik.values.email}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className="w-full px-4 py-3 border rounded-lg"
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
 
-                {/* Password */}
+                {/* PASSWORD */}
                 <div className="mb-6">
-                  <label className="font-semibold block mb-2">Password</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Password
+                  </label>
                   <input
                     name="password"
                     type="password"
                     value={formik.values.password}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className="w-full px-4 py-3 border rounded-lg"
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-blue-900 text-white rounded-lg"
+                  className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
                 >
-                  {loading ? 'Logging in...' : 'Login →'}
+                  {loading ? "Logging in..." : "Login →"}
                 </button>
               </form>
 
-              <p className="text-center text-sm mt-6">
-                Don’t have an account?{' '}
+              {/* REGISTER LINK */}
+              <p className="text-center text-gray-600 text-sm mt-6">
+                Don’t have an account?{" "}
                 <span
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate("/register")}
                   className="text-yellow-500 font-semibold cursor-pointer"
                 >
                   Create account
                 </span>
               </p>
-            </div>
 
-            {/* Image */}
-            <div className="hidden lg:flex">
-              <img
-                src="https://images.unsplash.com/photo-1589994965851-a8f479c573a9"
-                alt="Justice"
-                className="w-full h-full object-cover"
-              />
             </div>
-
           </div>
         </div>
       </div>
-    </div>
+      <Footer />
+    </>
   );
 };
 

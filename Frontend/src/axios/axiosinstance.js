@@ -3,12 +3,13 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 const getAccessToken = () => {
-  return localStorage.getItem('accessToken');
+  return localStorage.getItem('access_token');
 };
 
 const getRefreshToken = () => {
-  return localStorage.getItem('refreshToken');
+  return localStorage.getItem('refresh_token');
 };
+
 
 // Create an axios instance
 const axiosInstance = axios.create({
@@ -55,14 +56,14 @@ axiosInstance.interceptors.response.use(
 
                 // Store the new access token
                 const newAccessToken = response.data.access;
-                localStorage.setItem('accessToken', newAccessToken);
+                localStorage.setItem('access_token', newAccessToken);
                 // Retry the original request with the new token
                 originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
                 return axiosInstance(originalRequest);
             } catch (refreshError) {
                 // If refresh fails, redirect to login
-               localStorage.removeItem('accessToken');
-               localStorage.removeItem('refreshToken');
+               localStorage.removeItem('access_token');
+               localStorage.removeItem('refresh_token');
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             }

@@ -2,39 +2,16 @@ import React from "react";
 import { Link } from 'react-router-dom';
 import { GoLaw } from 'react-icons/go';
 import { Search, CalendarCheck, ShieldCheck, FileText } from 'lucide-react';
+import home1 from '../../assets/home1.jpg';
+import Header from "../../components/Header.jsx";
+import Footer from "../../components/Footer.jsx";
 
 const Home = () => {
   return (
+    <>
     <div className="bg-[#F9FAFB] text-gray-900">
 
-      {/* ================= NAVBAR ================= */}
-     <header className="bg-[#0F1A3D] text-white">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <GoLaw className="text-yellow-400 size-8" />
-            <span className="text-xl font-bold">
-              Mero<span className="text-yellow-400">Nyaya</span>
-            </span>
-          </div>
-
-          <nav className="hidden md:flex gap-8 text-sm font-medium">
-            <Link to="#">Find Lawyers</Link>
-            <Link to="#">Categories</Link>
-            <Link to="#">Pricing</Link>
-            <Link to="#">About Us</Link>
-          </nav>
-
-          <div className="flex gap-4">
-            <Link to="/login" className="text-sm">Login</Link>
-            <Link
-              to="/register"
-              className="bg-yellow-400 text-blue-900 px-4 py-2 rounded-lg text-sm font-semibold"
-            >
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </header>
+    <Header/>
 
       {/* ================= HERO ================= */}
       <section className="bg-blue-900 text-white">
@@ -61,7 +38,7 @@ const Home = () => {
 
           <div className="hidden lg:block">
             <img
-              src="https://images.unsplash.com/photo-1521791136064-7986c2920216"
+              src={home1}
               alt="Legal Consultation"
               className="rounded-xl shadow-lg"
             />
@@ -162,49 +139,9 @@ const Home = () => {
           </Link>
         </div>
       </section>
-
-      {/* ================= FOOTER ================= */}
-      <footer className="bg-blue-950 text-gray-300 py-12">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <h3 className="font-bold text-white mb-2">MeroNyaya</h3>
-            <p className="text-sm">
-              Nepal’s trusted digital legal service platform.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-2">Services</h4>
-            <ul className="text-sm space-y-1">
-              <li>Find Lawyers</li>
-              <li>Legal Advice</li>
-              <li>Appointments</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-2">Company</h4>
-            <ul className="text-sm space-y-1">
-              <li>About Us</li>
-              <li>Contact</li>
-              <li>Privacy Policy</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-white mb-2">Support</h4>
-            <ul className="text-sm space-y-1">
-              <li>Help Center</li>
-              <li>Terms of Service</li>
-            </ul>
-          </div>
-        </div>
-
-        <p className="text-center text-sm mt-8 text-gray-400">
-         © {new Date().getFullYear()} MeroNyaya. All rights reserved.
-        </p>
-      </footer>
+      <Footer/>
     </div>
+    </>
   );
 };
 

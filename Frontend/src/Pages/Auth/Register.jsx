@@ -1,15 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-import { GoLaw } from 'react-icons/go';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import { GoLaw } from "react-icons/go";
 
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { registerUser, clearError } from '../slices/auth';
+import register from "../../assets/register.jpg";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { registerUser, clearError } from "../slices/auth";
 
 import {
   clientValidationSchema,
   lawyerValidationSchema,
-} from '../utils/RegisterValidation';
+} from "../utils/RegisterValidation";
+
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -23,9 +27,7 @@ const Register = () => {
   const [currentStep, setCurrentStep] = useState(1);
 
   const validationSchema =
-    userType === "Client"
-      ? clientValidationSchema
-      : lawyerValidationSchema;
+    userType === "Client" ? clientValidationSchema : lawyerValidationSchema;
 
   const initialValues = {
     name: "",
@@ -42,7 +44,7 @@ const Register = () => {
       email: values.email,
       phone_number: values.phone,
       password: values.password,
-      role: userType.toLowerCase(),
+      role: userType.role,
     };
 
     const result = await dispatch(registerUser(payload));
@@ -58,55 +60,60 @@ const Register = () => {
   }, [dispatch, userType]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-6">
-            <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl font-bold">
-              <GoLaw className="size-8" />
-            </div>
-            <span className="text-2xl font-bold">
-              <span className="text-blue-900">Mero</span>
-              <span className="text-yellow-500">Nyaya</span>
-            </span>
-          </div>
-        </div>
+    <>
+      <Header />
 
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      {/* MAIN WRAPPER */}
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-20">
+        {/* CARD */}
+        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl/30 overflow-hidden ">
+
           <div className="grid grid-cols-1 lg:grid-cols-2">
-            {/* Image */}
-            <div className="hidden lg:flex">
+            {/* IMAGE */}
+            <div className="hidden lg:block">
               <img
-                src="https://lnplawoffice.id/wp-content/uploads/2025/10/still-life-world-intellectual-property-day-1024x1536.jpg"
-                alt="Legal"
+                src={register}
+                alt="Register"
                 className="w-full h-full object-cover"
               />
             </div>
 
-            {/* Form */}
+            {/* FORM SIDE */}
             <div className="p-8 lg:p-12">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+
+              {/* LOGO */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl mb-3">
+                  <GoLaw className="size-8" />
+                </div>
+                <h1 className="text-2xl font-bold">
+                  <span className="text-blue-900">Mero</span>
+                  <span className="text-yellow-500">Nyaya</span>
+                </h1>
+              </div>
+
+              {/* TITLE */}
+              <h2 className="text-xl font-semibold text-center mb-2">
                 Create Account
-              </h1>
-              <p className="text-gray-600 mb-6">
-                Join as a{" "}
+              </h2>
+              <p className="text-sm text-gray-600 text-center mb-6">
+                Join as{" "}
                 <span className="text-yellow-500 font-semibold">
                   {userType}
                 </span>
               </p>
 
-              {/* Error from Redux */}
+              {/* ERROR */}
               {registerError && (
                 <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-red-600 text-sm">
+                  <p className="text-red-600 text-sm text-center">
                     {registerError}
                   </p>
                 </div>
               )}
 
-              {/* Role Switch */}
-              <div className="flex gap-4 mb-8">
+              {/* ROLE SWITCH */}
+              <div className="flex gap-3 mb-6">
                 {["Client", "Lawyer"].map((type) => (
                   <button
                     key={type}
@@ -115,30 +122,32 @@ const Register = () => {
                       setUserType(type);
                       setCurrentStep(1);
                     }}
-                    className={`flex-1 py-3 px-6 rounded-lg font-semibold ${
-                      userType === type
-                        ? "bg-white border-2 border-blue-900"
-                        : "bg-gray-100"
-                    }`}
+                    className={`flex-1 py-2 rounded-lg font-semibold text-sm transition
+                      ${
+                        userType === type
+                          ? "bg-blue-900 text-white"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
                   >
                     {type}
                   </button>
                 ))}
               </div>
 
+              {/* FORM */}
               <Formik
                 initialValues={initialValues}
                 validationSchema={validationSchema}
                 onSubmit={handleSubmit}
               >
-                {({ values, setTouched, errors }) => (
+                {({ setTouched, errors }) => (
                   <Form>
                     {/* STEP 1 */}
                     {currentStep === 1 && (
                       <>
                         {["name", "email", "phone"].map((field) => (
                           <div className="mb-4" key={field}>
-                            <label className="block font-semibold mb-2">
+                            <label className="block text-sm font-semibold mb-1">
                               {field === "name"
                                 ? userType === "Client"
                                   ? "Full Name"
@@ -148,12 +157,12 @@ const Register = () => {
                             </label>
                             <Field
                               name={field}
-                              className="w-full px-4 py-3 border rounded-lg"
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
                             />
                             <ErrorMessage
                               name={field}
                               component="p"
-                              className="text-red-500 text-sm mt-1"
+                              className="text-red-500 text-xs mt-1"
                             />
                           </div>
                         ))}
@@ -166,11 +175,14 @@ const Register = () => {
                               email: true,
                               phone: true,
                             });
-                            if (!errors.name && !errors.email && !errors.phone) {
-                              setCurrentStep(2);
-                            }
+
+                            const hasErrors = ["name", "email", "phone"].some(
+                              (field) => errors[field]
+                            );
+
+                            if (!hasErrors) setCurrentStep(2);
                           }}
-                          className="w-full py-3 bg-blue-900 text-white rounded-lg"
+                          className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
                         >
                           Continue →
                         </button>
@@ -182,7 +194,7 @@ const Register = () => {
                       <>
                         {["password", "confirmPassword"].map((field) => (
                           <div className="mb-4" key={field}>
-                            <label className="block font-semibold mb-2">
+                            <label className="block text-sm font-semibold mb-1">
                               {field === "password"
                                 ? "Password"
                                 : "Confirm Password"}
@@ -190,12 +202,12 @@ const Register = () => {
                             <Field
                               name={field}
                               type="password"
-                              className="w-full px-4 py-3 border rounded-lg"
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
                             />
                             <ErrorMessage
                               name={field}
                               component="p"
-                              className="text-red-500 text-sm mt-1"
+                              className="text-red-500 text-xs mt-1"
                             />
                           </div>
                         ))}
@@ -203,7 +215,7 @@ const Register = () => {
                         <button
                           type="submit"
                           disabled={registerLoading}
-                          className="w-full py-3 bg-blue-900 text-white rounded-lg"
+                          className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
                         >
                           {registerLoading
                             ? "Creating Account..."
@@ -215,6 +227,7 @@ const Register = () => {
                 )}
               </Formik>
 
+              {/* LOGIN */}
               <p className="text-center text-gray-600 text-sm mt-6">
                 Already have an account?{" "}
                 <span
@@ -228,7 +241,9 @@ const Register = () => {
           </div>
         </div>
       </div>
-    </div>
+
+      <Footer />
+    </>
   );
 };
 
