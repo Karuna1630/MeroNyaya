@@ -7,7 +7,7 @@ import { Provider } from 'react-redux';
 import {store} from './Pages/store/store.js'
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
-import Dashboard from './Pages/Dashboard/Dashboard.jsx';
+import Dashboard from './Pages/Client/dashboard.jsx';
 
 
 function App() {

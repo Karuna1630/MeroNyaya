@@ -13,7 +13,7 @@ const Home = () => {
 
     <Header/>
 
-      {/* ================= HERO ================= */}
+     {/* Hero section */}
       <section className="bg-blue-900 text-white">
         <div className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -46,7 +46,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ================= CATEGORIES ================= */}
+      {/* categories */}
       <section className="max-w-7xl mx-auto px-6 py-16">
         <h2 className="text-2xl font-bold text-center mb-4">
           Browse by Legal Category

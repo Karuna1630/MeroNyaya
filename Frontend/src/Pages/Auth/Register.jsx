@@ -44,7 +44,7 @@ const Register = () => {
       email: values.email,
       phone_number: values.phone,
       password: values.password,
-      role: userType.role,
+      role: userType, 
     };
 
     const result = await dispatch(registerUser(payload));
@@ -63,11 +63,8 @@ const Register = () => {
     <>
       <Header />
 
-      {/* MAIN WRAPPER */}
       <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-20">
-        {/* CARD */}
-        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl/30 overflow-hidden ">
-
+        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl/30 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2">
             {/* IMAGE */}
             <div className="hidden lg:block">
@@ -75,12 +72,12 @@ const Register = () => {
                 src={register}
                 alt="Register"
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </div>
 
-            {/* FORM SIDE */}
+            {/* FORM */}
             <div className="p-8 lg:p-12">
-
               {/* LOGO */}
               <div className="flex flex-col items-center mb-6">
                 <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl mb-3">
@@ -92,10 +89,10 @@ const Register = () => {
                 </h1>
               </div>
 
-              {/* TITLE */}
               <h2 className="text-xl font-semibold text-center mb-2">
                 Create Account
               </h2>
+
               <p className="text-sm text-gray-600 text-center mb-6">
                 Join as{" "}
                 <span className="text-yellow-500 font-semibold">
@@ -122,25 +119,24 @@ const Register = () => {
                       setUserType(type);
                       setCurrentStep(1);
                     }}
-                    className={`flex-1 py-2 rounded-lg font-semibold text-sm transition
-                      ${
-                        userType === type
-                          ? "bg-blue-900 text-white"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
+                    className={`flex-1 py-2 rounded-lg font-semibold text-sm transition ${
+                      userType === type
+                        ? "bg-blue-900 text-white"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
                   >
                     {type}
                   </button>
                 ))}
               </div>
 
-              {/* FORM */}
               <Formik
                 initialValues={initialValues}
                 validationSchema={validationSchema}
+                validateOnMount={true} 
                 onSubmit={handleSubmit}
               >
-                {({ setTouched, errors }) => (
+                {({ validateForm, setTouched }) => (
                   <Form>
                     {/* STEP 1 */}
                     {currentStep === 1 && (
@@ -155,10 +151,12 @@ const Register = () => {
                                 : field.charAt(0).toUpperCase() +
                                   field.slice(1)}
                             </label>
+
                             <Field
                               name={field}
                               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
                             />
+
                             <ErrorMessage
                               name={field}
                               component="p"
@@ -169,7 +167,9 @@ const Register = () => {
 
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
+                            const errors = await validateForm();
+
                             setTouched({
                               name: true,
                               email: true,
@@ -180,7 +180,9 @@ const Register = () => {
                               (field) => errors[field]
                             );
 
-                            if (!hasErrors) setCurrentStep(2);
+                            if (!hasErrors) {
+                              setCurrentStep(2);
+                            }
                           }}
                           className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
                         >
@@ -199,11 +201,13 @@ const Register = () => {
                                 ? "Password"
                                 : "Confirm Password"}
                             </label>
+
                             <Field
                               name={field}
                               type="password"
                               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
                             />
+
                             <ErrorMessage
                               name={field}
                               component="p"

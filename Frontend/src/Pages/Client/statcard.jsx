@@ -1,6 +1,6 @@
 const statCard = ({ icon, title, value, subtitle }) => {
   return (
-    <div className="bg-white rounded-xl p-5 shadow-sm flex items-center gap-4">
+    <div className="bg-white rounded-xl p-5 shadow-md flex items-center gap-4">
       <div className="p-3 rounded-lg bg-blue-100 text-blue-900">
         {icon}
       </div>
