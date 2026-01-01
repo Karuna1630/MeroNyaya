@@ -54,16 +54,7 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* USER */}
-      <div className="px-6 py-4 border-t border-blue-800">
-        <p className="text-sm font-semibold">Karuna Giri</p>
-        <p className="text-xs text-gray-300">karuna@gmail.com</p>
-
-        <button className="flex items-center gap-2 mt-4 text-sm text-red-300 hover:text-red-400">
-          <LogOut size={16} />
-          Logout
-        </button>
-      </div>
+     
     </aside>
   );
 };

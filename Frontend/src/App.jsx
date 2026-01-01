@@ -9,6 +9,7 @@ import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Dashboard from './Pages/Client/dashboard.jsx';
 import MyCase from './Pages/Client/MyCase.jsx';
+import Appointments from './Pages/Client/Appointments.jsx';
 
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
         <Route path='/footer' element={<Footer />} />
         <Route path='/dashboard' element={<Dashboard />} />
         <Route path='/cases' element={<MyCase />} />
+        <Route path='/appointments' element={<Appointments />} />
       </Routes>
     </BrowserRouter>
     </Provider>
