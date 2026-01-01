@@ -7,10 +7,14 @@ import {
   FaInstagram,
 } from "react-icons/fa";
 
+// Adjustable padding - change this value to adjust footer padding
+// Options: px-6, px-8, px-10, px-12, px-14, px-16
+
+
 const Footer = () => {
   return (
     <footer className="bg-[#0F1A3D] text-gray-300">
-      <div className="max-w-7xl mx-auto px-6 py-14">
+      <div className={"w-full px-12 py-14"}>
 
         {/* Top Section */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">

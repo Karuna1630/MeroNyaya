@@ -2,10 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { GoLaw } from "react-icons/go";
 
+// Adjustable padding - change this value to adjust header padding
+// Options: px-6, px-8, px-10, px-12, px-14, px-16
+
+
 const Header = () => {
   return (
     <header className="w-full bg-[#0F1A3D]">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className={"w-full px-12"}>
         <div className="flex items-center justify-between h-20">
           
           {/* Logo */}

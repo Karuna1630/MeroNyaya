@@ -8,6 +8,7 @@ import {store} from './Pages/store/store.js'
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Dashboard from './Pages/Client/dashboard.jsx';
+import MyCase from './Pages/Client/MyCase.jsx';
 
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path='/header' element={<Header />} />
         <Route path='/footer' element={<Footer />} />
         <Route path='/dashboard' element={<Dashboard />} />
+        <Route path='/cases' element={<MyCase />} />
       </Routes>
     </BrowserRouter>
     </Provider>

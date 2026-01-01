@@ -1,6 +1,7 @@
 import React from "react";
 import Sidebar from "./sidebar";
 import StatCard from "./statcard";
+import DashHeader from "./DashHeader";
 import {
   Briefcase,
   Calendar,
@@ -91,33 +92,11 @@ const Dashboard = () => {
 
       {/* MAIN CONTENT */}
       <main className="flex-1">
-        {/* TOP HEADER SECTION WITH BORDER */}
-        <div className="bg-white border-b border-slate-200 px-8 py-6 shadow-md">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-                Welcome back, Karuna!
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">
-                Here's an overview of your legal matters and upcoming
-                appointments
-              </p>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button className="relative p-2 hover:bg-gray-100 rounded-full transition">
-                <Bell size={24} className="text-gray-600" />
-                <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  3
-                </span>
-              </button>
-
-              <button className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0F1A3D] text-white hover:bg-blue-950 transition">
-                <User size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* TOP HEADER */}
+        <DashHeader
+          title="Welcome back, Karuna!"
+          subtitle="Here's an overview of your legal matters and upcoming appointments"
+        />
 
         {/* MAIN BODY CONTENT */}
         <div className="p-8">
