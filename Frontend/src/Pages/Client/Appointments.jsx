@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Phone, Video, Clock, Calendar as CalIcon } from "lucide-react";
 import Sidebar from "./sidebar";
 import DashHeader from "./DashHeader";
+import lawyerPic from "../../assets/lawyerpic.jpg";
 
 const Appointments = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 11)); // December 2025
@@ -16,8 +17,8 @@ const Appointments = () => {
       date: "Dec 10, 2025",
       time: "10:00 AM - 10:30 AM",
       caseTitle: "Property Dispute - Land Registration",
-      status: "Scheduled", // Upcoming
-      avatar: "https://i.pravatar.cc/80?img=15",
+      status: "Scheduled",
+      avatar: lawyerPic, // use local asset
     },
     {
       id: 2,
@@ -26,8 +27,8 @@ const Appointments = () => {
       date: "Nov 25, 2025",
       time: "3:00 PM - 3:30 PM",
       caseTitle: "Business Contract Review",
-      status: "Completed", // Past
-      avatar: "https://i.pravatar.cc/80?img=5",
+      status: "Completed",
+      avatar: lawyerPic, // use local asset
     },
     {
       id: 3,
@@ -36,8 +37,8 @@ const Appointments = () => {
       date: "Dec 1, 2025",
       time: "10:00 AM - 10:30 AM",
       caseTitle: "Property Dispute - Land Registration",
-      status: "Completed", // Past
-      avatar: "https://i.pravatar.cc/80?img=32",
+      status: "Completed",
+      avatar: lawyerPic, // use local asset
     },
     {
       id: 4,
@@ -46,8 +47,8 @@ const Appointments = () => {
       date: "Dec 12, 2025",
       time: "11:00 AM - 11:30 AM",
       caseTitle: "Family Law - Custody",
-      status: "Cancelled", // Cancelled
-      avatar: "https://i.pravatar.cc/80?img=24",
+      status: "Cancelled",
+      avatar: lawyerPic, // use local asset
     },
   ];
 
