@@ -22,9 +22,9 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="bg-yellow-400 text-[#0F1A3D] p-2 rounded-full">
-                <GoLaw className="text-lg" />
-              </div>
+              <div className="bg-yellow-500 text-blue-900 p-2 rounded-lg">
+                        <GoLaw size={22} />
+                      </div>
               <h2 className="text-xl font-bold text-white">
                 Mero<span className="text-yellow-400">Nyaya</span>
               </h2>

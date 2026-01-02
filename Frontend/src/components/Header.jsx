@@ -5,7 +5,6 @@ import { GoLaw } from "react-icons/go";
 // Adjustable padding - change this value to adjust header padding
 // Options: px-6, px-8, px-10, px-12, px-14, px-16
 
-
 const Header = () => {
   return (
     <header className="w-full bg-[#0F1A3D]">
@@ -14,7 +13,9 @@ const Header = () => {
           
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <GoLaw className="text-yellow-400 text-2xl" />
+            <div className="bg-yellow-500 text-blue-900 p-2 rounded-lg">
+              <GoLaw size={22} />
+            </div>
             <span className="text-xl font-bold text-white">
               Mero<span className="text-yellow-400">Nyaya</span>
             </span>
@@ -52,7 +53,6 @@ const Header = () => {
               Get Started
             </Link>
           </div>
-
         </div>
       </div>
     </header>

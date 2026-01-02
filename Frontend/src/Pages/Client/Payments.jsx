@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, ArrowUpRight, ArrowDownLeft, CheckCircle, Clock, XCircle, Filter, Shield, Receipt, RefreshCw } from 'lucide-react';
 import DashHeader from './DashHeader';
+import Sidebar from './sidebar';
 
 const Payments = () => {
   const [activeTab, setActiveTab] = useState('history');
@@ -73,10 +74,24 @@ const Payments = () => {
     }
   ];
 
-  // Filter transactions based on status
+  // Filter transactions based on active tab and status
   const filteredTransactions = transactions.filter(transaction => {
-    if (filterStatus === 'all') return true;
-    return transaction.status === filterStatus;
+    // First filter by active tab
+    if (activeTab === 'pending') {
+      // On pending tab, only show pending transactions
+      if (transaction.status !== 'pending') {
+        return false;
+      }
+    }
+    
+    // Then filter by dropdown status (only on Transaction History tab)
+    if (activeTab === 'history') {
+      if (filterStatus === 'all') return true;
+      return transaction.status === filterStatus;
+    }
+    
+    // For pending tab, all pending transactions are shown (no additional filter)
+    return true;
   });
 
   // Get pending count
@@ -125,13 +140,16 @@ const Payments = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashHeader 
-        title="Payments" 
-        subtitle="Manage your payments and transactions"
-      />
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+      
+      <div className="flex-1">
+        <DashHeader 
+          title="Payments" 
+          subtitle="Manage your payments and transactions"
+        />
 
-      <div className="flex gap-6 p-8">
+        <div className="flex gap-6 p-8">
         {/* Main Content */}
         <div className="flex-1">
           {/* Tabs */}
@@ -162,42 +180,51 @@ const Payments = () => {
             {/* Filter Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                onClick={() => activeTab === 'history' && setShowFilterDropdown(!showFilterDropdown)}
+                disabled={activeTab === 'pending'}
+                className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg transition ${
+                  activeTab === 'pending' 
+                    ? 'bg-gray-100 cursor-not-allowed opacity-60' 
+                    : 'hover:bg-gray-50 cursor-pointer'
+                }`}
               >
+                
                 <Filter size={16} />
                 <span className="text-sm font-medium">
-                  {filterStatus === 'all' ? 'All Status' : 
-                   filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
+                  {activeTab === 'pending' 
+                    ? 'Pending' 
+                    : (filterStatus === 'all' ? 'All Status' : 
+                       filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1))
+                  }
                 </span>
                 <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
 
-              {showFilterDropdown && (
+              {showFilterDropdown && activeTab === 'history' && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                   <button
                     onClick={() => { setFilterStatus('all'); setShowFilterDropdown(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
                   >
                     All Status
                   </button>
                   <button
                     onClick={() => { setFilterStatus('completed'); setShowFilterDropdown(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
                   >
                     Completed
                   </button>
                   <button
                     onClick={() => { setFilterStatus('pending'); setShowFilterDropdown(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
                   >
                     Pending
                   </button>
                   <button
                     onClick={() => { setFilterStatus('failed'); setShowFilterDropdown(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
                   >
                     Failed
                   </button>
@@ -338,6 +365,7 @@ const Payments = () => {
                   </p>
                 </div>
               </div>
+        </div>
             </div>
           </div>
         </div>
