@@ -8,6 +8,10 @@ import {store} from './Pages/store/store.js'
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Dashboard from './Pages/Client/dashboard.jsx';
+import MyCase from './Pages/Client/MyCase.jsx';
+import Appointments from './Pages/Client/Appointments.jsx';
+import Messages from './Pages/Client/Messages.jsx';
+import Payments from './Pages/Client/Payments.jsx';
 
 
 function App() {
@@ -25,10 +29,10 @@ function App() {
         <Route path='/header' element={<Header />} />
         <Route path='/footer' element={<Footer />} />
         <Route path='/dashboard' element={<Dashboard />} />
-        
-
-
-
+        <Route path='/cases' element={<MyCase />} />
+        <Route path='/appointments' element={<Appointments />} />
+        <Route path='/messages' element={<Messages />} />
+        <Route path='/payments' element={<Payments />} />
       </Routes>
     </BrowserRouter>
     </Provider>
