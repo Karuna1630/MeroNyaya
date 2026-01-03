@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { GoLaw } from "react-icons/go";
+import { logoutUser } from "../features/auth/authSlice";
 
 // Adjustable padding - change this value to adjust header padding
 // Options: px-6, px-8, px-10, px-12, px-14, px-16
@@ -65,12 +66,30 @@ const Header = () => {
                   Login
                 </Link>
 
-            <Link
-              to="/register"
-              className="bg-yellow-400 text-[#0F1A3D] px-5 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition"
-            >
-              Get Started
-            </Link>
+                <Link
+                  to="/register"
+                  className="bg-yellow-400 text-[#0F1A3D] px-5 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition"
+                >
+                  Get Started
+                </Link>
+              </div>
+            ) : (
+              /* AFTER LOGIN */
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleProfile}
+                  className="text-sm font-semibold text-white hover:text-yellow-400 transition"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="bg-yellow-400 text-[#0F1A3D] px-5 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
