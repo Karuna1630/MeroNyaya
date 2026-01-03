@@ -25,7 +25,7 @@ const Login = () => {
       password: "",
       remember: false,
     },
-    validationSchema: loginValidationSchema,
+   validationSchema: loginValidationSchema,
     onSubmit: async (values) => {
       const payload = {
         email: values.email,
@@ -35,7 +35,20 @@ const Login = () => {
       const result = await dispatch(loginUser(payload));
 
       if (loginUser.fulfilled.match(result)) {
-        navigate("/");
+        // User data is in result.payload.Result.user
+        const user = result.payload.Result?.user;
+        const userRole = user?.role;
+
+        // // For debugging purposes
+        // console.log("User role:", userRole);
+        
+        if (userRole === "Client") {
+          navigate("/clientdashboard");
+        } else if (userRole === "Lawyer") {
+          navigate("/lawyerdashboard");
+        } else {
+          navigate("/");
+        }
       }
     },
   });
