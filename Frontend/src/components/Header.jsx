@@ -2,10 +2,8 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { GoLaw } from "react-icons/go";
-import { logoutUser } from "../features/auth/authSlice";
-
-// Adjustable padding - change this value to adjust header padding
-// Options: px-6, px-8, px-10, px-12, px-14, px-16
+import { User, LogOut } from "lucide-react";
+import { logoutUser } from "../Pages/slices/auth"; 
 
 const Header = () => {
   const dispatch = useDispatch();
@@ -14,13 +12,11 @@ const Header = () => {
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  // Logout
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login");
   };
-  
-  // View Profile
+
   const handleProfile = () => {
     const userRole = user?.role;
     if (userRole === "Client") navigate("/clientdashboard");
@@ -33,11 +29,11 @@ const Header = () => {
 
   return (
     <header className="w-full bg-[#0F1A3D]">
-      <div className={"w-full px-12"}>
+      <div className="w-full px-12">
         <div className="flex items-center justify-between h-20">
 
           {/* Logo */}
-          <div className="flex items-center gap-2">
+          <div onClick={handleHome} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
             <div className="bg-yellow-500 text-blue-900 p-2 rounded-lg">
               <GoLaw size={22} />
             </div>
@@ -75,22 +71,39 @@ const Header = () => {
               </div>
             ) : (
               /* AFTER LOGIN */
-              <div className="flex items-center gap-4">
+              <div className="relative">
+                {/* Avatar */}
                 <button
-                  onClick={handleProfile}
-                  className="text-sm font-semibold text-white hover:text-yellow-400 transition"
+                  onClick={() => setOpen(!open)}
+                  className="w-10 h-10 rounded-full bg-yellow-400 text-[#0F1A3D] flex items-center justify-center font-bold"
                 >
-                  Dashboard
+                  {user?.name?.charAt(0) || "U"}
                 </button>
-                <button
-                  onClick={handleLogout}
-                  className="bg-yellow-400 text-[#0F1A3D] px-5 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition"
-                >
-                  Logout
-                </button>
+
+                {/* Dropdown */}
+                {open && (
+                  <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-lg overflow-hidden z-50">
+                    <button
+                      onClick={handleProfile}
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm hover:bg-gray-100"
+                    >
+                      <User size={16} />
+                      View Profile
+                    </button>
+
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      <LogOut size={16} />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
+
         </div>
       </div>
     </header>

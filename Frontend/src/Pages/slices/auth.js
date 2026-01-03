@@ -179,7 +179,7 @@ const authSlice = createSlice({
 
     builder.addCase(loginUser.fulfilled, (state, action) => {
       state.loading = false;
-      state.user = action.payload.user;
+      state.user = action.payload.Result?.user;
       state.token = action.payload.access;
       state.isAuthenticated = true;
       state.success = true;
