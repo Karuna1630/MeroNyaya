@@ -1,0 +1,17 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.cpython-*.pyc
+
+# Database
+*.sqlite3
+*.db
+
+# Environment
+.env
+venv/
+env/
+
+# Node modules
+node_modules/
