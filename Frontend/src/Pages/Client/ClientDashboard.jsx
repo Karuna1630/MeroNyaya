@@ -1,7 +1,7 @@
 import React from "react";
 import Sidebar from "./sidebar";
 import StatCard from "./statcard";
-import DashHeader from "./DashHeader";
+import DashHeader from "./ClientDashHeader";
 import {
   Briefcase,
   Calendar,
@@ -14,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 
-const Dashboard = () => {
+const ClientDashboard = () => {
   const recentCases = [
     {
       title: "Property Dispute - Land Registration",
@@ -91,15 +91,17 @@ const Dashboard = () => {
       <Sidebar />
 
       {/* MAIN CONTENT */}
-      <main className="flex-1">
-        {/* TOP HEADER */}
-        <DashHeader
-          title="Welcome back, Karuna!"
-          subtitle="Here's an overview of your legal matters and upcoming appointments"
-        />
+      <main className="flex-1 flex flex-col">
+        {/* TOP HEADER - STICKY */}
+        <div className="sticky top-0 z-50 bg-white">
+          <DashHeader
+            title="Welcome back, Karuna!"
+            subtitle="Here's an overview of your legal matters and upcoming appointments"
+          />
+        </div>
 
-        {/* MAIN BODY CONTENT */}
-        <div className="p-8">
+        {/* MAIN BODY CONTENT - SCROLLABLE */}
+        <div className="flex-1 p-8 overflow-y-auto">
           {/* STATS */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
             <StatCard
@@ -284,4 +286,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default ClientDashboard;

@@ -9,7 +9,7 @@ import {
 	CheckCheck,
 } from "lucide-react";
 import Sidebar from "./sidebar";
-import DashHeader from "./DashHeader";
+import DashHeader from "./ClientDashHeader";
 import lawyerPic from "../../assets/lawyerpic.jpg";
 
 const conversations = [
@@ -68,7 +68,7 @@ const chatThread = [
 	
 ];
 
-const Messages = () => {
+const ClientMessage = () => {
 	const selected = useMemo(() => conversations[0], []);
 	const messagesRef = useRef(null);
 	const convoRef = useRef(null);
@@ -110,10 +110,12 @@ const Messages = () => {
 		<div className="flex min-h-screen bg-gray-50">
 			<Sidebar />
 
-			<main className="flex-1">
-				<DashHeader title="Messages" subtitle="Chat with your lawyers" />
+			<main className="flex-1 flex flex-col">
+				<div className="sticky top-0 z-50 bg-white">
+					<DashHeader title="Messages" subtitle="Chat with your lawyers" />
+				</div>
 
-				<div className="p-6">
+				<div className="flex-1 p-6 overflow-y-auto">
 					<div className="bg-white rounded-3xl shadow-[0_10px_40px_rgba(15,26,61,0.08)] p-4 xl:p-6 min-h-[70vh]">
 						<div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-4 xl:gap-6 h-full">
 							{/* Conversation List */}
@@ -297,4 +299,4 @@ const Messages = () => {
 	);
 };
 
-export default Messages;
+export default ClientMessage;

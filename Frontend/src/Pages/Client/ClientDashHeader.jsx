@@ -1,12 +1,12 @@
 import React from "react";
 import { Bell, User } from "lucide-react";
 
-const DashHeader = ({ title, subtitle }) => {
+const ClientDashHeader = ({ title, subtitle }) => {
   return (
     <div className="bg-white border-b-2 border-slate-300 px-8 py-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h2 className="text-2xl font-bold tracking-tight text-[#0F1A3D]">
             {title}
           </h2>
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
@@ -29,4 +29,4 @@ const DashHeader = ({ title, subtitle }) => {
   );
 };
 
-export default DashHeader;
+export default ClientDashHeader;

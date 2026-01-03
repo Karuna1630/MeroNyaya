@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Phone, Video, Clock, Calendar as CalIcon } from "lucide-react";
 import Sidebar from "./sidebar";
-import DashHeader from "./DashHeader";
+import DashHeader from "./ClientDashHeader";
 import lawyerPic from "../../assets/lawyerpic.jpg";
 
-const Appointments = () => {
+const ClientAppointment = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 11)); // December 2025
   const [activeTab, setActiveTab] = useState("Upcoming");
 
@@ -79,10 +79,12 @@ const Appointments = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
 
-      <main className="flex-1">
-        <DashHeader title="Appointments" subtitle="Manage your consultation schedule" />
+      <main className="flex-1 flex flex-col">
+        <div className="sticky top-0 z-50 bg-white">
+          <DashHeader title="Appointments" subtitle="Manage your consultation schedule" />
+        </div>
 
-        <div className="p-8">
+        <div className="flex-1 p-8 overflow-y-auto">
           <div className="grid grid-cols-1 xl:grid-cols-[420px_1fr] gap-6">
             {/* Calendar card */}
             <div className="bg-white rounded-3xl shadow-[0_10px_40px_rgba(15,26,61,0.08)] p-6">
@@ -236,4 +238,4 @@ const Appointments = () => {
   );
 };
 
-export default Appointments;
+export default ClientAppointment;

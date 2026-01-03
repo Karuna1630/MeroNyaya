@@ -1,21 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Download, ArrowUpRight, ArrowDownLeft, CheckCircle, Clock, XCircle, Filter, Shield, Receipt, RefreshCw } from 'lucide-react';
-import DashHeader from './DashHeader';
+import DashHeader from './ClientDashHeader';
 import Sidebar from './sidebar';
 
-const Payments = () => {
+const Payment= () => {
   const [activeTab, setActiveTab] = useState('history');
   const [filterStatus, setFilterStatus] = useState('all');
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('esewa');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-
-  // Close dropdown and reset filter when switching to pending tab
-  useEffect(() => {
-    if (activeTab === 'pending') {
-      setShowFilterDropdown(false);
-    }
-  }, [activeTab]);
 
   // Sample transaction data
   const transactions = [
@@ -150,13 +143,15 @@ const Payments = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       
-      <div className="flex-1">
-        <DashHeader 
-          title="Payments" 
-          subtitle="Manage your payments and transactions"
-        />
+      <div className="flex-1 flex flex-col">
+        <div className="sticky top-0 z-50 bg-white">
+          <DashHeader 
+            title="Payments" 
+            subtitle="Manage your payments and transactions"
+          />
+        </div>
 
-        <div className="flex gap-6 p-8">
+        <div className="flex gap-6 p-8 overflow-y-auto">
         {/* Main Content */}
         <div className="flex-1">
           {/* Tabs */}
@@ -195,6 +190,7 @@ const Payments = () => {
                     : 'hover:bg-gray-50 cursor-pointer'
                 }`}
               >
+                
                 <Filter size={16} />
                 <span className="text-sm font-medium">
                   {activeTab === 'pending' 
@@ -209,28 +205,28 @@ const Payments = () => {
               </button>
 
               {showFilterDropdown && activeTab === 'history' && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 animate-in fade-in duration-200">
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                   <button
                     onClick={() => { setFilterStatus('all'); setShowFilterDropdown(false); }}
-                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm transition ${filterStatus === 'all' ? 'bg-blue-50 text-blue-700 font-medium' : ''}`}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
                   >
                     All Status
                   </button>
                   <button
                     onClick={() => { setFilterStatus('completed'); setShowFilterDropdown(false); }}
-                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm transition ${filterStatus === 'completed' ? 'bg-blue-50 text-blue-700 font-medium' : ''}`}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
                   >
                     Completed
                   </button>
                   <button
                     onClick={() => { setFilterStatus('pending'); setShowFilterDropdown(false); }}
-                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm transition ${filterStatus === 'pending' ? 'bg-blue-50 text-blue-700 font-medium' : ''}`}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
                   >
                     Pending
                   </button>
                   <button
                     onClick={() => { setFilterStatus('failed'); setShowFilterDropdown(false); }}
-                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm transition ${filterStatus === 'failed' ? 'bg-blue-50 text-blue-700 font-medium' : ''}`}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
                   >
                     Failed
                   </button>
@@ -380,4 +376,4 @@ const Payments = () => {
   );
 };
 
-export default Payments;
+export default Payment;

@@ -14,12 +14,16 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const handleHome = () => {
+    navigate("/");
+  };
+
   const menuItems = [
-    { icon: Home, label: "Dashboard", path: "/dashboard" },
-    { icon: Briefcase, label: "My Cases", path: "/cases" },
-    { icon: Calendar, label: "Appointments", path: "/appointments" },
-    { icon: MessageSquare, label: "Messages", path: "/messages" },
-    { icon: CreditCard, label: "Payments", path: "/payments" },
+    { icon: Home, label: "Dashboard", path: "/clientdashboard" },
+    { icon: Briefcase, label: "My Cases", path: "/clientcase" },
+    { icon: Calendar, label: "Appointments", path: "/clientappointment" },
+    { icon: MessageSquare, label: "Messages", path: "/clientmessage" },
+    { icon: CreditCard, label: "Payments", path: "/clientpayment" },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -27,7 +31,7 @@ const Sidebar = () => {
   return (
     <aside className="w-64 bg-[#0F1A3D] text-white min-h-screen flex flex-col">
       {/* LOGO */}
-      <div className="flex items-center gap-2 px-6 py-5 border-b border-blue-800">
+      <div onClick={handleHome} className="flex items-center gap-2 px-6 py-5 border-b border-blue-800 cursor-pointer hover:opacity-80 transition">
         <div className="bg-yellow-500 text-blue-900 p-2 rounded-lg">
           <GoLaw size={22} />
         </div>
