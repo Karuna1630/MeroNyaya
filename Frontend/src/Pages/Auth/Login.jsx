@@ -1,114 +1,165 @@
-import { useState } from "react"
-import { useNavigate } from 'react-router-dom'
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useFormik } from "formik";
+import { GoLaw } from "react-icons/go";
+import loginImage from "../../assets/login image.jpg";
+import { loginValidationSchema } from "../utils/LoginValidation";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { loginUser, clearError } from "../slices/auth";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
-export default function Login() {
-  const [showPassword, setShowPassword] = useState(false)
-  const navigate = useNavigate()
+const Login = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const { loading, error } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
+  const formik = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+      remember: false,
+    },
+   validationSchema: loginValidationSchema,
+    onSubmit: async (values) => {
+      const payload = {
+        email: values.email,
+        password: values.password,
+      };
+
+      const result = await dispatch(loginUser(payload));
+
+      if (loginUser.fulfilled.match(result)) {
+        // User data is in result.payload.Result.user
+        const user = result.payload.Result?.user;
+        const userRole = user?.role;
+
+        // // For debugging purposes
+        // console.log("User role:", userRole);
+        
+        if (userRole === "Client") {
+          navigate("/clientdashboard");
+        } else if (userRole === "Lawyer") {
+          navigate("/lawyerdashboard");
+        } else {
+          navigate("/");
+        }
+      }
+    },
+  });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="w-full max-w-5xl bg-white rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-2 overflow-hidden">
+    <>
+      <Header />
 
-        {/* Left Section */}
-        <div className="p-10">
-          {/* Logo */}
-          <div className="flex items-center gap-2 mb-10">
-            <div className="bg-primary text-white p-2 rounded-md">⚖️</div>
-            <h1 className="text-xl font-bold">
-              Mero<span className="text-accent">Naya</span>
-            </h1>
-          </div>
+      {/* MAIN WRAPPER */}
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        {/* CARD */}
+        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl/30 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
 
-          <h2 className="text-2xl font-semibold mb-1">Welcome Back</h2>
-          <p className="text-gray-500 mb-6">
-            Enter your credentials to access your account
-          </p>
-
-          {/* Email */}
-          <div className="mb-4">
-            <label className="text-sm font-medium">Email</label>
-            <input
-              type="email"
-              placeholder="example@gmail.com"
-              className="w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-
-          {/* Password */}
-          <div className="mb-2">
-            <label className="text-sm font-medium">Password</label>
-            <div className="relative mt-1">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
-                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            {/* IMAGE */}
+            <div className="hidden lg:block">
+              <img
+                src={loginImage}
+                alt="Login"
+                className="w-full h-full object-cover"
               />
-              <button
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-500"
-                type="button"
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
+            </div>
+
+            {/* FORM SIDE */}
+            <div className="p-8 lg:p-12">
+
+              {/* LOGO */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl mb-3">
+                  <GoLaw className="size-8" />
+                </div>
+                <h1 className="text-2xl font-bold">
+                  <span className="text-blue-900">Mero</span>
+                  <span className="text-yellow-500">Nyaya</span>
+                </h1>
+              </div>
+
+              {/* TITLE */}
+              <h2 className="text-xl font-semibold text-center mb-2">
+                Welcome Back
+              </h2>
+              <p className="text-sm text-gray-600 text-center mb-6">
+                Enter your credentials to access your account
+              </p>
+
+              {/* ERROR */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <p className="text-red-600 text-sm text-center">{error}</p>
+                </div>
+              )}
+
+              {/* FORM */}
+              <form onSubmit={formik.handleSubmit}>
+                {/* EMAIL */}
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold mb-1">
+                    Email
+                  </label>
+                  <input
+                    name="email"
+                    type="email"
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+
+                {/* PASSWORD */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold mb-1">
+                    Password
+                  </label>
+                  <input
+                    name="password"
+                    type="password"
+                    value={formik.values.password}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
+                >
+                  {loading ? "Logging in..." : "Login →"}
+                </button>
+              </form>
+
+              {/* REGISTER LINK */}
+              <p className="text-center text-gray-600 text-sm mt-6">
+                Don’t have an account?{" "}
+                <span
+                  onClick={() => navigate("/register")}
+                  className="text-yellow-500 font-semibold cursor-pointer"
+                >
+                  Create account
+                </span>
+              </p>
+
             </div>
           </div>
-
-          <div className="text-right mb-6">
-            <a href="#" className="text-sm text-accent hover:underline">
-              Forgot password?
-            </a>
-          </div>
-
-          {/* Login Button */}
-          <button className="w-full bg-primary text-white py-2 rounded-md hover:bg-opacity-90 transition">
-            Login →
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center my-6">
-            <div className="flex-grow h-px bg-gray-300"></div>
-            <span className="px-3 text-sm text-gray-500">
-              Or continue with
-            </span>
-            <div className="flex-grow h-px bg-gray-300"></div>
-          </div>
-
-          {/* Social Login */}
-          <div className="flex gap-4">
-            <button className="flex-1 border py-2 rounded-md hover:bg-gray-50">
-              Google
-            </button>
-            <button className="flex-1 border py-2 rounded-md hover:bg-gray-50">
-              Facebook
-            </button>
-          </div>
-
-          {/* Signup */}
-          <p className="text-sm text-center mt-6">
-            Don’t have an account?{' '}
-            <span onClick={() => navigate('/register')} className="text-accent font-medium cursor-pointer">
-              Create account
-            </span>
-          </p>
-
-          {/* Footer */}
-          <p className="text-xs text-center text-gray-400 mt-6">
-            By continuing, you agree to our{" "}
-            <span className="underline">Terms of Service</span> and{" "}
-            <span className="underline">Privacy Policy</span>
-          </p>
         </div>
-
-        {/* Right Section */}
-        <div className="hidden md:block">
-          <img
-            src="/login-law.jpg"
-            alt="Law"
-            className="h-full w-full object-cover"
-          />
-        </div>
-
       </div>
-    </div>
-  )
-}
+      <Footer />
+    </>
+  );
+};
+
+export default Login;
