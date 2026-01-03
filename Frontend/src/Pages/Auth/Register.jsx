@@ -1,237 +1,243 @@
-import React, { useState} from 'react';
-import { useNavigate } from 'react-router-dom'
-import { useFormik } from 'formik';
-import { clientValidationSchema, lawyerValidationSchema } from '../Utils/RegisterValidation';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Formik, Form, Field, ErrorMessage } from "formik";
 import { GoLaw } from "react-icons/go";
 
+import register from "../../assets/register.jpg";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { registerUser, clearError } from "../slices/auth";
+
+import {
+  clientValidationSchema,
+  lawyerValidationSchema,
+} from "../utils/RegisterValidation";
+
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+
 const Register = () => {
-    const navigate = useNavigate()
-  const [userType, setUserType] = useState('Client');
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  const { registerLoading, registerError } = useAppSelector(
+    (state) => state.auth
+  );
+
+  const [userType, setUserType] = useState("Client");
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Fields for each role
-  const clientFields = [
-    { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter your full name' },
-    { id: 'email', label: 'Email Address', type: 'email', placeholder: 'Enter your email' },
-    { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+977 9845656421' },
-  ];
+  const validationSchema =
+    userType === "Client" ? clientValidationSchema : lawyerValidationSchema;
 
-  const lawyerFields = [
-    { id: 'name', label: 'Lawyer Name', type: 'text', placeholder: 'Enter your name' },
-    { id: 'email', label: 'Email Address', type: 'email', placeholder: 'Enter your email' },
-    { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+977 9845656421' },
-  ];
-
-  const passwordFields = [
-    { id: 'password', label: 'Password', type: 'password', placeholder: 'Create a strong password' },
-    { id: 'confirmPassword', label: 'Confirm Password', type: 'password', placeholder: 'Confirm your password' },
-  ];
-
-  // Decide which fields and validation schema to use
-  const step1Fields = userType === 'Client' ? clientFields : lawyerFields;
-  const validationSchema = userType === 'Client' ? clientValidationSchema : lawyerValidationSchema;
-
-  // Default form values (defined locally so schemas stay focused)
-  const initialValues = { name: '', email: '', phone: '', password: '', confirmPassword: '' };
-
-  // Formik configuration
-  const formik = useFormik({
-    initialValues,
-    validationSchema,
-    onSubmit: (values) => {
-      const submitData = { role: userType.toLowerCase(), ...values };
-      console.log('Account created:', submitData);
-    },
-  });
-
-  // Event handlers
-  const handleUserTypeChange = (type) => {
-    setUserType(type);
-    setCurrentStep(1);
-    formik.resetForm();
+  const initialValues = {
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+    terms: false,
   };
 
-  const handleContinue = () => {
-    const step1 = ['name', 'email', 'phone'];
-    step1.forEach(f => formik.setFieldTouched(f, true));
-    formik.validateForm().then(errs => { if (!step1.some(f => errs[f])) setCurrentStep(2); });
-  };
+  const handleSubmit = async (values, actions) => {
+    const payload = {
+      name: values.name,
+      email: values.email,
+      phone_number: values.phone,
+      password: values.password,
+      role: userType, 
+    };
 
-  const handleBack = () => {
-    if (currentStep === 2) {
-      setCurrentStep(1);
+    const result = await dispatch(registerUser(payload));
+
+    if (registerUser.fulfilled.match(result)) {
+      actions.resetForm();
+      navigate("/verify-otp");
     }
   };
 
-  const handleCreateAccount = () => {
-    const step2 = ['password', 'confirmPassword'];
-    step2.forEach(f => formik.setFieldTouched(f, true));
-    formik.validateForm().then(errs => { if (!step2.some(f => errs[f])) formik.handleSubmit(); });
-  };
-
-  // Small reusable input component
-  const Input = ({ id, label, type, placeholder }) => {
-    const hasError = formik.touched[id] && formik.errors[id];
-    return (
-      <div className="mb-4" key={id}>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
-        <input
-          id={id}
-          name={id}
-          type={type}
-          placeholder={placeholder}
-          value={formik.values[id]}
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
-          className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-1 transition-colors ${hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-900 focus:ring-blue-900'}`}
-        />
-        {hasError && <p className="text-red-500 text-sm mt-1">{formik.errors[id]}</p>}
-      </div>
-    );
-  };
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch, userType]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl">
-        {/* Logo Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-6">
-           
-            <div className="bg-blue-900 text-yellow-400 p-2 rounded-lg text-m font-bold">
-               <GoLaw className=''/>
-            </div>
-            <span className="text-2xl font-bold">
-              <span className="text-blue-900">Mero</span><span className="text-yellow-500">Naya</span>
-            </span>
-          </div>
-        </div>
+    <>
+      <Header />
 
-        {/* Main Card */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-20">
+        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl/30 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2">
-            {/* Left Side - Decorative Section */}
-            <div className="hidden lg:flex items-center justify-center p-0">
-              <img 
-                src="https://lnplawoffice.id/wp-content/uploads/2025/10/still-life-world-intellectual-property-day-1024x1536.jpg"
-                alt="Justice & Legal Services"
+            {/* IMAGE */}
+            <div className="hidden lg:block">
+              <img
+                src={register}
+                alt="Register"
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </div>
 
-            {/* Right Side - Form Section */}
+            {/* FORM */}
             <div className="p-8 lg:p-12">
-              {/* Header */}
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-              <p className="text-gray-600 mb-6">
-                Join as a <span className="text-yellow-500 font-semibold">{userType}</span>
+              {/* LOGO */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl mb-3">
+                  <GoLaw className="size-8" />
+                </div>
+                <h1 className="text-2xl font-bold">
+                  <span className="text-blue-900">Mero</span>
+                  <span className="text-yellow-500">Nyaya</span>
+                </h1>
+              </div>
+
+              <h2 className="text-xl font-semibold text-center mb-2">
+                Create Account
+              </h2>
+
+              <p className="text-sm text-gray-600 text-center mb-6">
+                Join as{" "}
+                <span className="text-yellow-500 font-semibold">
+                  {userType}
+                </span>
               </p>
 
-              {/* User Type Selection */}
-              <div className="flex gap-4 mb-8">
-                {[
-                  { type: 'Client', label: 'Client' },
-                  { type: 'Lawyer', label: 'Lawyer' }
-                ].map((option) => (
+              {/* ERROR */}
+              {registerError && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <p className="text-red-600 text-sm text-center">
+                    {registerError}
+                  </p>
+                </div>
+              )}
+
+              {/* ROLE SWITCH */}
+              <div className="flex gap-3 mb-6">
+                {["Client", "Lawyer"].map((type) => (
                   <button
-                    key={option.type}
-                    onClick={() => handleUserTypeChange(option.type)}
-                    className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all ${
-                      userType === option.type
-                        ? 'bg-white text-gray-900 border-2 border-blue-900'
-                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:border-blue-900'
+                    key={type}
+                    type="button"
+                    onClick={() => {
+                      setUserType(type);
+                      setCurrentStep(1);
+                    }}
+                    className={`flex-1 py-2 rounded-lg font-semibold text-sm transition ${
+                      userType === type
+                        ? "bg-blue-900 text-white"
+                        : "bg-gray-100 text-gray-700"
                     }`}
                   >
-                    {option.label}
+                    {type}
                   </button>
                 ))}
               </div>
 
-              {/* Progress Indicator */}
-              <div className="flex items-center gap-4 mb-8">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
-                    currentStep >= 1
-                      ? 'bg-blue-900 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  1
-                </div>
-                <div
-                  className={`flex-1 h-1 transition-colors ${
-                    currentStep >= 2 ? 'bg-blue-900' : 'bg-gray-200'
-                  }`}
-                />
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
-                    currentStep >= 2
-                      ? 'bg-blue-900 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  2
-                </div>
-              </div>
+              <Formik
+                initialValues={initialValues}
+                validationSchema={validationSchema}
+                validateOnMount={true} 
+                onSubmit={handleSubmit}
+              >
+                {({ validateForm, setTouched }) => (
+                  <Form>
+                    {/* STEP 1 */}
+                    {currentStep === 1 && (
+                      <>
+                        {["name", "email", "phone"].map((field) => (
+                          <div className="mb-4" key={field}>
+                            <label className="block text-sm font-semibold mb-1">
+                              {field === "name"
+                                ? userType === "Client"
+                                  ? "Full Name"
+                                  : "Lawyer Name"
+                                : field.charAt(0).toUpperCase() +
+                                  field.slice(1)}
+                            </label>
 
-              {/* Form Content - Step 1 */}
-              {currentStep === 1 && (
-                <div className="mb-8">
-                  {step1Fields.map(field => (
-                    <Input key={field.id} id={field.id} label={field.label} type={field.type} placeholder={field.placeholder} />
-                  ))}
-                </div>
-              )}
+                            <Field
+                              name={field}
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            />
 
-              {/* Form Content - Step 2 */}
-              {currentStep === 2 && (
-                <div className="mb-8">
-                  {passwordFields.map(field => (
-                    <Input key={field.id} id={field.id} label={field.label} type={field.type} placeholder={field.placeholder} />
-                  ))}
+                            <ErrorMessage
+                              name={field}
+                              component="p"
+                              className="text-red-500 text-xs mt-1"
+                            />
+                          </div>
+                        ))}
 
-                  {/* Terms & Conditions */}
-                  <div className="flex items-start gap-3 pt-2">
-                    <input
-                      type="checkbox"
-                      id="terms"
-                      className="mt-1 w-4 h-4 rounded border-gray-300"
-                    />
-                    <label htmlFor="terms" className="text-sm text-gray-700">
-                      I agree to the{' '}
-                      <span className="text-yellow-500 hover:underline cursor-pointer">
-                        Terms of Service
-                      </span>{' '}
-                      and{' '}
-                      <span className="text-yellow-500 hover:underline cursor-pointer">
-                        Privacy Policy
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const errors = await validateForm();
 
-              {/* Action Buttons */}
-              <div className="flex gap-4">
-                {currentStep === 2 && (
-                  <button
-                    onClick={handleBack}
-                    className="flex-1 py-3 px-6 border-2 border-gray-300 text-gray-900 rounded-lg font-semibold hover:bg-gray-50 transition-all"
-                  >
-                    ← Back
-                  </button>
+                            setTouched({
+                              name: true,
+                              email: true,
+                              phone: true,
+                            });
+
+                            const hasErrors = ["name", "email", "phone"].some(
+                              (field) => errors[field]
+                            );
+
+                            if (!hasErrors) {
+                              setCurrentStep(2);
+                            }
+                          }}
+                          className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
+                        >
+                          Continue →
+                        </button>
+                      </>
+                    )}
+
+                    {/* STEP 2 */}
+                    {currentStep === 2 && (
+                      <>
+                        {["password", "confirmPassword"].map((field) => (
+                          <div className="mb-4" key={field}>
+                            <label className="block text-sm font-semibold mb-1">
+                              {field === "password"
+                                ? "Password"
+                                : "Confirm Password"}
+                            </label>
+
+                            <Field
+                              name={field}
+                              type="password"
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            />
+
+                            <ErrorMessage
+                              name={field}
+                              component="p"
+                              className="text-red-500 text-xs mt-1"
+                            />
+                          </div>
+                        ))}
+
+                        <button
+                          type="submit"
+                          disabled={registerLoading}
+                          className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
+                        >
+                          {registerLoading
+                            ? "Creating Account..."
+                            : "Create Account →"}
+                        </button>
+                      </>
+                    )}
+                  </Form>
                 )}
-                <button
-                  onClick={currentStep === 1 ? handleContinue : handleCreateAccount}
-                  className="flex-1 py-3 px-6 rounded-lg font-semibold text-white bg-blue-900 hover:bg-blue-800 transition-all"
-                >
-                  {currentStep === 1 ? 'Continue →' : 'Create Account →'}
-                </button>
-              </div>
+              </Formik>
 
-              {/* Login Link */}
+              {/* LOGIN */}
               <p className="text-center text-gray-600 text-sm mt-6">
-                Already have an account?{' '}
-                <span onClick={() => navigate('/login')} className="text-yellow-500 hover:underline cursor-pointer font-semibold">
+                Already have an account?{" "}
+                <span
+                  onClick={() => navigate("/login")}
+                  className="text-yellow-500 cursor-pointer font-semibold"
+                >
                   Login here
                 </span>
               </p>
@@ -239,7 +245,9 @@ const Register = () => {
           </div>
         </div>
       </div>
-    </div>
+
+      <Footer />
+    </>
   );
 };
 
