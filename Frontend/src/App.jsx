@@ -25,6 +25,10 @@ function App() {
         <Route path='/header' element={<Header />} />
         <Route path='/footer' element={<Footer />} />
         <Route path='/dashboard' element={<Dashboard />} />
+        
+
+
+
       </Routes>
     </BrowserRouter>
     </Provider>
