@@ -71,8 +71,8 @@ export const loginUser = createAsyncThunk(
 
       if (response.data.access) {
         localStorage.setItem("access_token", response.data.access);
-        localStorage.setItem("refresh_token", response.data.refresh);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("refresh_token", response.data.refresh_token);
+        localStorage.setItem("user", JSON.stringify(response.data.Result?.user));
       }
 
       return response.data;
