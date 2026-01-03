@@ -1,221 +1,383 @@
-import React, { useState } from "react";
-import { Search, FileText, ChevronRight, Filter, Calendar, User } from "lucide-react";
-import Sidebar from "./sidebar";
-import DashHeader from "./DashHeader";
+import React, { useState, useEffect } from 'react';
+import { Download, ArrowUpRight, ArrowDownLeft, CheckCircle, Clock, XCircle, Filter, Shield, Receipt, RefreshCw } from 'lucide-react';
+import DashHeader from './DashHeader';
+import Sidebar from './sidebar';
 
-const MyCase = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All Status");
+const Payments = () => {
+  const [activeTab, setActiveTab] = useState('history');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [amount, setAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('esewa');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  // Sample case data - replace with actual API data
-  const cases = [
+  // Close dropdown and reset filter when switching to pending tab
+  useEffect(() => {
+    if (activeTab === 'pending') {
+      setShowFilterDropdown(false);
+    }
+  }, [activeTab]);
+
+  // Sample transaction data
+  const transactions = [
     {
-      id: "CASE-2025-001",
-      status: "In Progress",
-      title: "Property Dispute - Land Registration",
-      category: "Property Law",
-      lawyer: {
-        name: "Advocate Priya Sharma",
-        avatar: "",
-      },
-      createdDate: "Nov 20, 2025",
-      nextHearing: "Dec 15, 2025",
+      id: 1,
+      type: 'payment',
+      title: 'Consultation Fee - Adv. Rajesh Sharma',
+      caseType: 'Property Dispute',
+      paymentMethod: 'eSewa',
+      amount: 5000,
+      status: 'completed',
+      date: 'Dec 5, 2025'
     },
     {
-      id: "CASE-2025-001",
-      status: "In Progress",
-      title: "Property Dispute - Land Registration",
-      category: "Property Law",
-      lawyer: {
-        name: "Advocate Priya Sharma",
-        avatar: "",
-      },
-      createdDate: "Nov 20, 2025",
-      nextHearing: "Dec 15, 2025",
+      id: 2,
+      type: 'payment',
+      title: 'Document Filing Fee',
+      caseType: 'Property Dispute',
+      paymentMethod: 'Khalti',
+      amount: 2500,
+      status: 'completed',
+      date: 'Dec 3, 2025'
     },
     {
-      id: "CASE-2025-001",
-      status: "In Progress",
-      title: "Property Dispute - Land Registration",
-      category: "Property Law",
-      lawyer: {
-        name: "Advocate Priya Sharma",
-        avatar: "",
-      },
-      createdDate: "Nov 20, 2025",
-      nextHearing: "Dec 15, 2025",
+      id: 3,
+      type: 'payment',
+      title: 'Consultation Fee - Adv. Priya Sharma',
+      caseType: 'Divorce Proceedings',
+      paymentMethod: 'eSewa',
+      amount: 5000,
+      status: 'pending',
+      date: 'Dec 1, 2025'
     },
     {
-      id: "CASE-2025-001",
-      status: "In Progress",
-      title: "Property Dispute - Land Registration",
-      category: "Property Law",
-      lawyer: {
-        name: "Advocate Priya Sharma",
-        avatar: "",
-      },
-      createdDate: "Nov 20, 2025",
-      nextHearing: "Dec 15, 2025",
+      id: 4,
+      type: 'refund',
+      title: 'Refund - Cancelled Appointment',
+      caseType: 'Employment Dispute',
+      paymentMethod: 'eSewa',
+      amount: 3000,
+      status: 'completed',
+      date: 'Nov 28, 2025'
     },
     {
-      id: "CASE-2025-001",
-      status: "In Progress",
-      title: "Property Dispute - Land Registration",
-      category: "Property Law",
-      lawyer: {
-        name: "Advocate Priya Sharma",
-        avatar: "",
-      },
-      createdDate: "Nov 20, 2025",
-      nextHearing: "Dec 15, 2025",
+      id: 5,
+      type: 'payment',
+      title: 'Retainer Fee - Adv. Sita Karki',
+      caseType: 'Business Contract Review',
+      paymentMethod: 'Khalti',
+      amount: 15000,
+      status: 'completed',
+      date: 'Nov 25, 2025'
     },
+    {
+      id: 6,
+      type: 'payment',
+      title: 'Court Fee Deposit',
+      caseType: 'Property Dispute',
+      paymentMethod: 'eSewa',
+      amount: 10000,
+      status: 'failed',
+      date: 'Nov 20, 2025'
+    }
   ];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "In Progress":
-        return "bg-blue-100 text-blue-700";
-      case "Completed":
-        return "bg-green-100 text-green-700";
-      case "Pending":
-        return "bg-yellow-100 text-yellow-700";
-      case "Closed":
-        return "bg-gray-100 text-gray-700";
-      default:
-        return "bg-gray-100 text-gray-700";
+  // Filter transactions based on active tab and status
+  const filteredTransactions = transactions.filter(transaction => {
+    // First filter by active tab
+    if (activeTab === 'pending') {
+      // On pending tab, only show pending transactions
+      if (transaction.status !== 'pending') {
+        return false;
+      }
     }
+    
+    // Then filter by dropdown status (only on Transaction History tab)
+    if (activeTab === 'history') {
+      if (filterStatus === 'all') return true;
+      return transaction.status === filterStatus;
+    }
+    
+    // For pending tab, all pending transactions are shown (no additional filter)
+    return true;
+  });
+
+  // Get pending count
+  const pendingCount = transactions.filter(t => t.status === 'pending').length;
+
+  const getStatusIcon = (status) => {
+    switch(status) {
+      case 'completed':
+        return <CheckCircle className="text-green-500" size={16} />;
+      case 'pending':
+        return <Clock className="text-yellow-500" size={16} />;
+      case 'failed':
+        return <XCircle className="text-red-500" size={16} />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'completed':
+        return 'text-green-600';
+      case 'pending':
+        return 'text-yellow-600';
+      case 'failed':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const getTransactionIcon = (type) => {
+    if (type === 'refund') {
+      return <ArrowDownLeft className="text-green-600" size={20} />;
+    }
+    return <ArrowUpRight className="text-gray-600" size={20} />;
+  };
+
+  const handleProceedToPay = (e) => {
+    e.preventDefault();
+    if (!amount || parseFloat(amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    alert(`Processing payment of Rs. ${amount} via ${paymentMethod === 'esewa' ? 'eSewa' : 'Khalti'}`);
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
-      {/* Main Content */}
-      <main className="flex-1">
-        {/* TOP HEADER */}
-        <DashHeader
-          title="My Cases"
-          subtitle="Track and manage all your legal cases"
+      
+      <div className="flex-1">
+        <DashHeader 
+          title="Payments" 
+          subtitle="Manage your payments and transactions"
         />
 
-        {/* MAIN BODY CONTENT */}
-        <div className="p-8">
-          {/* Search and Filter */}
-          <div className="flex gap-4 mb-8">
-            <div className="flex-1 relative">
-              <Search
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Search by case title or ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer min-w-[160px]"
+        <div className="flex gap-6 p-8">
+        {/* Main Content */}
+        <div className="flex-1">
+          {/* Tabs */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex gap-6">
+              <button
+                onClick={() => setActiveTab('history')}
+                className={`pb-2 font-medium transition-colors ${
+                  activeTab === 'history'
+                    ? 'text-gray-900 border-b-2 border-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
               >
-                <option>All Status</option>
-                <option>In Progress</option>
-                <option>Completed</option>
-                <option>Pending</option>
-                <option>Closed</option>
-              </select>
-              <Filter
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                size={18}
-              />
+                Transaction History
+              </button>
+              <button
+                onClick={() => setActiveTab('pending')}
+                className={`pb-2 font-medium transition-colors ${
+                  activeTab === 'pending'
+                    ? 'text-gray-900 border-b-2 border-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Pending ({pendingCount})
+              </button>
+            </div>
+
+            {/* Filter Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => activeTab === 'history' && setShowFilterDropdown(!showFilterDropdown)}
+                disabled={activeTab === 'pending'}
+                className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg transition ${
+                  activeTab === 'pending' 
+                    ? 'bg-gray-100 cursor-not-allowed opacity-60' 
+                    : 'hover:bg-gray-50 cursor-pointer'
+                }`}
+              >
+                <Filter size={16} />
+                <span className="text-sm font-medium">
+                  {activeTab === 'pending' 
+                    ? 'Pending' 
+                    : (filterStatus === 'all' ? 'All Status' : 
+                       filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1))
+                  }
+                </span>
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showFilterDropdown && activeTab === 'history' && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 animate-in fade-in duration-200">
+                  <button
+                    onClick={() => { setFilterStatus('all'); setShowFilterDropdown(false); }}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm transition ${filterStatus === 'all' ? 'bg-blue-50 text-blue-700 font-medium' : ''}`}
+                  >
+                    All Status
+                  </button>
+                  <button
+                    onClick={() => { setFilterStatus('completed'); setShowFilterDropdown(false); }}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm transition ${filterStatus === 'completed' ? 'bg-blue-50 text-blue-700 font-medium' : ''}`}
+                  >
+                    Completed
+                  </button>
+                  <button
+                    onClick={() => { setFilterStatus('pending'); setShowFilterDropdown(false); }}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm transition ${filterStatus === 'pending' ? 'bg-blue-50 text-blue-700 font-medium' : ''}`}
+                  >
+                    Pending
+                  </button>
+                  <button
+                    onClick={() => { setFilterStatus('failed'); setShowFilterDropdown(false); }}
+                    className={`w-full text-left px-4 py-2 hover:bg-gray-50 text-sm transition ${filterStatus === 'failed' ? 'bg-blue-50 text-blue-700 font-medium' : ''}`}
+                  >
+                    Failed
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Case Cards */}
-          <div className="space-y-4">
-          {cases.map((caseItem, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100"
-            >
-              <div className="flex items-center gap-6">
-                {/* Case Icon */}
-                <div className="flex-shrink-0">
-                  <div className="w-14 h-14 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <FileText className="text-blue-600" size={28} />
+          {/* Transactions List */}
+          <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
+            {filteredTransactions.map((transaction) => (
+              <div
+                key={transaction.id}
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Icon */}
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                    {getTransactionIcon(transaction.type)}
                   </div>
-                </div>
 
-                {/* Case Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-sm font-semibold text-yellow-600">
-                      {caseItem.id}
-                    </span>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        caseItem.status
-                      )}`}
-                    >
-                      {caseItem.status}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {caseItem.title}
-                  </h3>
-                  <p className="text-sm text-gray-500">{caseItem.category}</p>
-                </div>
-
-                {/* Lawyer Info */}
-                <div className="flex-shrink-0 flex items-center gap-3 px-6 border-l border-gray-200">
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-                    <User size={20} className="text-gray-600" />
-                  </div>
+                  {/* Transaction Details */}
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {caseItem.lawyer.name}
+                    <h3 className="font-semibold text-gray-900">{transaction.title}</h3>
+                    <p className="text-sm text-gray-600">
+                      {transaction.caseType} • {transaction.paymentMethod}
                     </p>
-                    <p className="text-xs text-gray-500">Assigned Lawyer</p>
                   </div>
                 </div>
 
-                {/* Dates */}
-                <div className="flex-shrink-0 flex items-center gap-8 px-6 border-l border-gray-200">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Calendar size={14} className="text-gray-400" />
-                      <p className="text-xs text-gray-500">Created</p>
+                {/* Amount and Status */}
+                <div className="flex items-center gap-6">
+                  <div className="text-right">
+                    <p className="font-bold text-gray-900">
+                      {transaction.type === 'refund' ? '+' : '-'} Rs. {transaction.amount.toLocaleString()}
+                    </p>
+                    <div className="flex items-center gap-1 justify-end mt-1">
+                      {getStatusIcon(transaction.status)}
+                      <span className={`text-sm capitalize ${getStatusColor(transaction.status)}`}>
+                        {transaction.status}
+                      </span>
+                      <span className="text-sm text-gray-500 ml-2">{transaction.date}</span>
                     </div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {caseItem.createdDate}
-                    </p>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Calendar size={14} className="text-gray-400" />
-                      <p className="text-xs text-gray-500">Next Hearing</p>
-                    </div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {caseItem.nextHearing}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Action Button */}
-                <button className="flex-shrink-0 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition">
-                  <ChevronRight size={20} className="text-gray-400" />
-                </button>
+                  {/* Download Button */}
+                  <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                    <Download size={20} className="text-gray-600" />
+                  </button>
+                </div>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick Pay Sidebar */}
+        <div className="w-96">
+          <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Pay</h2>
+
+            <form onSubmit={handleProceedToPay}>
+              {/* Amount Input */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount (Rs.)
+                </label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  step="1"
+                />
+              </div>
+
+              {/* Payment Method */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Method
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('esewa')}
+                    className={`px-6 py-3 rounded-lg font-semibold transition ${
+                      paymentMethod === 'esewa'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    eSewa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('khalti')}
+                    className={`px-6 py-3 rounded-lg font-semibold transition ${
+                      paymentMethod === 'khalti'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Khalti
+                  </button>
+                </div>
+              </div>
+
+              {/* Proceed Button */}
+              <button
+                type="submit"
+                className="w-full bg-[#0F1A3D] text-white py-3 rounded-lg font-semibold hover:bg-blue-950 transition"
+              >
+                Proceed to Pay
+              </button>
+            </form>
+
+            {/* Payment Information */}
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="font-semibold text-gray-900 mb-4">Payment Information</h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Shield className="text-green-500 mt-0.5" size={20} />
+                  <p className="text-sm text-gray-600">
+                    All payments are secured with 256-bit encryption
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Receipt className="text-blue-500 mt-0.5" size={20} />
+                  <p className="text-sm text-gray-600">
+                    Digital receipts are generated automatically
+                  </p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <RefreshCw className="text-orange-500 mt-0.5" size={20} />
+                  <p className="text-sm text-gray-600">
+                    Refunds processed within 5-7 business days
+                  </p>
+                </div>
+              </div>
+        </div>
             </div>
-          ))}
+          </div>
         </div>
-        </div>
-      </main>
+      </div>
     </div>
   );
 };
 
-export default MyCase;
+export default Payments;
