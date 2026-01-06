@@ -42,9 +42,9 @@ const Register = () => {
     const payload = {
       name: values.name,
       email: values.email,
-      phone_number: values.phone,
+      phone: values.phone,
       password: values.password,
-      role: userType, 
+      is_lawyer: userType === "Lawyer",
     };
 
     const result = await dispatch(registerUser(payload));

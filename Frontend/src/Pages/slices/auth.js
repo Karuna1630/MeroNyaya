@@ -33,6 +33,33 @@ export const registerUser = createAsyncThunk(
   }
 );
 
+// Extract a human-friendly message from API error shapes
+const extractErrorMessage = (payload) => {
+  if (!payload) return "Registration failed.";
+  if (typeof payload === "string") return payload;
+
+  const errorMessage = payload.ErrorMessage;
+  if (typeof errorMessage === "string" && errorMessage.trim()) {
+    return errorMessage;
+  }
+
+  if (errorMessage && typeof errorMessage === "object") {
+    const firstEntry = Object.values(errorMessage)[0];
+    if (Array.isArray(firstEntry) && firstEntry.length > 0) {
+      return firstEntry[0];
+    }
+    if (typeof firstEntry === "string") {
+      return firstEntry;
+    }
+  }
+
+  if (payload.Result?.message) {
+    return payload.Result.message;
+  }
+
+  return "Registration failed.";
+};
+
 export const verifyOtp = createAsyncThunk(
   "auth/verifyOtp",
   async (payload, { rejectWithValue }) => {
@@ -150,7 +177,7 @@ const authSlice = createSlice({
 
     builder.addCase(registerUser.rejected, (state, action) => {
       state.registerLoading = false;
-      state.registerError = action.payload;
+      state.registerError = extractErrorMessage(action.payload);
     });
 
      /* Verify OTP */
