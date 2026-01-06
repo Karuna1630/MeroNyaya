@@ -38,6 +38,11 @@ const Register = () => {
     terms: false,
   };
 
+  const stepMeta = [
+    { number: 1, label: "Profile" },
+    { number: 2, label: "Security" },
+  ];
+
   const handleSubmit = async (values, actions) => {
     const payload = {
       name: values.name,
@@ -103,9 +108,20 @@ const Register = () => {
               {/* ERROR */}
               {registerError && (
                 <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-red-600 text-sm text-center">
+                  <p className="text-red-600 text-sm text-center mb-2">
                     {registerError}
                   </p>
+                  {currentStep === 2 && (
+                    <div className="flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(1)}
+                        className="px-3 py-1 text-xs font-semibold text-blue-900 border border-blue-900 rounded"
+                      >
+                        Go back and edit details
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -138,6 +154,32 @@ const Register = () => {
               >
                 {({ validateForm, setTouched }) => (
                   <Form>
+                    {/* STEP INDICATOR */}
+                    <div className="flex items-center gap-8 mb-6">
+                      {stepMeta.map((step, index) => {
+                        const isActive = currentStep === step.number;
+                        const isCompleted = currentStep > step.number;
+                        return (
+                          <div key={step.number} className="flex items-center gap-8">
+                            <div
+                              className={`h-10 w-10 rounded-full border-2 flex items-center justify-center font-bold text-lg transition ${
+                                isActive
+                                  ? "bg-yellow-500 text-blue-900 border-yellow-500"
+                                  : isCompleted
+                                  ? "bg-blue-900 text-white border-blue-900"
+                                  : "bg-gray-100 text-gray-700 border-gray-300"
+                              }`}
+                            >
+                              {step.number}
+                            </div>
+                            {index < stepMeta.length - 1 && (
+                              <div className="h-1 w-8 bg-gray-300"></div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
                     {/* STEP 1 */}
                     {currentStep === 1 && (
                       <>
@@ -216,15 +258,25 @@ const Register = () => {
                           </div>
                         ))}
 
-                        <button
-                          type="submit"
-                          disabled={registerLoading}
-                          className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
-                        >
-                          {registerLoading
-                            ? "Creating Account..."
-                            : "Create Account →"}
-                        </button>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(1)}
+                            className="w-1/2 py-2.5 bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-300"
+                          >
+                            ← Back
+                          </button>
+
+                          <button
+                            type="submit"
+                            disabled={registerLoading}
+                            className="w-1/2 py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
+                          >
+                            {registerLoading
+                              ? "Creating Account..."
+                              : "Create Account →"}
+                          </button>
+                        </div>
                       </>
                     )}
                   </Form>
