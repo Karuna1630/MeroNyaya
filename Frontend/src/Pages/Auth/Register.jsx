@@ -84,12 +84,12 @@ const Register = () => {
             {/* FORM */}
             <div className="p-8 lg:p-12">
               {/* LOGO */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl mb-3">
-                  <GoLaw className="size-8" />
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <div className="bg-yellow-500 text-[#0F1A3D] p-2 rounded-lg">
+                  <GoLaw className="size-6" />
                 </div>
                 <h1 className="text-2xl font-bold">
-                  <span className="text-blue-900">Mero</span>
+                  <span className="text-[#0F1A3D]">Mero</span>
                   <span className="text-yellow-500">Nyaya</span>
                 </h1>
               </div>
@@ -108,20 +108,9 @@ const Register = () => {
               {/* ERROR */}
               {registerError && (
                 <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-red-600 text-sm text-center mb-2">
+                  <p className="text-red-600 text-sm text-center">
                     {registerError}
                   </p>
-                  {currentStep === 2 && (
-                    <div className="flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep(1)}
-                        className="px-3 py-1 text-xs font-semibold text-blue-900 border border-blue-900 rounded"
-                      >
-                        Go back and edit details
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -137,7 +126,7 @@ const Register = () => {
                     }}
                     className={`flex-1 py-2 rounded-lg font-semibold text-sm transition ${
                       userType === type
-                        ? "bg-blue-900 text-white"
+                        ? "bg-[#0F1A3D] text-white"
                         : "bg-gray-100 text-gray-700"
                     }`}
                   >
@@ -164,16 +153,16 @@ const Register = () => {
                             <div
                               className={`h-10 w-10 rounded-full border-2 flex items-center justify-center font-bold text-lg transition ${
                                 isActive
-                                  ? "bg-yellow-500 text-blue-900 border-yellow-500"
+                                  ? "bg-yellow-500 text-[#0F1A3D] border-yellow-500"
                                   : isCompleted
-                                  ? "bg-blue-900 text-white border-blue-900"
+                                  ? "bg-[#0F1A3D] text-white border-[#0F1A3D]"
                                   : "bg-gray-100 text-gray-700 border-gray-300"
                               }`}
                             >
                               {step.number}
                             </div>
                             {index < stepMeta.length - 1 && (
-                              <div className="h-1 w-8 bg-gray-300"></div>
+                              <div className="h-1 w-16 bg-gray-300"></div>
                             )}
                           </div>
                         );
@@ -196,7 +185,7 @@ const Register = () => {
 
                             <Field
                               name={field}
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
                             />
 
                             <ErrorMessage
@@ -226,7 +215,7 @@ const Register = () => {
                               setCurrentStep(2);
                             }
                           }}
-                          className="w-full py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
+                          className="w-full py-2.5 bg-[#0F1A3D] text-white rounded-lg font-semibold"
                         >
                           Continue →
                         </button>
@@ -262,7 +251,7 @@ const Register = () => {
                           <button
                             type="button"
                             onClick={() => setCurrentStep(1)}
-                            className="w-1/2 py-2.5 bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-300"
+                            className="w-1/2 py-2.5 bg-yellow-500 text-[#0F1A3D] rounded-lg font-semibold border border-yellow-500"
                           >
                             ← Back
                           </button>
@@ -270,7 +259,7 @@ const Register = () => {
                           <button
                             type="submit"
                             disabled={registerLoading}
-                            className="w-1/2 py-2.5 bg-blue-900 text-white rounded-lg font-semibold"
+                            className="w-1/2 py-2.5 bg-[#0F1A3D] text-white rounded-lg font-semibold"
                           >
                             {registerLoading
                               ? "Creating Account..."
