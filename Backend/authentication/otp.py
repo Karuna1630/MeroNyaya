@@ -1,4 +1,5 @@
 import random
+import string
 from datetime import timedelta
 from django.conf import settings
 from django.core.mail import send_mail
@@ -11,61 +12,106 @@ from.models import User, OTP
 def generate_otp(length=6):
     return ''.join([str(random.randint(0, 9)) for _ in range(length)])
 
+# Function to send OTP via email
+def send_otp(email, otp):
+    subject = "Your OTP Code - MeroNyaya"  
+    message = f"""
+    Hello,
 
-def create_and_send_otp(email,expiry_minutes=3):
-    opt_code = generate_otp()
+    your OTP code is: {otp}
+    This code will expire in 3 minutes.
+    please do not share this code with anyone.
 
-    OTP.objects.filter(email=email, is_used=False).update(is_used=True)
+    If you did not request this code, please ignore this email.
 
-    otp = OTP.objects.create(
-        email=email,
-        otp=opt_code,
-    )
-
+    Regards,
+    MeroNyaya Team
+    """
+    from email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@meronyaya.com'
     try:
         send_mail(
-            subject="Your OTP Code",
-            message=f"Your OTP code is {opt_code}. It will expire in {expiry_minutes} minutes.",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
+            subject = subject,
+            message = message,  
+            from_email = from_email,
+            recipient_list = [email],
+            fail_silently=False,
         )
         return True
     except Exception as e:
-        otp.delete()
-        raise Exception(f"Failed to send OTP email: {e}")  
+        print(f"Error sending email: {e}")
+        return False
+    
+
+# Function to create OTP
+def create_otp(email):
+    OTP.objects.filter(email=email, is_used=False).update(is_used=True)
+    otp_code = generate_otp()
+    otp_instance = OTP.objects.create(email=email, otp=otp_code)
+    
+    email_sent = send_otp(email, otp_code)
+    return otp_instance, email_sent  
 
 
     # Function to verify OTP
-def verify_otp(email, otp_input, expiry_minutes=3):
-    otp = OTP.objects.filter(email=email, otp=otp_input, is_used=False).first()
-    if not otp:
-        return False, "No valid OTP found. Please request a new one."
-    if timezone.now() > otp.created_at + timedelta(minutes=expiry_minutes):
-        otp.delete()
-        return False, "OTP has expired. Please request a new one."
-    if otp.otp != otp_input:
-        return False, "Invalid OTP. Please try again."
-            
-    otp.is_used = True
-    otp.save()
-
+def verify_otp(email, otp_code):
     try:
-        user = User.objects.get(email=email)
-        # Mark user as verified and active
-        user.is_verified = True
-        user.save()
-        return True, "OTP verified successfully."
-    except User.DoesNotExist:
-        return False, "User does not exist."
+        otp_instance = OTP.objects.filter(
+            email=email,
+            otp=otp_code,
+            is_used=False
+        ).order_by('-created_at').first()
+        
+        if not otp_instance:
+            return False, "Invalid OTP code"
+        
+        expiry_time = otp_instance.created_at + timedelta(minutes=10)
+        
+        if timezone.now() > expiry_time:
+            otp_instance.is_used = True
+            otp_instance.save()
+            return False, "OTP has expired"
+        
+        otp_instance.is_used = True
+        otp_instance.save()
+        
+        try:
+            user = User.objects.get(email=email)
+            if not user.is_verified:
+                user.is_verified = True
+                user.save()
+        except User.DoesNotExist:
+            pass
+        
+        return True, "OTP verified successfully"
+    
+    except Exception as e:
+        return False, f"Error verifying OTP: {str(e)}"
         
 # Function to resend OTP   
 def resend_otp(email):
     try:
-        user = User.objects.get(email=email)
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return False, "User with this email does not exist"
+        
         if user.is_verified:
-            return False, "Email is already verified."
-        create_and_send_otp(email)
-        return True, "OTP resent successfully."
+            return False, "User is already verified"
+        
+        recent_otp = OTP.objects.filter(
+            email=email,
+            created_at__gte=timezone.now() - timedelta(minutes=2)
+        ).first()
+        
+        if recent_otp:
+            return False, "Please wait 2 minutes before requesting a new OTP"
+        
+        otp_instance, email_sent = create_otp(email)
+        
+        if email_sent:
+            return True, "OTP has been sent to your email"
+        else:
+            return False, "Failed to send OTP email. Please try again later."
     
-    except User.DoesNotExist:
-        return False, "User does not exist."
+    except Exception as e:
+        return False, f"Error resending OTP: {str(e)}"
