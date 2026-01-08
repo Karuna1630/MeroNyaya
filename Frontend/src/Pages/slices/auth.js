@@ -214,7 +214,7 @@ const authSlice = createSlice({
 
     builder.addCase(loginUser.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload;
+      state.error = extractErrorMessage(action.payload);
     });
 
     /* Logout */

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { GoLaw } from "react-icons/go";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import register from "../../assets/register.jpg";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -58,14 +60,23 @@ const Register = () => {
     const result = await dispatch(registerUser(payload));
 
     if (registerUser.fulfilled.match(result)) {
+      toast.success("Registration successful! Please verify your OTP.");
       actions.resetForm();
-      navigate("/verify-otp");
+      setTimeout(() => {
+        navigate("/verify-otp");
+      }, 1500);
     }
   };
 
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch, userType]);
+
+  useEffect(() => {
+    if (registerError) {
+      toast.error(registerError);
+    }
+  }, [registerError]);
 
 
   return (
@@ -109,14 +120,7 @@ const Register = () => {
                 </span>
               </p>
 
-              {/* ERROR */}
-              {registerError && (
-                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-red-600 text-sm text-center">
-                    {registerError}
-                  </p>
-                </div>
-              )}
+             
 
               {/* ROLE SWITCH */}
               <div className="flex gap-3 mb-6">
@@ -320,6 +324,17 @@ const Register = () => {
       </div>
 
       <Footer />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </>
   );
 };

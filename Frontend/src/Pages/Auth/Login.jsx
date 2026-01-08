@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import { GoLaw } from "react-icons/go";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import loginImage from "../../assets/login image.jpg";
 import { loginValidationSchema } from "../utils/LoginValidation";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -21,6 +23,12 @@ const Login = () => {
     dispatch(clearError());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
   const formik = useFormik({
     initialValues: {
       email: "",
@@ -37,6 +45,7 @@ const Login = () => {
       const result = await dispatch(loginUser(payload));
 
       if (loginUser.fulfilled.match(result)) {
+        toast.success("Login successful!");
         // User data is in result.payload.Result.user
         const user = result.payload.Result?.user;
         const userRole = user?.role;
@@ -96,12 +105,7 @@ const Login = () => {
                 Enter your credentials to access your account
               </p>
 
-              {/* ERROR */}
-              {error && (
-                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-                  <p className="text-red-600 text-sm text-center">{error}</p>
-                </div>
-              )}
+            
 
               {/* FORM */}
               <form onSubmit={formik.handleSubmit}>
@@ -189,6 +193,17 @@ const Login = () => {
         </div>
       </div>
       <Footer />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </>
   );
 };
