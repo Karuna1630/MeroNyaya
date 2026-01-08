@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { GoLaw } from "react-icons/go";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 import register from "../../assets/register.jpg";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -25,6 +26,8 @@ const Register = () => {
 
   const [userType, setUserType] = useState("Client");
   const [currentStep, setCurrentStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validationSchema =
     userType === "Client" ? clientValidationSchema : lawyerValidationSchema;
@@ -63,6 +66,7 @@ const Register = () => {
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch, userType]);
+
 
   return (
     <>
@@ -225,27 +229,55 @@ const Register = () => {
                     {/* STEP 2 */}
                     {currentStep === 2 && (
                       <>
-                        {["password", "confirmPassword"].map((field) => (
-                          <div className="mb-4" key={field}>
-                            <label className="block text-sm font-semibold mb-1">
-                              {field === "password"
-                                ? "Password"
-                                : "Confirm Password"}
-                            </label>
-
+                        <div className="mb-4">
+                          <label className="block text-sm font-semibold mb-1">
+                            Password
+                          </label>
+                          <div className="relative">
                             <Field
-                              name={field}
-                              type="password"
+                              name="password"
+                              type={showPassword ? "text" : "password"}
                               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
                             />
-
-                            <ErrorMessage
-                              name={field}
-                              component="p"
-                              className="text-red-500 text-xs mt-1"
-                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                              {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                            </button>
                           </div>
-                        ))}
+                          <ErrorMessage
+                            name="password"
+                            component="p"
+                            className="text-red-500 text-xs mt-1"
+                          />
+                        </div>
+
+                        <div className="mb-4">
+                          <label className="block text-sm font-semibold mb-1">
+                            Confirm Password
+                          </label>
+                          <div className="relative">
+                            <Field
+                              name="confirmPassword"
+                              type={showConfirmPassword ? "text" : "password"}
+                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                              {showConfirmPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                            </button>
+                          </div>
+                          <ErrorMessage
+                            name="confirmPassword"
+                            component="p"
+                            className="text-red-500 text-xs mt-1"
+                          />
+                        </div>
 
                         <div className="flex gap-3">
                           <button

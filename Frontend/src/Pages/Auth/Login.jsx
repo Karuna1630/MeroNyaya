@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import { GoLaw } from "react-icons/go";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import loginImage from "../../assets/login image.jpg";
 import { loginValidationSchema } from "../utils/LoginValidation";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -12,6 +13,7 @@ import Footer from "../../components/Footer";
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const [showPassword, setShowPassword] = useState(false);
 
   const { loading, error } = useAppSelector((state) => state.auth);
 
@@ -119,18 +121,47 @@ const Login = () => {
                 </div>
 
                 {/* PASSWORD */}
-                <div className="mb-6">
+                <div className="mb-4">
                   <label className="block text-sm font-semibold mb-1">
                     Password
                   </label>
-                  <input
-                    name="password"
-                    type="password"
-                    value={formik.values.password}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
-                  />
+                  <div className="relative">
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      value={formik.values.password}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* REMEMBER ME & FORGOT PASSWORD */}
+                <div className="flex items-center justify-between mb-6">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="remember"
+                      checked={formik.values.remember}
+                      onChange={formik.handleChange}
+                      className="mr-2 w-4 h-4 text-blue-900 border-gray-300 rounded focus:ring-blue-900"
+                    />
+                    <span className="text-sm text-gray-600">Remember me</span>
+                  </label>
+                  <span
+                    onClick={() => navigate("/forgot-password")}
+                    className="text-sm text-yellow-500 font-semibold cursor-pointer hover:underline"
+                  >
+                    Forgot password?
+                  </span>
                 </div>
 
                 <button
