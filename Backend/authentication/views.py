@@ -13,10 +13,18 @@ from django.db import transaction
 
 from meronaya.resonses import api_response
 from .otp import verify_otp, resend_otp
-from .serializers import (UserResponseSerializer, RegisterUserSerializer, VerifyOTPSerializer, ResendOTPSerializer,LoginUserSerializer)
+from .serializers import (
+    UserResponseSerializer,
+    RegisterUserSerializer,
+    VerifyOTPSerializer,
+    ResendOTPSerializer,
+    LoginUserSerializer,
+    ResetPasswordSerializer,
+)
 
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+
 
 # View to register a new user
 class RegisterUserView(generics.CreateAPIView):
@@ -38,6 +46,7 @@ class RegisterUserView(generics.CreateAPIView):
        },
        tags=["User"],
    )
+   
     # post method to handle user registration
    def post(self, request):
         try:
@@ -70,7 +79,7 @@ class RegisterUserView(generics.CreateAPIView):
                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
            )
         
-# Verify OTP View
+# View for verifying OTP
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
     serializer_class = VerifyOTPSerializer
@@ -85,6 +94,7 @@ class VerifyOTPView(APIView):
         },
         tags=["OTP"],
     )
+    # post method to handle OTP verification
     def post(self, request):
         try:
             serializer = VerifyOTPSerializer(data=request.data)
@@ -128,7 +138,7 @@ class VerifyOTPView(APIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-# Resend OTP View
+# View for resending OTP
 class ResendOTPView(APIView):
     permission_classes = [AllowAny]
 
@@ -142,22 +152,22 @@ class ResendOTPView(APIView):
             },
         tags=["OTP"]
     )
+    # Created post method for resending OTP
     def post(self, request):
         try:
-            email = request.session.get('otp_email')
-            
-            if not email:
+            serializer = ResendOTPSerializer(data=request.data)
+            if not serializer.is_valid():
                 return api_response(
                     is_success=False,
-                    error_message={"error": "Session expired. Please register again."},
+                    error_message=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Resend OTP
+            email = serializer.validated_data['email']
+            
             result, message = resend_otp(email)
 
             if result:
-                # Refresh session expiry
                 request.session['otp_email'] = email
                 request.session.set_expiry(1800)
                 return api_response(
@@ -171,6 +181,68 @@ class ResendOTPView(APIView):
                     error_message={"error": message},
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+# View for Resetting Password
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Reset user password after OTP verification",
+        request_body=ResetPasswordSerializer,
+        responses={
+            200: openapi.Response(description="Password reset successful"),
+            400: openapi.Response(description="Bad Request"),
+            404: openapi.Response(description="User not found"),
+            500: openapi.Response(description="Internal Server Error"),
+        },
+        tags=["User"],
+    )
+
+    # Created post method for resetting password
+    def post(self, request):
+        try:
+            serializer = ResetPasswordSerializer(data=request.data)
+            if not serializer.is_valid():
+                return api_response(
+                    is_success=False,
+                    error_message=serializer.errors,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            email = request.session.get("reset_email") or request.data.get("email")
+            if not email:
+                return api_response(
+                    is_success=False,
+                    error_message="OTP verification required before resetting password.",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return api_response(
+                    is_success=False,
+                    error_message="User not found.",
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
+
+            user.set_password(serializer.validated_data["new_password"])
+            user.save()
+
+            if "reset_email" in request.session:
+                del request.session["reset_email"]
+
+            return api_response(
+                is_success=True,
+                status_code=status.HTTP_200_OK,
+                result={"message": "Password reset successfully."},
+            )
         except Exception as e:
             return api_response(
                 is_success=False,
@@ -256,6 +328,7 @@ class GetUserView(generics.ListAPIView):
         },
         tags=["User"],
     )
+    # get method to handle retrieving all users
     def get(self, request, *args, **kwargs):
         try:
             users = self.get_queryset()
@@ -292,7 +365,7 @@ class UserDetailView(generics.RetrieveAPIView):
        },
        tags=["User"],
    )
-
+    # get method to handle retrieving user details by ID
    def get(self, request, *args, **kwargs):
        try:
            user = self.get_object()

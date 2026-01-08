@@ -22,12 +22,11 @@ def send_otp(email, otp):
     This code will expire in 3 minutes.
     please do not share this code with anyone.
 
-    If you did not request this code, please ignore this email.
 
     Regards,
-    MeroNyaya Team
+    MeroNyaya 
     """
-    from email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@meronyaya.com'
+    from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@meronyaya.com'
     try:
         send_mail(
             subject = subject,
@@ -115,3 +114,4 @@ def resend_otp(email):
     
     except Exception as e:
         return False, f"Error resending OTP: {str(e)}"
+    

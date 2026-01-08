@@ -1,13 +1,16 @@
 from rest_framework import serializers
 from .models import User
-from .otp import create_and_send_otp
+from .otp import create_otp, send_otp
 
+
+# Serializer for User Response
 class UserResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'name', 'phone', 'is_lawyer', 'role', 'date_joined']
         read_only_fields = ['id', 'date_joined', 'role']
 
+# Serializer for Registering User
 class RegisterUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -43,11 +46,12 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             name=validated_data.get('name', ''),
             phone=validated_data.get('phone', ''),
             password=validated_data['password'],
-            is_lawyer=validated_data.get('is_lawyer', False)
+            is_lawyer=validated_data.get('is_lawyer', False),
+            is_verified=False
         )
         # Send OTP for email verification
         try:
-            create_and_send_otp(user.email)
+            create_otp(user.email)
         except Exception as e:
             print(f"Error sending OTP: {e}")
 
@@ -60,7 +64,7 @@ class VerifyOTPSerializer(serializers.Serializer):
 
 # Resend OTP Serializer
 class ResendOTPSerializer(serializers.Serializer):
-    pass
+    email = serializers.EmailField(required=True)
 
 # Login Serializer
 class LoginUserSerializer(serializers.Serializer):
@@ -86,3 +90,25 @@ class LoginUserSerializer(serializers.Serializer):
             
             attrs['user'] = user
             return attrs
+
+# Serializer for User Logout
+class UserLogoutSerializers(serializers.Serializer):
+    refresh = serializers.CharField(required=True)
+
+
+# Serializer for Resetting Password
+class ResetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate(self, attrs):
+        new_password = attrs.get("new_password")
+        confirm_password = attrs.get("confirm_password")
+
+        if new_password != confirm_password:
+            raise serializers.ValidationError("Passwords do not match.")
+
+        return attrs
+    
+    
+
