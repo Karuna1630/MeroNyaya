@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import User
-from .otp import create_otp, send_otp, create_and_send_otp
+from .otp import create_otp, send_otp
 
 
 # Serializer for User Response
@@ -51,7 +51,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         )
         # Send OTP for email verification
         try:
-            create_and_send_otp(user.email)
+            create_otp(user.email)
         except Exception as e:
             print(f"Error sending OTP: {e}")
 
@@ -64,7 +64,7 @@ class VerifyOTPSerializer(serializers.Serializer):
 
 # Resend OTP Serializer
 class ResendOTPSerializer(serializers.Serializer):
-    pass
+    email = serializers.EmailField(required=True)
 
 # Login Serializer
 class LoginUserSerializer(serializers.Serializer):

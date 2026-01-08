@@ -22,10 +22,9 @@ def send_otp(email, otp):
     This code will expire in 3 minutes.
     please do not share this code with anyone.
 
-    If you did not request this code, please ignore this email.
 
     Regards,
-    MeroNyaya Team
+    MeroNyaya 
     """
     from_email = settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@meronyaya.com'
     try:
@@ -50,12 +49,6 @@ def create_otp(email):
     
     email_sent = send_otp(email, otp_code)
     return otp_instance, email_sent  
-
-
-# Convenience function - creates and sends OTP together
-def create_and_send_otp(email):
-    """Create OTP and send it via email"""
-    return create_otp(email)
 
 
     # Function to verify OTP
@@ -121,3 +114,4 @@ def resend_otp(email):
     
     except Exception as e:
         return False, f"Error resending OTP: {str(e)}"
+    
