@@ -38,7 +38,7 @@ const ViewProfile = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Profile</h1>
 
         {/* Personal Information Card */}
-        <div className="bg-white rounded-lg border shadow-xl border-gray-200 p-8 mb-8">
+        <div className="bg-white rounded-lg shadow-xl/30  border border-gray-200 p-8 mb-8">
           {/* Section Title */}
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-900">Personal Information</h2>
