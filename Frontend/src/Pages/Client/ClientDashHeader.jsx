@@ -1,15 +1,25 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Bell, User, LogOut } from "lucide-react";
 
 const ClientDashHeader = ({ title, subtitle }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
 
-  const handleProfile = () => {
-    navigate("/profile");
+  const isDashboardActive = location.pathname === "/clientdashboard";
+
+  const handleDashboard = () => {
+    if (!isDashboardActive) {
+      navigate("/clientdashboard");
+    }
+    setOpen(false);
+  };
+
+  const handleViewProfile = () => {
+    navigate("/viewprofile");
     setOpen(false);
   };
 
@@ -61,14 +71,18 @@ const ClientDashHeader = ({ title, subtitle }) => {
 
                 {/* Menu Items */}
                 <button
-                  onClick={handleProfile}
-                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition"
+                  onClick={handleDashboard}
+                  className={`flex items-center gap-2 w-full px-4 py-3 text-sm transition ${
+                    isDashboardActive
+                      ? "bg-slate-800 text-yellow-400 font-semibold"
+                      : "text-gray-200 hover:bg-slate-800"
+                  }`}
                 >
                   Go to Dashboard
                 </button>
 
                 <button
-                  onClick={handleProfile}
+                  onClick={handleViewProfile}
                   className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition border-t border-slate-700"
                 >
                   <User size={16} />

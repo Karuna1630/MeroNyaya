@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ArrowLeft, User, Mail, Phone, MapPin, CheckCircle } from "lucide-react";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
 const ViewProfile = () => {
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ const ViewProfile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+        <Header />
       {/* Back Button */}
       <div className="max-w-4xl mx-auto px-6 py-6">
         <button
@@ -182,6 +185,7 @@ const ViewProfile = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

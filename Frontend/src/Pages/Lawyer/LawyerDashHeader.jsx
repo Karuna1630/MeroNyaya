@@ -1,15 +1,25 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Bell, User, LogOut } from "lucide-react";
 
 const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
 
-  const handleProfile = () => {
-    navigate("/profile");
+  const isDashboardActive = location.pathname === "/lawyerdashboard";
+
+  const handleDashboard = () => {
+    if (!isDashboardActive) {
+      navigate("/lawyerdashboard");
+    }
+    setOpen(false);
+  };
+
+  const handleViewProfile = () => {
+    navigate("/viewprofile");
     setOpen(false);
   };
 
@@ -20,8 +30,10 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
   };
 
   return (
-    <div className="bg-white border-b-2 border-slate-300 px-8 py-4 shadow-sm">
-      <div className="flex justify-between items-center">
+    <>
+   
+      <div className="bg-white border-b-2 border-slate-300 px-8 py-4 shadow-sm">
+        <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-[#0F1A3D]">{title}</h2>
           <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
@@ -61,14 +73,18 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
 
                 {/* Menu Items */}
                 <button
-                  onClick={handleProfile}
-                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition"
+                  onClick={handleDashboard}
+                  className={`flex items-center gap-2 w-full px-4 py-3 text-sm transition ${
+                    isDashboardActive
+                      ? "bg-slate-800 text-yellow-400 font-semibold"
+                      : "text-gray-200 hover:bg-slate-800"
+                  }`}
                 >
                   Go to Dashboard
                 </button>
 
                 <button
-                  onClick={handleProfile}
+                  onClick={handleViewProfile}
                   className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition border-t border-slate-700"
                 >
                   <User size={16} />
@@ -88,6 +104,8 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
         </div>
       </div>
     </div>
+    
+    </>
   );
 };
 
