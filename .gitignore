@@ -11,7 +11,7 @@ __pycache__/
 # Environment
 .env
 venv/
-env/
+
 
 # Node modules
 node_modules/
