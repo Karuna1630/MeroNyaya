@@ -82,10 +82,28 @@ const Header = () => {
 
                 {/* Dropdown */}
                 {open && (
-                  <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg shadow-lg overflow-hidden z-50">
+                  <div className="absolute right-0 mt-3 w-56 bg-slate-900 rounded-lg shadow-xl overflow-hidden z-50 border border-slate-700">
+                    {/* Profile Section */}
+                    <div className="px-4 py-4 border-b border-slate-700 flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center font-bold text-lg">
+                        {user?.name?.charAt(0) || "U"}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold text-sm">{user?.name || "User"}</p>
+                      </div>
+                    </div>
+
+                    {/* Menu Items */}
                     <button
                       onClick={handleProfile}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-sm hover:bg-gray-100"
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition"
+                    >
+                      Go to Dashboard
+                    </button>
+
+                    <button
+                      onClick={handleProfile}
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition border-t border-slate-700"
                     >
                       <User size={16} />
                       View Profile
@@ -93,7 +111,7 @@ const Header = () => {
 
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-gray-100"
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-500 hover:bg-slate-800 transition border-t border-slate-700"
                     >
                       <LogOut size={16} />
                       Logout
