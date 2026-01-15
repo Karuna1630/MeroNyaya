@@ -38,7 +38,7 @@ const ViewProfile = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Profile</h1>
 
         {/* Personal Information Card */}
-        <div className="bg-white rounded-lg border border-gray-200 p-8 mb-8">
+        <div className="bg-white rounded-lg border shadow-xl border-gray-200 p-8 mb-8">
           {/* Section Title */}
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-900">Personal Information</h2>
@@ -46,7 +46,7 @@ const ViewProfile = () => {
           </div>
 
           {/* Profile Section */}
-          <div className="flex items-start gap-6 mb-8 pb-8 border-b border-gray-200">
+          <div className="flex items-start gap-6 mb-8 p-6 border border-gray-200 rounded-lg shadow-md bg-gray-50">
             {/* Avatar */}
             <div className="w-24 h-24 rounded-full bg-[#0F1A3D] text-white flex items-center justify-center font-bold text-3xl flex-shrink-0">
               {user?.name?.charAt(0) || "U"}
