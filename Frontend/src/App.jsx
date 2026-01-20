@@ -8,6 +8,7 @@ import {store} from './Pages/store/store.js'
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import FindLawyers from './Pages/Public/FindLawyers.jsx';
+import IndividualLawyer from './Pages/Public/IndividualLawyer.jsx';
 
 import ClientDashboard from './Pages/Client/ClientDashboard.jsx';
 import ClientCase from './Pages/Client/ClientCase.jsx';
@@ -33,6 +34,7 @@ function App() {
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/findlawyers' element={<FindLawyers />} />
+        <Route path='/lawyer/:id' element={<IndividualLawyer />} />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         <Route path='/verify-otp' element={<VerifyOtp />} />
