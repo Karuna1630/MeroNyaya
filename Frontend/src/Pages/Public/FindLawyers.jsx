@@ -160,58 +160,80 @@ const FindLawyers = () => {
 	return (
 		<div className="bg-[#F7F8FB] min-h-screen text-slate-900">
 			<Header />
-			<main className="max-w-7xl mx-auto px-6 lg:px-12 pb-16">
-				<section className="pt-8 space-y-6">
+			{/* ================= WHITE TOP SECTION ================= */}
+			<section className="bg-white">
+				<div className="max-w-7xl mx-auto px-6 lg:px-12 py-10 space-y-6">
 					<div className="text-center space-y-2">
-						<h1 className="text-2xl sm:text-3xl font-semibold text-[#0F1A3D]">Find Your Legal Expert</h1>
-						<p className="text-sm sm:text-base text-slate-600">Browse through our network of verified lawyers across Nepal</p>
+						<h1 className="text-2xl sm:text-3xl font-semibold text-[#0F1A3D]">
+							Find Your Legal Expert
+						</h1>
+						<p className="text-slate-600">
+							Browse through our network of verified lawyers across Nepal
+						</p>
 					</div>
 
-					<div className="grid grid-cols-1 lg:grid-cols-[300px,1fr] gap-8 items-start">
-						<aside className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-8">
-						<div className="space-y-4">
-							<h3 className="text-sm font-semibold text-[#0F1A3D]">Specialization</h3>
-							<div className="space-y-2 text-sm text-slate-600">
-								{specializations.map((item) => {
-									const isActive = selectedSpec === item;
-									return (
-										<button
-											key={item}
-											onClick={() => setSelectedSpec(item)}
-											className={`w-full text-left px-3 py-2 rounded-lg transition border ${
-												isActive
-													? "bg-[#0F1A3D] text-white border-[#0F1A3D] shadow-sm"
-													: "hover:bg-slate-50 border-transparent"
-											}`}
-										>
-											{item}
-										</button>
-									);
-								})}
-							</div>
+					<div className="flex justify-center">
+						<div className="w-full max-w-2xl flex items-center gap-2 border border-slate-200 rounded-lg bg-white px-4 py-3 shadow-sm">
+							<Search size={18} className="text-slate-400" />
+							<input
+								value={searchTerm}
+								onChange={(e) => setSearchTerm(e.target.value)}
+								placeholder="Search by name or specialization..."
+								className="w-full bg-transparent outline-none"
+							/>
 						</div>
+					</div>
+				</div>
+			</section>
 
-						<div className="space-y-4">
-							<h3 className="text-sm font-semibold text-[#0F1A3D]">Location</h3>
-							<div className="space-y-2 text-sm text-slate-600">
-								{locations.map((item) => {
-									const isActive = selectedLocation === item;
-									return (
-										<button
-											key={item}
-											onClick={() => setSelectedLocation(item)}
-											className={`w-full text-left px-3 py-2 rounded-lg transition border ${
-												isActive
-													? "bg-[#0F1A3D] text-white border-[#0F1A3D] shadow-sm"
-													: "hover:bg-slate-50 border-transparent"
-											}`}
-										>
-											{item}
-										</button>
-									);
-								})}
+			<main className="max-w-7xl mx-auto px-6 lg:px-12 pb-16">
+				<section className="pt-2">
+
+					<div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start pt-2">
+						<aside className="md:col-span-4 lg:col-span-3 bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-8">
+							<div className="space-y-4">
+								<h3 className="text-sm font-semibold text-[#0F1A3D]">Specialization</h3>
+								<div className="space-y-2 text-sm text-slate-600">
+									{specializations.map((item) => {
+										const isActive = selectedSpec === item;
+										return (
+											<button
+												key={item}
+												onClick={() => setSelectedSpec(item)}
+												className={`w-full text-left px-3 py-2 rounded-lg transition border ${
+													isActive
+														? "bg-[#0F1A3D] text-white border-[#0F1A3D] shadow-sm"
+														: "hover:bg-slate-50 border-transparent"
+												}`}
+											>
+												{item}
+											</button>
+										);
+									})}
+								</div>
 							</div>
-						</div>
+
+							<div className="space-y-4">
+								<h3 className="text-sm font-semibold text-[#0F1A3D]">Location</h3>
+								<div className="space-y-2 text-sm text-slate-600">
+									{locations.map((item) => {
+										const isActive = selectedLocation === item;
+										return (
+											<button
+												key={item}
+												onClick={() => setSelectedLocation(item)}
+												className={`w-full text-left px-3 py-2 rounded-lg transition border ${
+													isActive
+														? "bg-[#0F1A3D] text-white border-[#0F1A3D] shadow-sm"
+														: "hover:bg-slate-50 border-transparent"
+												}`}
+											>
+												{item}
+											</button>
+										);
+									})}
+								</div>
+							</div>
 
 							<div className="space-y-4">
 								<div className="flex items-center justify-between text-sm font-semibold text-[#0F1A3D]">
@@ -234,18 +256,7 @@ const FindLawyers = () => {
 							</div>
 						</aside>
 
-						<div className="space-y-4">
-							<div className="flex items-center gap-2 border border-slate-200 rounded-lg bg-white px-4 py-3 shadow-sm w-full">
-								<Search size={18} className="text-slate-400" />
-								<input
-									value={searchTerm}
-									onChange={(e) => setSearchTerm(e.target.value)}
-									type="text"
-									placeholder="Search by name or specialization..."
-									className="w-full outline-none text-slate-800 placeholder-slate-400 bg-transparent"
-								/>
-							</div>
-
+						<div className="md:col-span-8 lg:col-span-9 space-y-4">
 							<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 								<div className="text-sm text-slate-600">Showing {sortedLawyers.length} lawyers</div>
 								<div className="flex items-center gap-2 text-sm text-slate-600">

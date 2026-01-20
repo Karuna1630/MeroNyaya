@@ -72,38 +72,46 @@ const IndividualLawyer = () => {
           {/* Left Column */}
           <div className="space-y-6">
             {/* Lawyer Header Card */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <div className="flex gap-6">
-                {/* Avatar */}
-                <div className="relative shrink-0">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#1a285b] to-[#0F1A3D] flex items-center justify-center text-white font-bold text-3xl border-4 border-yellow-400">
-                    P
+            <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
+              <div className="flex items-start justify-between gap-6">
+                {/* Left: Avatar + Info */}
+                <div className="flex gap-4 flex-1">
+                  {/* Avatar */}
+                  <div className="relative shrink-0">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#1a2f6d] to-[#0F1A3D] flex items-center justify-center text-white font-bold text-2xl border-4 border-yellow-400">
+                      PS
+                    </div>
                   </div>
-                  <div className="absolute bottom-0 right-0 bg-yellow-400 text-[#0F1A3D] px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                    <Star size={12} className="fill-current" /> {lawyer.rating}
+
+                  {/* Info */}
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold text-[#0F1A3D] mb-1">
+                      {lawyer.name}
+                    </h1>
+                    <p className="text-slate-600 text-sm mb-2">{lawyer.specialization}</p>
+                    <div className="flex items-center gap-3 text-xs text-slate-600">
+                      <span className="flex items-center gap-1">
+                        <MapPin size={14} /> {lawyer.location}
+                      </span>
+                      <span className="text-yellow-500 font-semibold">
+                        ⭐ {lawyer.reviews} reviews
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Info */}
-                <div className="flex-1">
-                  <h1 className="text-2xl font-semibold text-[#0F1A3D] mb-1">
-                    {lawyer.name}
-                  </h1>
-                  <p className="text-slate-600 mb-3">{lawyer.specialization}</p>
-                  <div className="flex items-center gap-4 text-sm text-slate-600">
-                    <span className="flex items-center gap-1">
-                      <MapPin size={16} /> {lawyer.location}
-                    </span>
-                    <span className="text-yellow-500 font-semibold">
-                      ⭐ {lawyer.reviews} reviews
-                    </span>
+                {/* Right: Rating Badge */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-full px-3 py-2 flex items-center gap-1">
+                    <Star size={16} className="fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm font-bold text-yellow-600">{lawyer.rating}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* About Section */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
               <h2 className="text-lg font-semibold text-[#0F1A3D] mb-4">About</h2>
               <p className="text-sm leading-relaxed text-slate-700 mb-4">
                 {lawyer.about}
@@ -129,7 +137,7 @@ const IndividualLawyer = () => {
             </div>
 
             {/* Education Section */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
               <h2 className="text-lg font-semibold text-[#0F1A3D] mb-4">
                 Education
               </h2>
@@ -143,21 +151,8 @@ const IndividualLawyer = () => {
               </ul>
             </div>
 
-            {/* Awards Section */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-[#0F1A3D] mb-4">Awards</h2>
-              <ul className="space-y-2">
-                {lawyer.awards.map((award, idx) => (
-                  <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                    <span className="text-yellow-500 mt-1">▪</span>
-                    {award}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             {/* Client Reviews Section */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
               <h2 className="text-lg font-semibold text-[#0F1A3D] mb-4">
                 Client Reviews
               </h2>
@@ -189,7 +184,7 @@ const IndividualLawyer = () => {
           {/* Right Column */}
           <div className="space-y-6">
             {/* Consultation Fee Card */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-[#0F1A3D]">
                   Consultation Fee
@@ -265,7 +260,7 @@ const IndividualLawyer = () => {
             </div>
 
             {/* Need Help Section */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
               <h3 className="text-sm font-semibold text-[#0F1A3D] mb-2">
                 Need Help?
               </h3>
