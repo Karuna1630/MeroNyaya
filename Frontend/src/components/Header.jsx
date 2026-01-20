@@ -44,7 +44,7 @@ const Header = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-200">
-            <Link to="/" className="hover:text-yellow-400 transition">Find Lawyers</Link>
+            <Link to="/findlawyers" className="hover:text-yellow-400 transition">Find Lawyers</Link>
             <Link to="/" className="hover:text-yellow-400 transition">Categories</Link>
             <Link to="/" className="hover:text-yellow-400 transition">Pricing</Link>
             <Link to="/" className="hover:text-yellow-400 transition">About Us</Link>
