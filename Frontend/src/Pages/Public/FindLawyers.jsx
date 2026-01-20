@@ -162,7 +162,7 @@ const FindLawyers = () => {
 			<Header />
 			{/* ================= WHITE TOP SECTION ================= */}
 			<section className="bg-white">
-				<div className="max-w-7xl mx-auto px-6 lg:px-12 py-10 space-y-6">
+				<div className="w-full px-12 py-10 space-y-6">
 					<div className="text-center space-y-2">
 						<h1 className="text-2xl sm:text-3xl font-semibold text-[#0F1A3D]">
 							Find Your Legal Expert
@@ -186,7 +186,7 @@ const FindLawyers = () => {
 				</div>
 			</section>
 
-			<main className="max-w-7xl mx-auto px-6 lg:px-12 pb-16">
+			<main className="w-full px-12 pb-16">
 				<section className="pt-2">
 
 					<div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start pt-2">

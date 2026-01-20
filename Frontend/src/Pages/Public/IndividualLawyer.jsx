@@ -60,7 +60,7 @@ const IndividualLawyer = () => {
     <div className="bg-[#F7F8FB] min-h-screen text-slate-900">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-6 lg:px-12 pb-16">
+      <main className="w-full px-12 pb-16">
         {/* Breadcrumb */}
         <div className="pt-6 pb-4 text-sm text-slate-600">
           <span className="hover:text-[#0F1A3D] cursor-pointer">Lawyer</span>
@@ -68,9 +68,9 @@ const IndividualLawyer = () => {
           <span>{lawyer.name}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Column */}
-          <div className="space-y-6">
+          <div className="lg:col-span-9 space-y-6">
             {/* Lawyer Header Card */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
               <div className="flex items-start justify-between gap-6">
@@ -182,7 +182,7 @@ const IndividualLawyer = () => {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             {/* Consultation Fee Card */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
