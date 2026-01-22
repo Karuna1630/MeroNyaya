@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
+import IdentityDocs from "./IdentityDocs";
 
 const tabs = [
   { key: "personal", label: "Personal Information", icon: User2 },
@@ -32,6 +33,12 @@ const KYC = () => {
     availabilityDays: [],
     availableFrom: "",
     availableUntil: "",
+    citizenshipFront: null,
+    citizenshipBack: null,
+    lawyerLicense: null,
+    passportPhoto: null,
+    lawDegree: null,
+    experienceCertificate: null,
   });
 
   const handleChange = (e) => {
@@ -107,6 +114,17 @@ const KYC = () => {
                 onContinue={() => {
                   setCompletedTabs([...completedTabs, "professional"]);
                   setActiveTab("identity");
+                }}
+              />
+            )}
+            {activeTab === "identity" && (
+              <IdentityDocs
+                form={form}
+                onChange={handleChange}
+                onSaveDraft={() => console.log("Draft saved")}
+                onContinue={() => {
+                  setCompletedTabs([...completedTabs, "identity"]);
+                  setActiveTab("declaration");
                 }}
               />
             )}
