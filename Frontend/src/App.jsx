@@ -26,6 +26,9 @@ import ViewProfile from './Pages/Profile/ViewProfile.jsx';
 
 import KYCHeader from './Pages/KYC/KYCHeader.jsx';
 import KYCTabs from './Pages/KYC/KYCtabs.jsx';
+import PersonalInfo from './Pages/KYC/PersonalInfo.jsx';
+import KYC from './Pages/KYC/KYC.jsx';
+
 
 
 
@@ -65,8 +68,10 @@ function App() {
 
 
          {/* KYC */}
+         <Route path='/kyc' element={<KYC/>} />
          <Route path='/kycheader' element={<KYCHeader />} />
-         <Route path='/kyctabs' element={<KYCTabs />} />
+         <Route path='/kyctabs' element={<KYCtabs />} />
+         <Route path='/personalinfo' element={<PersonalInfo />} />
       </Routes>
     </BrowserRouter>
     </Provider>

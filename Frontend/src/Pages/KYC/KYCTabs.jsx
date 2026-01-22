@@ -7,7 +7,7 @@ const tabs = [
   { key: "declaration", label: "Declaration & Submit", icon: CheckCircle2 },
 ];
 
-const KYCTabs = ({ activeTab, onTabChange }) => {
+const KYCtabs = ({ activeTab, onTabChange }) => {
   return (
     <div className="bg-[#F2F4F7] rounded-2xl p-2 mt-6 flex gap-2">
       {tabs.map((tab) => {
@@ -34,4 +34,4 @@ const KYCTabs = ({ activeTab, onTabChange }) => {
   );
 };
 
-export default KYCTabs;
+export default KYCtabs;
