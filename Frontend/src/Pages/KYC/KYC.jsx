@@ -3,6 +3,7 @@ import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
+import Declaration from "./Declaration";
 
 const tabs = [
   { key: "personal", label: "Personal Information", icon: User2 },
@@ -39,11 +40,20 @@ const KYC = () => {
     passportPhoto: null,
     lawDegree: null,
     experienceCertificate: null,
+    confirmAccuracy: false,
+    authorizeVerification: false,
+    agreeTerms: false,
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = () => {
+    console.log("Form submitted:", form);
+    // Add your submission logic here
+    alert("KYC application submitted successfully!");
   };
 
   return (
@@ -126,6 +136,15 @@ const KYC = () => {
                   setCompletedTabs([...completedTabs, "identity"]);
                   setActiveTab("declaration");
                 }}
+              />
+            )}
+            {activeTab === "declaration" && (
+              <Declaration
+                form={form}
+                onChange={handleChange}
+                onSaveDraft={() => console.log("Draft saved")}
+                onSubmit={handleSubmit}
+                onPrevious={() => setActiveTab("identity")}
               />
             )}
           </div>
