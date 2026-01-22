@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 import PersonalInfo from "./PersonalInfo";
+import ProfessionalInfo from "./ProfessionalInfo";
 
 const tabs = [
   { key: "personal", label: "Personal Information", icon: User2 },
@@ -23,6 +24,14 @@ const KYC = () => {
     gender: "Female",
     permanentAddress: "",
     currentAddress: "",
+    barCouncilNumber: "",
+    lawFirmName: "",
+    yearsOfExperience: "",
+    consultationFee: "",
+    specializations: [],
+    availabilityDays: [],
+    availableFrom: "",
+    availableUntil: "",
   });
 
   const handleChange = (e) => {
@@ -87,6 +96,17 @@ const KYC = () => {
                 onContinue={() => {
                   setCompletedTabs([...completedTabs, "personal"]);
                   setActiveTab("professional");
+                }}
+              />
+            )}
+            {activeTab === "professional" && (
+              <ProfessionalInfo
+                form={form}
+                onChange={handleChange}
+                onSaveDraft={() => console.log("Draft saved")}
+                onContinue={() => {
+                  setCompletedTabs([...completedTabs, "professional"]);
+                  setActiveTab("identity");
                 }}
               />
             )}
