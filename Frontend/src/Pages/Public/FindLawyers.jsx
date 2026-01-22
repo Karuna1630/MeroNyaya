@@ -298,15 +298,15 @@ const FindLawyers = () => {
 											<div className="flex items-start justify-between gap-3">
 												<div className="space-y-1">
 													<h3 className="text-lg font-semibold text-[#0F1A3D]">{lawyer.name}</h3>
-													<div className="space-y-1 text-sm text-slate-600">
-														<div className="inline-flex items-center gap-1">
+													<div className="flex items-center gap-4 text-sm text-slate-600 whitespace-nowrap">
+														<span className="inline-flex items-center gap-1 whitespace-nowrap">
 															<Briefcase size={16} className="text-slate-500" />
 															{lawyer.specialization}
-														</div>
-														<div className="inline-flex items-center gap-1">
+														</span>
+														<span className="inline-flex items-center gap-1 whitespace-nowrap">
 															<Calendar size={16} className="text-slate-500" />
 															{lawyer.experience} yrs exp.
-														</div>
+														</span>
 													</div>
 												</div>
 												<div className="text-right space-y-1">
