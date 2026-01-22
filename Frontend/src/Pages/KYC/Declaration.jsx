@@ -1,7 +1,7 @@
 import React from "react";
 import { CheckCircle2, Shield } from "lucide-react";
 
-const Declaration = ({ form, onChange, onSaveDraft, onSubmit, onPrevious }) => {
+const Declaration = ({ form, onChange }) => {
   const handleCheckboxChange = (fieldName) => {
     onChange({
       target: {
@@ -131,38 +131,6 @@ const Declaration = ({ form, onChange, onSaveDraft, onSubmit, onPrevious }) => {
         <p className="text-sm text-slate-700">
           <span className="font-semibold">Note:</span> Your KYC application will be reviewed within 2-3 business days. You will receive a notification once your verification is complete. During the review period, you will have limited access to the platform.
         </p>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-        <button
-          onClick={onSaveDraft}
-          className="px-5 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
-        >
-          Save Draft
-        </button>
-        
-        <div className="flex gap-3">
-          <button
-            onClick={onPrevious}
-            className="px-5 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
-          >
-            Previous
-          </button>
-          <button
-            onClick={onSubmit}
-            disabled={!allChecked}
-            className={`px-6 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2
-              ${
-                allChecked
-                  ? "text-[#0F1A3D] bg-yellow-400 hover:bg-yellow-500"
-                  : "text-slate-400 bg-slate-200 cursor-not-allowed"
-              }`}
-          >
-            <Shield size={16} />
-            Submit for Verification
-          </button>
-        </div>
       </div>
     </div>
   );

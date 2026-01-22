@@ -50,15 +50,37 @@ const KYC = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
-    console.log("Form submitted:", form);
-    // Add your submission logic here
-    alert("KYC application submitted successfully!");
+  const handleSaveDraft = () => {
+    console.log("Draft saved:", form);
+    alert("Draft saved successfully!");
+  };
+
+  const handleContinue = () => {
+    if (activeTab === "personal") {
+      setCompletedTabs([...completedTabs, "personal"]);
+      setActiveTab("professional");
+    } else if (activeTab === "professional") {
+      setCompletedTabs([...completedTabs, "professional"]);
+      setActiveTab("identity");
+    } else if (activeTab === "identity") {
+      setCompletedTabs([...completedTabs, "identity"]);
+      setActiveTab("declaration");
+    }
+  };
+
+  const handlePrevious = () => {
+    if (activeTab === "professional") {
+      setActiveTab("personal");
+    } else if (activeTab === "identity") {
+      setActiveTab("professional");
+    } else if (activeTab === "declaration") {
+      setActiveTab("identity");
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
-      <div className="w-full max-w-6xl">
+      <div className="w-full max-w-6xl flex flex-col">
         
         {/* Header - Outside Card */}
         <div className="bg-[#0F1A3D] text-white rounded-t-2xl p-6 flex items-start gap-4">
@@ -68,8 +90,8 @@ const KYC = () => {
           </p>
         </div>
 
-        {/* MAIN KYC CARD - Without top padding */}
-        <div className="w-full bg-white rounded-b-2xl shadow-sm overflow-hidden">
+        {/* MAIN KYC CARD */}
+        <div className="w-full bg-white rounded-b-2xl shadow-sm overflow-hidden flex flex-col flex-1">
         
           {/* Tabs */}
           <div className="px-6 pt-6 pb-0">
@@ -109,44 +131,78 @@ const KYC = () => {
               <PersonalInfo
                 form={form}
                 onChange={handleChange}
-                onSaveDraft={() => console.log("Draft saved")}
-                onContinue={() => {
-                  setCompletedTabs([...completedTabs, "personal"]);
-                  setActiveTab("professional");
-                }}
               />
             )}
             {activeTab === "professional" && (
               <ProfessionalInfo
                 form={form}
                 onChange={handleChange}
-                onSaveDraft={() => console.log("Draft saved")}
-                onContinue={() => {
-                  setCompletedTabs([...completedTabs, "professional"]);
-                  setActiveTab("identity");
-                }}
               />
             )}
             {activeTab === "identity" && (
               <IdentityDocs
                 form={form}
                 onChange={handleChange}
-                onSaveDraft={() => console.log("Draft saved")}
-                onContinue={() => {
-                  setCompletedTabs([...completedTabs, "identity"]);
-                  setActiveTab("declaration");
-                }}
               />
             )}
             {activeTab === "declaration" && (
               <Declaration
                 form={form}
                 onChange={handleChange}
-                onSaveDraft={() => console.log("Draft saved")}
-                onSubmit={handleSubmit}
-                onPrevious={() => setActiveTab("identity")}
               />
             )}
+          </div>
+
+          {/* Fixed Footer with Buttons */}
+          <div className="border-t border-slate-200 px-6 py-4 bg-white flex items-center justify-between">
+            <button
+              onClick={handleSaveDraft}
+              className="px-5 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+            >
+              Save Draft
+            </button>
+
+            <div className="flex gap-3">
+              {activeTab !== "personal" && (
+                <button
+                  onClick={handlePrevious}
+                  className="px-6 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Previous
+                </button>
+              )}
+              
+              {activeTab !== "declaration" && (
+                <button
+                  onClick={handleContinue}
+                  className="px-6 py-2 rounded-lg text-sm font-semibold text-white bg-[#0F1A3D] hover:opacity-95 transition"
+                >
+                  Continue
+                </button>
+              )}
+
+              {activeTab === "declaration" && (
+                <button
+                  onClick={() => {
+                    const allChecked = form.confirmAccuracy && form.authorizeVerification && form.agreeTerms;
+                    if (allChecked) {
+                      console.log("Form submitted:", form);
+                      alert("KYC application submitted successfully!");
+                    }
+                  }}
+                  disabled={!(form.confirmAccuracy && form.authorizeVerification && form.agreeTerms)}
+                  className={`px-6 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2
+                    ${
+                      form.confirmAccuracy && form.authorizeVerification && form.agreeTerms
+                        ? "text-[#0F1A3D] bg-yellow-400 hover:bg-yellow-500"
+                        : "text-slate-400 bg-slate-200 cursor-not-allowed"
+                    }`}
+                >
+                  <Shield size={16} />
+                  Submit for Verification
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

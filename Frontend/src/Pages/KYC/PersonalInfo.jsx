@@ -1,7 +1,7 @@
 import React from "react";
 import { User2 } from "lucide-react";
 
-const PersonalInfo = ({ form, onChange, onSaveDraft, onContinue }) => {
+const PersonalInfo = ({ form, onChange }) => {
   return (
     <div className="space-y-6">
       {/* Section Header */}
@@ -112,22 +112,6 @@ const PersonalInfo = ({ form, onChange, onSaveDraft, onContinue }) => {
             className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] resize-none"
           />
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-        <button
-          onClick={onSaveDraft}
-          className="px-5 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
-        >
-          Save Draft
-        </button>
-        <button
-          onClick={onContinue}
-          className="px-6 py-2 rounded-lg text-sm font-semibold text-white bg-[#0F1A3D] hover:opacity-95 transition"
-        >
-          Continue
-        </button>
       </div>
     </div>
   );

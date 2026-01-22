@@ -24,7 +24,7 @@ const daysOfWeek = [
   "Saturday",
 ];
 
-const ProfessionalInfo = ({ form, onChange, onSaveDraft, onContinue }) => {
+const ProfessionalInfo = ({ form, onChange }) => {
   const handleCheckboxChange = (field, value) => {
     const currentValues = form[field] || [];
     const newValues = currentValues.includes(value)
@@ -192,22 +192,6 @@ const ProfessionalInfo = ({ form, onChange, onSaveDraft, onContinue }) => {
             />
           </div>
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-        <button
-          onClick={onSaveDraft}
-          className="px-5 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
-        >
-          Save Draft
-        </button>
-        <button
-          onClick={onContinue}
-          className="px-6 py-2 rounded-lg text-sm font-semibold text-white bg-[#0F1A3D] hover:opacity-95 transition"
-        >
-          Continue
-        </button>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FileText, Upload, X } from "lucide-react";
 
-const IdentityDocs = ({ form, onChange, onSaveDraft, onContinue }) => {
+const IdentityDocs = ({ form, onChange }) => {
   const [draggedOver, setDraggedOver] = useState(null);
 
   const handleFileChange = (fieldName, file) => {
@@ -144,22 +144,6 @@ const IdentityDocs = ({ form, onChange, onSaveDraft, onContinue }) => {
           {renderUploadBox("lawDegree", "Law Degree Certificate", false)}
           {renderUploadBox("experienceCertificate", "Experience Certificate", false)}
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-        <button
-          onClick={onSaveDraft}
-          className="px-5 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
-        >
-          Save Draft
-        </button>
-        <button
-          onClick={onContinue}
-          className="px-6 py-2 rounded-lg text-sm font-semibold text-white bg-[#0F1A3D] hover:opacity-95 transition"
-        >
-          Continue
-        </button>
       </div>
     </div>
   );
