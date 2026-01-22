@@ -24,6 +24,9 @@ import LawyerCase from './Pages/Lawyer/LawyerCase.jsx';
 import ViewProfile from './Pages/Profile/ViewProfile.jsx';
 
 
+import KYCHeader from './Pages/KYC/KYCHeader.jsx';
+
+
 function App() {
 
 
@@ -56,6 +59,11 @@ function App() {
         <Route path='/lawyerearning' element={<Earning />} />
 
          <Route path='/viewprofile' element={<ViewProfile />} />
+
+
+
+         {/* KYC */}
+         <Route path='/kycheader' element={<KYCHeader />} />
       </Routes>
     </BrowserRouter>
     </Provider>
