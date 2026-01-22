@@ -1,13 +1,20 @@
 import { useState } from "react";
-import KYCHeader from "./KYCHeader";
-import KYCTabs from "./KYCtabs";
+import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 import PersonalInfo from "./PersonalInfo";
 
-const KYC = () => {
-  // Active tab
-  const [activeTab, setActiveTab] = useState("personal");
+const tabs = [
+  { key: "personal", label: "Personal Information", icon: User2 },
+  { key: "professional", label: "Professional Information", icon: Briefcase },
+  { key: "identity", label: "Identity Documents", icon: FileText },
+  { key: "declaration", label: "Declaration & Submit", icon: CheckCircle2 },
+];
 
-  // Form state (ONLY personal for now)
+
+
+const KYC = () => {
+  const [activeTab, setActiveTab] = useState("personal");
+  const [completedTabs, setCompletedTabs] = useState([]);
+
   const [form, setForm] = useState({
     fullName: "Adv. Ram Kumar",
     email: "ram.kumar@example.com",
@@ -18,42 +25,94 @@ const KYC = () => {
     currentAddress: "",
   });
 
-  //  Change handler
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Actions
-  const handleSaveDraft = () => {
-    console.log("Draft saved:", form);
-  };
-
-  const handleContinue = () => {
-    setActiveTab("professional");
-  };
-
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <KYCHeader />
+    <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
+      <div className="w-full max-w-6xl">
+        
+        {/* Header - Outside Card */}
+        <div className="bg-[#0F1A3D] text-white rounded-t-2xl p-6 flex items-start gap-4">
+          <Shield size={24} className="shrink-0 mt-1" />
+          <p className="text-sm sm:text-base leading-relaxed">
+            To ensure platform security and trust, please complete identity verification before accessing the system.
+          </p>
+        </div>
 
-      <KYCTabs
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+        {/* MAIN KYC CARD - Without top padding */}
+        <div className="w-full bg-white rounded-b-2xl shadow-sm overflow-hidden">
+        
+          {/* Tabs */}
+          <div className="px-6 pt-6 pb-0">
+            <div className="flex gap-3 pb-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.key;
+                const isCompleted = completedTabs.includes(tab.key);
 
-      <div className="bg-white rounded-2xl p-6 border">
-        {activeTab === "personal" && (
-          <PersonalInfo
-            form={form}
-            onChange={handleChange}
-            onSaveDraft={handleSaveDraft}
-            onContinue={handleContinue}
-          />
-        )}
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-sm font-semibold whitespace-nowrap transition-all
+                      ${
+                        isActive
+                          ? "bg-[#0F1A3D] text-white shadow-md"
+                          : isCompleted
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                  >
+                    <Icon size={20} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-slate-200 my-0 mt-4" />
+
+          {/* Scrollable Content */}
+          <div className="px-6 py-6 max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+            {activeTab === "personal" && (
+              <PersonalInfo
+                form={form}
+                onChange={handleChange}
+                onSaveDraft={() => console.log("Draft saved")}
+                onContinue={() => {
+                  setCompletedTabs([...completedTabs, "personal"]);
+                  setActiveTab("professional");
+                }}
+              />
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Custom Scrollbar */}
+      <style>{`
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 8px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: #f1f5f9;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
     </div>
   );
 };
 
 export default KYC;
+
