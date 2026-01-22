@@ -1,4 +1,3 @@
-import React from "react";
 import { User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 
 const tabs = [
@@ -10,7 +9,7 @@ const tabs = [
 
 const KYCTabs = ({ activeTab, onTabChange }) => {
   return (
-    <div className="flex flex-wrap gap-3 mt-4">
+    <div className="bg-[#F2F4F7] rounded-2xl p-2 mt-6 flex gap-2">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.key;
@@ -19,11 +18,12 @@ const KYCTabs = ({ activeTab, onTabChange }) => {
           <button
             key={tab.key}
             onClick={() => onTabChange(tab.key)}
-            className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-semibold border transition ${
-              isActive
-                ? "bg-[#0F1A3D] text-white border-[#0F1A3D]"
-                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-            }`}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all
+              ${
+                isActive
+                  ? "bg-[#0F1A3D] text-white shadow-sm"
+                  : "bg-[#F7F8FB] text-slate-600"
+              }`}
           >
             <Icon size={18} />
             <span>{tab.label}</span>
