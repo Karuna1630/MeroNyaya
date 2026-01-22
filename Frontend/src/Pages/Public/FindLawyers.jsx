@@ -298,15 +298,15 @@ const FindLawyers = () => {
 											<div className="flex items-start justify-between gap-3">
 												<div className="space-y-1">
 													<h3 className="text-lg font-semibold text-[#0F1A3D]">{lawyer.name}</h3>
-													<div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-														<span className="inline-flex items-center gap-1">
+													<div className="space-y-1 text-sm text-slate-600">
+														<div className="inline-flex items-center gap-1">
 															<Briefcase size={16} className="text-slate-500" />
 															{lawyer.specialization}
-														</span>
-														<span className="inline-flex items-center gap-1">
+														</div>
+														<div className="inline-flex items-center gap-1">
 															<Calendar size={16} className="text-slate-500" />
 															{lawyer.experience} yrs exp.
-														</span>
+														</div>
 													</div>
 												</div>
 												<div className="text-right space-y-1">
@@ -329,8 +329,7 @@ const FindLawyers = () => {
 												</div>
 											</div>
 
-											<div className="flex items-center justify-between pt-2">
-												<p className="text-xs text-slate-500">Transparent pricing & fast response</p>
+											<div className="flex justify-end pt-2">
 												<button className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-[#1b2762] to-[#1c3e8a] shadow hover:shadow-md transition">
 													View Profile
 												</button>
