@@ -78,6 +78,13 @@ const KYC = () => {
     }
   };
 
+  const canAccessTab = (tabKey) => {
+  if (tabKey === activeTab) return true;
+  if (completedTabs.includes(tabKey)) return true;
+  return false;
+};
+
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
       <div className="w-full max-w-6xl flex flex-col">
@@ -102,21 +109,23 @@ const KYC = () => {
                 const isCompleted = completedTabs.includes(tab.key);
 
                 return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-sm font-semibold whitespace-nowrap transition-all
-                      ${
-                        isActive
-                          ? "bg-[#0F1A3D] text-white shadow-md"
-                          : isCompleted
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-slate-100 text-slate-500"
-                      }`}
-                  >
-                    <Icon size={20} />
-                    <span>{tab.label}</span>
-                  </button>
+                <button
+  key={tab.key}
+  disabled={!canAccessTab(tab.key)}
+  onClick={() => canAccessTab(tab.key) && setActiveTab(tab.key)}
+  className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-sm font-semibold whitespace-nowrap transition-all
+    ${
+      isActive
+        ? "bg-[#0F1A3D] text-white shadow-md"
+        : isCompleted
+        ? "bg-yellow-100 text-yellow-700"
+        : "bg-slate-100 text-slate-400 cursor-not-allowed"
+    }`}
+>
+  <Icon size={20} />
+  <span>{tab.label}</span>
+</button>
+
                 );
               })}
             </div>
