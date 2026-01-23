@@ -7,8 +7,8 @@ from .otp import create_otp, send_otp
 class UserResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'is_lawyer', 'role', 'date_joined']
-        read_only_fields = ['id', 'date_joined', 'role']
+        fields = ['id', 'email', 'name', 'phone', 'is_verified','is_lawyer', 'role', 'date_joined']
+        read_only_fields = ['id', 'date_joined', 'role', 'is_verified']
 
 # Serializer for Registering User
 class RegisterUserSerializer(serializers.ModelSerializer):
