@@ -1,18 +1,48 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Sidebar from "./sidebar";
 import ClientDashHeader from "./ClientDashHeader";
 import { Search, MapPin, Star, Briefcase, Shield, ChevronDown } from "lucide-react";
+
+const specializations = [
+  "All Specializations",
+  "Family Law",
+  "Property Law",
+  "Criminal Law",
+  "Civil Litigation",
+  "Banking & Finance",
+  "Labor Law",
+  "Immigration Law",
+];
+
+const locations = [
+  "All Locations",
+  "Kathmandu",
+  "Lalitpur",
+  "Pokhara",
+  "Butwal",
+  "Bharatpur",
+  "Biratnagar",
+  "Birgunj",
+  "Bhaktapur",
+];
+
+const sortOptions = [
+  "Top Rated",
+  "Price: Low to High",
+  "Price: High to Low",
+  "Experience",
+];
 
 const lawyers = [
   {
     id: 1,
     name: "Adv. Priya Sharma",
     specialization: "Property Law",
-    experience: "12 yrs",
+    experience: 12,
     rating: 4.9,
     reviews: 15,
     location: "Kathmandu",
-    fee: "Rs. 2,500",
+    fee: 2500,
     status: "Available",
     verified: true,
     image: "https://ui-avatars.com/api/?name=Priya+Sharma&background=4F46E5&color=fff",
@@ -20,12 +50,12 @@ const lawyers = [
   {
     id: 2,
     name: "Adv. Rajesh Thapa",
-    specialization: "Corporate Law",
-    experience: "15 yrs",
+    specialization: "Banking & Finance",
+    experience: 15,
     rating: 4.8,
     reviews: 12,
     location: "Lalitpur",
-    fee: "Rs. 5,000",
+    fee: 5000,
     status: "Available",
     verified: true,
     image: "https://ui-avatars.com/api/?name=Rajesh+Thapa&background=4F46E5&color=fff",
@@ -34,11 +64,11 @@ const lawyers = [
     id: 3,
     name: "Adv. Sita Karki",
     specialization: "Family Law",
-    experience: "8 yrs",
+    experience: 8,
     rating: 4.7,
     reviews: 8,
     location: "Bhaktapur",
-    fee: "Rs. 2,500",
+    fee: 2500,
     status: "Busy",
     verified: true,
     image: "https://ui-avatars.com/api/?name=Sita+Karki&background=4F46E5&color=fff",
@@ -47,20 +77,84 @@ const lawyers = [
     id: 4,
     name: "Adv. Anita Gurung",
     specialization: "Criminal Law",
-    experience: "10 yrs",
+    experience: 10,
     rating: 4.6,
     reviews: 10,
     location: "Kathmandu",
-    fee: "Rs. 4,000",
+    fee: 4000,
     status: "Available",
     verified: true,
     image: "https://ui-avatars.com/api/?name=Anita+Gurung&background=4F46E5&color=fff",
+  },
+  {
+    id: 5,
+    name: "Adv. Kumar Shrestha",
+    specialization: "Civil Litigation",
+    experience: 14,
+    rating: 4.9,
+    reviews: 25,
+    location: "Pokhara",
+    fee: 3500,
+    status: "Available",
+    verified: true,
+    image: "https://ui-avatars.com/api/?name=Kumar+Shrestha&background=4F46E5&color=fff",
+  },
+  {
+    id: 6,
+    name: "Adv. Deepak Khadka",
+    specialization: "Immigration Law",
+    experience: 11,
+    rating: 4.8,
+    reviews: 19,
+    location: "Biratnagar",
+    fee: 3800,
+    status: "Available",
+    verified: true,
+    image: "https://ui-avatars.com/api/?name=Deepak+Khadka&background=4F46E5&color=fff",
   },
 ];
 
 const FindLawyers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialization, setSelectedSpecialization] = useState("All Specializations");
+  const [selectedLocation, setSelectedLocation] = useState("All Locations");
+  const [sortBy, setSortBy] = useState("Top Rated");
+
+  // Filter lawyers based on search, specialization, and location
+  const filteredLawyers = useMemo(() => {
+    return lawyers.filter((lawyer) => {
+      const matchesSpec =
+        selectedSpecialization === "All Specializations" ||
+        lawyer.specialization === selectedSpecialization;
+      
+      const matchesLocation =
+        selectedLocation === "All Locations" ||
+        lawyer.location === selectedLocation;
+      
+      const matchesSearch =
+        lawyer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lawyer.specialization.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        lawyer.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return matchesSpec && matchesLocation && matchesSearch;
+    });
+  }, [searchQuery, selectedSpecialization, selectedLocation]);
+
+  // Sort filtered lawyers
+  const sortedLawyers = useMemo(() => {
+    const clone = [...filteredLawyers];
+
+    switch (sortBy) {
+      case "Price: Low to High":
+        return clone.sort((a, b) => a.fee - b.fee);
+      case "Price: High to Low":
+        return clone.sort((a, b) => b.fee - a.fee);
+      case "Experience":
+        return clone.sort((a, b) => b.experience - a.experience);
+      default: // "Top Rated"
+        return clone.sort((a, b) => b.rating - a.rating);
+    }
+  }, [filteredLawyers, sortBy]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -75,9 +169,9 @@ const FindLawyers = () => {
         <div className="flex-1 p-8">
           {/* Search and Filter Section */}
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
               {/* Search Bar */}
-              <div className="flex-1 relative">
+              <div className="flex-1 min-w-[300px] relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
@@ -95,32 +189,55 @@ const FindLawyers = () => {
                   onChange={(e) => setSelectedSpecialization(e.target.value)}
                   className="appearance-none px-6 py-3 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent bg-white cursor-pointer"
                 >
-                  <option>All Specializations</option>
-                  <option>Property Law</option>
-                  <option>Corporate Law</option>
-                  <option>Family Law</option>
-                  <option>Criminal Law</option>
-                  <option>Civil Law</option>
+                  {specializations.map((spec) => (
+                    <option key={spec} value={spec}>
+                      {spec}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
               </div>
 
-              {/* Filters Button */}
-              <button className="px-6 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2.5 5.83333H17.5M5.83333 10H14.1667M8.33333 14.1667H11.6667" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-                Filters
-              </button>
+              {/* Location Dropdown */}
+              <div className="relative">
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  className="appearance-none px-6 py-3 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent bg-white cursor-pointer"
+                >
+                  {locations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+              </div>
+
+              {/* Sort By Dropdown */}
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="appearance-none px-6 py-3 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent bg-white cursor-pointer"
+                >
+                  {sortOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+              </div>
             </div>
           </div>
 
           {/* Results Count */}
-          <p className="text-gray-600 mb-6">Showing {lawyers.length} lawyers</p>
+          <p className="text-gray-600 mb-6">Showing {sortedLawyers.length} lawyers</p>
 
           {/* Lawyers Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {lawyers.map((lawyer) => (
+            {sortedLawyers.map((lawyer) => (
               <div
                 key={lawyer.id}
                 className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100"
@@ -178,7 +295,7 @@ const FindLawyers = () => {
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                     <div className="flex items-center gap-1">
                       <Briefcase size={14} />
-                      <span>{lawyer.experience} exp.</span>
+                      <span>{lawyer.experience} yrs exp.</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPin size={14} />
@@ -189,7 +306,7 @@ const FindLawyers = () => {
                   {/* Consultation Fee */}
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-gray-600">Consultation from</span>
-                    <span className="text-lg font-bold text-[#0F1A3D]">{lawyer.fee}</span>
+                    <span className="text-lg font-bold text-[#0F1A3D]">Rs. {lawyer.fee.toLocaleString()}</span>
                   </div>
 
                   {/* Action Button */}
@@ -200,6 +317,14 @@ const FindLawyers = () => {
               </div>
             ))}
           </div>
+
+          {/* No Results Message */}
+          {sortedLawyers.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No lawyers found matching your criteria</p>
+              <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or search terms</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
