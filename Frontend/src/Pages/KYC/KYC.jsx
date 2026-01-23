@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
@@ -12,6 +12,7 @@ const tabs = [
   { key: "declaration", label: "Declaration & Submit", icon: CheckCircle2 },
 ];
 
+const KYC_DRAFT_KEY = "lawyer_kyc_draft";
 
 
 const KYC = () => {
@@ -45,15 +46,32 @@ const KYC = () => {
     agreeTerms: false,
   });
 
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(KYC_DRAFT_KEY);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        // Exclude file fields when restoring
+        const { citizenshipFront, citizenshipBack, lawyerLicense, passportPhoto, lawDegree, experienceCertificate, ...restData } = parsed;
+        setForm((prev) => ({ ...prev, ...restData }));
+      } catch (error) {
+        console.error("Failed to restore draft:", error);
+      }
+    }
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSaveDraft = () => {
-    console.log("Draft saved:", form);
-    alert("Draft saved successfully!");
+    // Exclude file objects when saving to localStorage
+    const { citizenshipFront, citizenshipBack, lawyerLicense, passportPhoto, lawDegree, experienceCertificate, ...formDataToSave } = form;
+    localStorage.setItem(KYC_DRAFT_KEY, JSON.stringify(formDataToSave));
+    alert("Draft saved successfully! Note: Uploaded files will need to be re-uploaded.");
   };
+
 
   const handleContinue = () => {
     if (activeTab === "personal") {
