@@ -15,6 +15,7 @@ import ClientCase from './Pages/Client/ClientCase.jsx';
 import ClientAppointment from './Pages/Client/ClientAppointment.jsx';
 import ClientMessage from './Pages/Client/ClientMessage.jsx';
 import Payment from './Pages/Client/Payment.jsx';
+import ClientFindLawyers from './Pages/Client/ClientFindLawyers.jsx';
 
 import LawyerDashboard from './Pages/Lawyer/LawyerDashboard.jsx';
 import LawyerMessage from './Pages/Lawyer/LawyerMessage.jsx';
@@ -49,6 +50,7 @@ function App() {
         {/*  Client Routes */}
         <Route path='/footer' element={<Footer />} />
         <Route path='/clientdashboard' element={<ClientDashboard />} />
+        <Route path='/client/findlawyers' element={<ClientFindLawyers />} />
         <Route path='/clientcase' element={<ClientCase />} />
         <Route path='/clientappointment' element={<ClientAppointment />} />
         <Route path='/clientmessage' element={<ClientMessage />} />
