@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
@@ -69,7 +71,10 @@ const KYC = () => {
     // Exclude file objects when saving to localStorage
     const { citizenshipFront, citizenshipBack, lawyerLicense, passportPhoto, lawDegree, experienceCertificate, ...formDataToSave } = form;
     localStorage.setItem(KYC_DRAFT_KEY, JSON.stringify(formDataToSave));
-    alert("Draft saved successfully! Note: Uploaded files will need to be re-uploaded.");
+    toast.info("Draft saved successfully! Note: Uploaded files will need to be re-uploaded.", {
+      position: "top-right",
+      autoClose: 3000,
+    });
   };
 
 
@@ -105,6 +110,7 @@ const KYC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
+      <ToastContainer />
       <div className="w-full max-w-6xl flex flex-col">
         
         {/* Header - Outside Card */}
@@ -214,7 +220,10 @@ const KYC = () => {
                     const allChecked = form.confirmAccuracy && form.authorizeVerification && form.agreeTerms;
                     if (allChecked) {
                       console.log("Form submitted:", form);
-                      alert("KYC application submitted successfully!");
+                      toast.success("KYC application submitted successfully!", {
+                        position: "top-right",
+                        autoClose: 3000,
+                      });
                     }
                   }}
                   disabled={!(form.confirmAccuracy && form.authorizeVerification && form.agreeTerms)}
