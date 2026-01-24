@@ -1,5 +1,6 @@
 import React from "react";
 import { Briefcase } from "lucide-react";
+import { Field, ErrorMessage, useFormikContext } from "formik";
 
 const specializations = [
   "Criminal Law",
@@ -24,19 +25,16 @@ const daysOfWeek = [
   "Saturday",
 ];
 
-const ProfessionalInfo = ({ form, onChange }) => {
+const ProfessionalInfo = () => {
+  const { values, setFieldValue } = useFormikContext();
+
   const handleCheckboxChange = (field, value) => {
-    const currentValues = form[field] || [];
+    const currentValues = values[field] || [];
     const newValues = currentValues.includes(value)
       ? currentValues.filter((v) => v !== value)
       : [...currentValues, value];
 
-    onChange({
-      target: {
-        name: field,
-        value: newValues,
-      },
-    });
+    setFieldValue(field, newValues);
   };
 
   return (
@@ -52,28 +50,34 @@ const ProfessionalInfo = ({ form, onChange }) => {
         {/* Row 1: Nepal Bar Council & Law Firm Name */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">
+            <label className="block text-sm font-semibold text-slate-800">
               Nepal Bar Council Registration Number <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
+            <Field
               name="barCouncilNumber"
-              value={form.barCouncilNumber || ""}
-              onChange={onChange}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+              type="text"
               placeholder="e.g., NPC-XXXXX"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="barCouncilNumber"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Law Firm Name (Optional)</label>
-            <input
-              type="text"
+            <label className="block text-sm font-semibold text-slate-800">Law Firm Name (Optional)</label>
+            <Field
               name="lawFirmName"
-              value={form.lawFirmName || ""}
-              onChange={onChange}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+              type="text"
               placeholder="Enter law firm name"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="lawFirmName"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
         </div>
@@ -81,14 +85,13 @@ const ProfessionalInfo = ({ form, onChange }) => {
         {/* Row 2: Years of Experience & Consultation Fee */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">
+            <label className="block text-sm font-semibold text-slate-800">
               Years of Experience <span className="text-red-500">*</span>
             </label>
-            <select
+            <Field
               name="yearsOfExperience"
-              value={form.yearsOfExperience || ""}
-              onChange={onChange}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+              as="select"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
             >
               <option value="">Select experience</option>
               <option value="0-1">0-1 years</option>
@@ -96,32 +99,40 @@ const ProfessionalInfo = ({ form, onChange }) => {
               <option value="3-5">3-5 years</option>
               <option value="5-10">5-10 years</option>
               <option value="10+">10+ years</option>
-            </select>
+            </Field>
+            <ErrorMessage
+              name="yearsOfExperience"
+              component="p"
+              className="text-red-500 text-xs mt-1"
+            />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">
+            <label className="block text-sm font-semibold text-slate-800">
               Consultation Fee (NPR) <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
+            <Field
               name="consultationFee"
-              value={form.consultationFee || ""}
-              onChange={onChange}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+              type="number"
               placeholder="e.g., 2000"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="consultationFee"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
         </div>
 
         {/* Row 3: Area of Specialization */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800">
+          <label className="block text-sm font-semibold text-slate-800">
             Area of Specialization <span className="text-red-500">*</span>
           </label>
           <div className="flex flex-wrap gap-2">
             {specializations.map((spec) => {
-              const isSelected = (form.specializations || []).includes(spec);
+              const isSelected = (values.specializations || []).includes(spec);
               return (
                 <button
                   key={spec}
@@ -139,16 +150,21 @@ const ProfessionalInfo = ({ form, onChange }) => {
               );
             })}
           </div>
+          <ErrorMessage
+            name="specializations"
+            component="p"
+            className="text-red-500 text-xs mt-1"
+          />
         </div>
 
         {/* Row 4: Availability Days */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800">
+          <label className="block text-sm font-semibold text-slate-800">
             Availability Days <span className="text-red-500">*</span>
           </label>
           <div className="flex flex-wrap gap-2">
             {daysOfWeek.map((day) => {
-              const isSelected = (form.availabilityDays || []).includes(day);
+              const isSelected = (values.availabilityDays || []).includes(day);
               return (
                 <button
                   key={day}
@@ -166,29 +182,40 @@ const ProfessionalInfo = ({ form, onChange }) => {
               );
             })}
           </div>
+          <ErrorMessage
+            name="availabilityDays"
+            component="p"
+            className="text-red-500 text-xs mt-1"
+          />
         </div>
 
         {/* Row 5: Available From & Available Until */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Available From</label>
-            <input
-              type="time"
+            <label className="block text-sm font-semibold text-slate-800">Available From</label>
+            <Field
               name="availableFrom"
-              value={form.availableFrom || ""}
-              onChange={onChange}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+              type="time"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="availableFrom"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Available Until</label>
-            <input
-              type="time"
+            <label className="block text-sm font-semibold text-slate-800">Available Until</label>
+            <Field
               name="availableUntil"
-              value={form.availableUntil || ""}
-              onChange={onChange}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+              type="time"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="availableUntil"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
         </div>

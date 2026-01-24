@@ -1,29 +1,21 @@
 import React, { useState } from "react";
 import { FileText, Upload, X } from "lucide-react";
+import { useFormikContext, ErrorMessage } from "formik";
 
-const IdentityDocs = ({ form, onChange }) => {
+const IdentityDocs = () => {
+  const { values, setFieldValue } = useFormikContext();
   const [draggedOver, setDraggedOver] = useState(null);
 
   const handleFileChange = (fieldName, file) => {
     if (file && file.size <= 5 * 1024 * 1024) {
-      onChange({
-        target: {
-          name: fieldName,
-          value: file,
-        },
-      });
+      setFieldValue(fieldName, file);
     } else {
       alert("File size must be less than 5MB");
     }
   };
 
   const handleRemoveFile = (fieldName) => {
-    onChange({
-      target: {
-        name: fieldName,
-        value: null,
-      },
-    });
+    setFieldValue(fieldName, null);
   };
 
   const formatFileSize = (bytes) => {
@@ -57,12 +49,12 @@ const IdentityDocs = ({ form, onChange }) => {
   };
 
   const renderUploadBox = (fieldName, label, isRequired = true) => {
-    const file = form[fieldName];
+    const file = values[fieldName];
     const isDragged = draggedOver === fieldName;
 
     return (
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-800">
+        <label className="block text-sm font-semibold text-slate-800">
           {label} {isRequired && <span className="text-red-500">*</span>}
         </label>
         
@@ -110,6 +102,11 @@ const IdentityDocs = ({ form, onChange }) => {
             </div>
           </div>
         )}
+        <ErrorMessage
+          name={fieldName}
+          component="p"
+          className="text-red-500 text-xs mt-1"
+        />
       </div>
     );
   };

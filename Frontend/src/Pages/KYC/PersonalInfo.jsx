@@ -2,7 +2,7 @@ import React from "react";
 import { User2 } from "lucide-react";
 import { Field, ErrorMessage } from "formik";
 
-const PersonalInfo = ({ formik }) => {
+const PersonalInfo = () => {
   return (
     <div className="space-y-6">
       {/* Section Header */}
