@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
 
-export const personalInitialValues = {
+export const PersonalInitialValues = {
   fullName: '',
   email: '',
   phone: '',
@@ -10,7 +10,7 @@ export const personalInitialValues = {
   currentAddress: '',
 };
 
-export const personalValidationSchema = Yup.object().shape({
+export const PersonalValidationSchema = Yup.object().shape({
   fullName: Yup.string()
     .trim()
     .min(2, 'Full name must be at least 2 characters')
@@ -24,10 +24,13 @@ export const personalValidationSchema = Yup.object().shape({
     .trim()
     .matches(/^[+]?[\d\s()-]{10,}$/u, 'Please enter a valid phone number')
     .required('Phone number is required'),
-  dob: Yup.date()
-    .max(new Date(), 'Date of birth cannot be in the future')
-    .typeError('Date of birth is required')
-    .required('Date of birth is required'),
+ dob: Yup.date()
+  .max(
+    new Date(new Date().setFullYear(new Date().getFullYear() - 18)),
+    'You must be at least 18 years old'
+  )
+  .typeError('Date of birth is required')
+  .required('Date of birth is required'),
   gender: Yup.string()
     .oneOf(['Female', 'Male', 'Other'], 'Select a valid gender')
     .required('Gender is required'),
