@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Formik, Form } from "formik";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -6,6 +7,7 @@ import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
 import Declaration from "./Declaration";
+import { PersonalInitialValues, PersonalValidationSchema } from "../utils/kyc/personalSchema";
 
 const tabs = [
   { key: "personal", label: "Personal Information", icon: User2 },
@@ -20,6 +22,7 @@ const KYC_DRAFT_KEY = "lawyer_kyc_draft";
 const KYC = () => {
   const [activeTab, setActiveTab] = useState("personal");
   const [completedTabs, setCompletedTabs] = useState([]);
+  const formikRef = useRef(null);
 
   const [form, setForm] = useState({
     fullName: "Adv. Ram Kumar",
@@ -78,9 +81,10 @@ const KYC = () => {
   };
 
 
-  const handleContinue = () => {
+  const handleContinue = (formikValues) => {
     if (activeTab === "personal") {
       setCompletedTabs([...completedTabs, "personal"]);
+      setForm((prev) => ({ ...prev, ...formikValues }));
       setActiveTab("professional");
     } else if (activeTab === "professional") {
       setCompletedTabs([...completedTabs, "professional"]);
@@ -161,10 +165,22 @@ const KYC = () => {
           {/* Scrollable Content */}
           <div className="px-6 py-6 max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
             {activeTab === "personal" && (
-              <PersonalInfo
-                form={form}
-                onChange={handleChange}
-              />
+              <Formik
+                innerRef={formikRef}
+                initialValues={PersonalInitialValues}
+                validationSchema={PersonalValidationSchema}
+                onSubmit={(values) => {
+                  setForm((prev) => ({ ...prev, ...values }));
+                  setCompletedTabs([...completedTabs, "personal"]);
+                  setActiveTab("professional");
+                }}
+              >
+                {({ validateForm, setTouched, values }) => (
+                  <Form>
+                    <PersonalInfo formik={{ values }} />
+                  </Form>
+                )}
+              </Formik>
             )}
             {activeTab === "professional" && (
               <ProfessionalInfo
@@ -207,7 +223,30 @@ const KYC = () => {
               
               {activeTab !== "declaration" && (
                 <button
-                  onClick={handleContinue}
+                  type="button"
+                  onClick={async () => {
+                    if (activeTab === "personal") {
+                      // Validate and submit form for personal tab
+                      if (formikRef.current) {
+                        const errors = await formikRef.current.validateForm();
+                        formikRef.current.setTouched({
+                          fullName: true,
+                          email: true,
+                          phone: true,
+                          dob: true,
+                          gender: true,
+                          permanentAddress: true,
+                          currentAddress: true,
+                        });
+                        
+                        if (Object.keys(errors).length === 0) {
+                          formikRef.current.submitForm();
+                        }
+                      }
+                    } else {
+                      handleContinue(form);
+                    }
+                  }}
                   className="px-6 py-2 rounded-lg text-sm font-semibold text-white bg-[#0F1A3D] hover:opacity-95 transition"
                 >
                   Continue

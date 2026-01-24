@@ -1,7 +1,8 @@
 import React from "react";
 import { User2 } from "lucide-react";
+import { Field, ErrorMessage } from "formik";
 
-const PersonalInfo = ({ form, onChange }) => {
+const PersonalInfo = ({ formik }) => {
   return (
     <div className="space-y-6">
       {/* Section Header */}
@@ -15,24 +16,36 @@ const PersonalInfo = ({ form, onChange }) => {
         {/* Row 1: Full Name & Email */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Full Name</label>
-            <input
+            <label className="block text-sm font-semibold text-slate-800">
+              Full Name <span className="text-red-500">*</span>
+            </label>
+            <Field
+              name="fullName"
               type="text"
-              value={form.fullName}
-              readOnly
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-slate-700 placeholder-slate-400"
-              placeholder="Adv. Ram Kumar"
+              placeholder="Enter your full name"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="fullName"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Email Address</label>
-            <input
+            <label className="block text-sm font-semibold text-slate-800">
+              Email Address <span className="text-red-500">*</span>
+            </label>
+            <Field
+              name="email"
               type="email"
-              value={form.email}
-              readOnly
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-slate-700 placeholder-slate-400"
-              placeholder="ram.kumar@example.com"
+              placeholder="your.email@example.com"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="email"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
         </div>
@@ -40,76 +53,96 @@ const PersonalInfo = ({ form, onChange }) => {
         {/* Row 2: Phone & Date of Birth */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">
+            <label className="block text-sm font-semibold text-slate-800">
               Phone Number <span className="text-red-500">*</span>
             </label>
-            <input
-              type="tel"
+            <Field
               name="phone"
-              value={form.phone}
-              onChange={onChange}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+              type="tel"
               placeholder="9816309711"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="phone"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">
+            <label className="block text-sm font-semibold text-slate-800">
               Date of Birth <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
+            <Field
               name="dob"
-              value={form.dob}
-              onChange={onChange}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+              type="date"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            />
+            <ErrorMessage
+              name="dob"
+              component="p"
+              className="text-red-500 text-xs mt-1"
             />
           </div>
         </div>
 
         {/* Row 3: Gender */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800">
+          <label className="block text-sm font-semibold text-slate-800">
             Gender <span className="text-red-500">*</span>
           </label>
-          <select
+          <Field
             name="gender"
-            value={form.gender}
-            onChange={onChange}
-            className="w-full md:w-1/2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
+            as="select"
+            className="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]"
           >
+            <option value="">Select Gender</option>
             <option value="Female">Female</option>
             <option value="Male">Male</option>
             <option value="Other">Other</option>
-          </select>
+          </Field>
+          <ErrorMessage
+            name="gender"
+            component="p"
+            className="text-red-500 text-xs mt-1"
+          />
         </div>
 
         {/* Row 4: Permanent Address */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800">
+          <label className="block text-sm font-semibold text-slate-800">
             Permanent Address <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <Field
             name="permanentAddress"
-            value={form.permanentAddress}
-            onChange={onChange}
+            as="textarea"
             rows={3}
-            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] resize-none"
-            placeholder="Nepal"
+            placeholder="Enter your permanent address"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] resize-none"
+          />
+          <ErrorMessage
+            name="permanentAddress"
+            component="p"
+            className="text-red-500 text-xs mt-1"
           />
         </div>
 
         {/* Row 5: Current Address */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-800">
+          <label className="block text-sm font-semibold text-slate-800">
             Current Address <span className="text-red-500">*</span>
           </label>
-          <textarea
+          <Field
             name="currentAddress"
-            value={form.currentAddress}
-            onChange={onChange}
+            as="textarea"
             rows={3}
-            className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] resize-none"
+            placeholder="Enter your current address"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] resize-none"
+          />
+          <ErrorMessage
+            name="currentAddress"
+            component="p"
+            className="text-red-500 text-xs mt-1"
           />
         </div>
       </div>
