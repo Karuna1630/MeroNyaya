@@ -12,5 +12,5 @@ urlpatterns = [
     path("verify-otp/", views.VerifyOTPView.as_view(), name="verify-otp"),
     path("resend-otp/", views.ResendOTPView.as_view(), name="resend-otp"),
     path("reset-password/", views.ResetPasswordView.as_view(), name="reset-password"),
- 
+    path("profile/", views.UserProfileView.as_view(), name="user-profile"),
 ]

@@ -5,10 +5,55 @@ from .otp import create_otp, send_otp
 
 # Serializer for User Response
 class UserResponseSerializer(serializers.ModelSerializer):
+    profile_image = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'is_verified','is_lawyer', 'role', 'date_joined']
-        read_only_fields = ['id', 'date_joined', 'role', 'is_verified']
+        fields = ['id', 'email', 'name', 'phone', 'is_verified','is_lawyer', 'role', 'date_joined', 'profile_image']
+        read_only_fields = ['id', 'date_joined', 'role', 'is_verified', 'profile_image']
+    
+    def get_profile_image(self, obj):
+        """Get full URL for profile image"""
+        if obj.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile_image.url)
+            return obj.profile_image.url
+        return None
+
+# Serializer for User Profile Page
+class UserProfileSerializer(serializers.ModelSerializer):
+    profile_image = serializers.ImageField(required=False, allow_null=True)
+    
+    class Meta:
+        model = User
+        fields = ['id', 'name', 'email', 'phone', 'city', 'district', 'bio', 'role', 'is_verified', 'profile_image']
+        read_only_fields = ['id', 'email', 'role', 'is_verified']
+
+    def validate_profile_image(self, value):
+        """Validate profile image size and format"""
+        if value:
+            # Check file size (max 5MB)
+            if value.size > 5 * 1024 * 1024:
+                raise serializers.ValidationError("Image file size must not exceed 5MB.")
+            
+            # Check file format
+            allowed_formats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+            if value.content_type not in allowed_formats:
+                raise serializers.ValidationError("Only JPEG, PNG, GIF, and WebP image formats are allowed.")
+        
+        return value
+    
+    def to_representation(self, instance):
+        """Get full URL for profile image in response"""
+        data = super().to_representation(instance)
+        if instance.profile_image:
+            request = self.context.get('request')
+            if request:
+                data['profile_image'] = request.build_absolute_uri(instance.profile_image.url)
+            else:
+                data['profile_image'] = instance.profile_image.url
+        return data
 
 # Serializer for Registering User
 class RegisterUserSerializer(serializers.ModelSerializer):
