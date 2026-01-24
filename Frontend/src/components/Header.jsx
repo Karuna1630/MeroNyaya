@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { GoLaw } from "react-icons/go";
 import { User, LogOut } from "lucide-react";
 import { logoutUser } from "../Pages/slices/auth"; 
+import { fetchUserProfile } from "../Pages/slices/profileSlice";
 
 const Header = () => {
   const dispatch = useDispatch();
@@ -11,6 +12,16 @@ const Header = () => {
   const [open, setOpen] = useState(false);
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { userProfile } = useSelector((state) => state.profile);
+
+  const profile = userProfile || user;
+  const avatarSrc = userProfile?.profile_image;
+
+  useEffect(() => {
+    if (isAuthenticated && !userProfile) {
+      dispatch(fetchUserProfile());
+    }
+  }, [dispatch, isAuthenticated, userProfile]);
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -75,9 +86,13 @@ const Header = () => {
                 {/* Avatar */}
                 <button
                   onClick={() => setOpen(!open)}
-                  className="w-10 h-10 rounded-full bg-yellow-400 text-[#0F1A3D] flex items-center justify-center font-bold"
+                  className="w-10 h-10 rounded-full bg-yellow-400 text-[#0F1A3D] flex items-center justify-center font-bold overflow-hidden"
                 >
-                  {user?.name?.charAt(0) || "U"}
+                  {avatarSrc ? (
+                    <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    profile?.name?.charAt(0) || "U"
+                  )}
                 </button>
 
                 {/* Dropdown */}
@@ -85,11 +100,15 @@ const Header = () => {
                   <div className="absolute right-0 mt-3 w-56 bg-slate-900 rounded-lg shadow-xl overflow-hidden z-50 border border-slate-700">
                     {/* Profile Section */}
                     <div className="px-4 py-4 border-b border-slate-700 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center font-bold text-lg">
-                        {user?.name?.charAt(0) || "U"}
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-yellow-400 text-slate-900 flex items-center justify-center font-bold text-lg">
+                        {avatarSrc ? (
+                          <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          profile?.name?.charAt(0) || "U"
+                        )}
                       </div>
                       <div>
-                        <p className="text-white font-semibold text-sm">{user?.name || "User"}</p>
+                        <p className="text-white font-semibold text-sm">{profile?.name || "User"}</p>
                       </div>
                     </div>
 

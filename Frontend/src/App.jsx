@@ -23,6 +23,7 @@ import LawyerAppointment from './Pages/Lawyer/LawyerAppointment.jsx';
 import Earning from './Pages/Lawyer/Earning.jsx';
 import LawyerCase from './Pages/Lawyer/LawyerCase.jsx';
 import ViewProfile from './Pages/Profile/ViewProfile.jsx';
+import EditProfile from './Pages/Profile/EditProfile.jsx';
 
 
 
@@ -64,7 +65,7 @@ function App() {
         <Route path='/lawyerearning' element={<Earning />} />
 
          <Route path='/viewprofile' element={<ViewProfile />} />
-
+        <Route path='/edit-profile' element={<EditProfile />} />
 
 
          {/* KYC */}

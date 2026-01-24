@@ -59,9 +59,17 @@ const ViewProfile = () => {
           {/* Profile Section */}
           <div className="flex items-start gap-6 mb-8 p-6 border border-gray-200 rounded-lg shadow-md bg-gray-50">
             {/* Avatar */}
-            <div className="w-24 h-24 rounded-full bg-[#0F1A3D] text-white flex items-center justify-center font-bold text-3xl flex-shrink-0">
-              {profile?.name?.charAt(0) || "U"}
-            </div>
+            {profile?.profile_image ? (
+              <img
+                src={profile.profile_image}
+                alt={profile?.name || "User"}
+                className="w-24 h-24 rounded-full object-cover flex-shrink-0 border-2 border-[#0F1A3D]"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-[#0F1A3D] text-white flex items-center justify-center font-bold text-3xl flex-shrink-0">
+                {profile?.name?.charAt(0) || "U"}
+              </div>
+            )}
 
             {/* User Info */}
             <div className="flex-1">
