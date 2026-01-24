@@ -1,17 +1,28 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, User, Mail, Phone, MapPin, CheckCircle } from "lucide-react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import { fetchUserProfile } from "../slices/profileSlice";
 
 const ViewProfile = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { userProfile, fetchLoading } = useSelector((state) => state.profile);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Prefer richer profile slice data; fall back to auth.user
+  const profile = userProfile || user;
+
+  useEffect(() => {
+    // Always fetch fresh profile to include bio/city/district
+    dispatch(fetchUserProfile());
+  }, [dispatch]);
+
   const handleBackToDashboard = () => {
-    const userRole = user?.role;
+    const userRole = profile?.role;
     if (userRole === "Client") navigate("/clientdashboard");
     if (userRole === "Lawyer") navigate("/lawyerdashboard");
   };
@@ -49,19 +60,19 @@ const ViewProfile = () => {
           <div className="flex items-start gap-6 mb-8 p-6 border border-gray-200 rounded-lg shadow-md bg-gray-50">
             {/* Avatar */}
             <div className="w-24 h-24 rounded-full bg-[#0F1A3D] text-white flex items-center justify-center font-bold text-3xl flex-shrink-0">
-              {user?.name?.charAt(0) || "U"}
+              {profile?.name?.charAt(0) || "U"}
             </div>
 
             {/* User Info */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-2xl font-bold text-gray-900">{user?.name || "User"}</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{profile?.name || "User"}</h3>
                 <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
                   <CheckCircle size={14} />
-                  Verified
+                  {profile?.is_verified ? "Verified" : "Unverified"}
                 </span>
               </div>
-              <p className="text-gray-600 mb-3">{user?.role || "User"}</p>
+              <p className="text-gray-600 mb-3">{profile?.role || "User"}</p>
               <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                 Active
               </span>
@@ -78,7 +89,7 @@ const ViewProfile = () => {
                   <User size={18} className="text-gray-400" />
                   <input
                     type="text"
-                    value={user?.name?.split(" ")[0] || ""}
+                    value={profile?.name?.split(" ")[0] || ""}
                     readOnly
                     className="flex-1 bg-transparent outline-none text-gray-700"
                   />
@@ -91,7 +102,7 @@ const ViewProfile = () => {
                   <User size={18} className="text-gray-400" />
                   <input
                     type="text"
-                    value={user?.name?.split(" ").slice(1).join(" ") || ""}
+                    value={profile?.name?.split(" ").slice(1).join(" ") || ""}
                     readOnly
                     className="flex-1 bg-transparent outline-none text-gray-700"
                   />
@@ -106,7 +117,7 @@ const ViewProfile = () => {
                 <Mail size={18} className="text-gray-400" />
                 <input
                   type="email"
-                  value={user?.email || ""}
+                  value={profile?.email || ""}
                   readOnly
                   className="flex-1 bg-transparent outline-none text-gray-700"
                 />
@@ -120,7 +131,7 @@ const ViewProfile = () => {
                 <Phone size={18} className="text-gray-400" />
                 <input
                   type="tel"
-                  value={user?.phone_number || ""}
+                  value={profile?.phone || ""}
                   readOnly
                   className="flex-1 bg-transparent outline-none text-gray-700"
                 />
@@ -135,7 +146,7 @@ const ViewProfile = () => {
                   <MapPin size={18} className="text-gray-400" />
                   <input
                     type="text"
-                    value={user?.city || ""}
+                    value={profile?.city || ""}
                     readOnly
                     className="flex-1 bg-transparent outline-none text-gray-700"
                   />
@@ -148,7 +159,7 @@ const ViewProfile = () => {
                   <MapPin size={18} className="text-gray-400" />
                   <input
                     type="text"
-                    value={user?.district || ""}
+                    value={profile?.district || ""}
                     readOnly
                     className="flex-1 bg-transparent outline-none text-gray-700"
                   />
@@ -160,7 +171,7 @@ const ViewProfile = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">Bio</label>
               <textarea
-                value={user?.bio || ""}
+                value={profile?.bio || ""}
                 readOnly
                 rows="4"
                 className="w-full border border-gray-200 rounded-lg px-4 py-3 bg-gray-50 text-gray-700 outline-none"

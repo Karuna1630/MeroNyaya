@@ -1,16 +1,22 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../../axios/axiosinstance';
+import { setUser } from './auth';
 
 /* ================= FETCH USER PROFILE ================= */
 export const fetchUserProfile = createAsyncThunk(
   "profile/fetchUserProfile",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, dispatch }) => {
     try {
       const response = await axiosInstance.get(
         "/authentications/profile/"
       );
 
       console.log("Fetch profile response:", response.data);
+
+      // Sync auth.user for global usage (e.g., ViewProfile)
+      if (response?.data?.Result) {
+        dispatch(setUser(response.data.Result));
+      }
 
       return response.data;
     } catch (error) {
@@ -23,7 +29,7 @@ export const fetchUserProfile = createAsyncThunk(
 /* ================= UPDATE USER PROFILE ================= */
 export const updateUserProfile = createAsyncThunk(
   "profile/updateUserProfile",
-  async (profileData, { rejectWithValue }) => {
+  async (profileData, { rejectWithValue, dispatch }) => {
     try {
       console.log("Update profile payload:", profileData);
 
@@ -49,6 +55,12 @@ export const updateUserProfile = createAsyncThunk(
 
       console.log("Update profile response:", response.data);
 
+      // Sync auth.user with the updated profile
+      const updatedUser = response?.data?.Result?.user;
+      if (updatedUser) {
+        dispatch(setUser(updatedUser));
+      }
+
       return response.data;
     } catch (error) {
       console.error("Update profile error:", error.response?.data || error.message);
@@ -60,7 +72,7 @@ export const updateUserProfile = createAsyncThunk(
 /* ================= FULL UPDATE USER PROFILE (PUT) ================= */
 export const fullUpdateUserProfile = createAsyncThunk(
   "profile/fullUpdateUserProfile",
-  async (profileData, { rejectWithValue }) => {
+  async (profileData, { rejectWithValue, dispatch }) => {
     try {
       console.log("Full update profile payload:", profileData);
 
@@ -85,6 +97,12 @@ export const fullUpdateUserProfile = createAsyncThunk(
       );
 
       console.log("Full update profile response:", response.data);
+
+      // Sync auth.user with the fully updated profile
+      const updatedUser = response?.data?.Result?.user;
+      if (updatedUser) {
+        dispatch(setUser(updatedUser));
+      }
 
       return response.data;
     } catch (error) {

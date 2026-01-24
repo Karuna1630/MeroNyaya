@@ -96,10 +96,17 @@ export const loginUser = createAsyncThunk(
         credentials
       );
 
-      if (response.data.access) {
-        localStorage.setItem("access_token", response.data.access);
-        localStorage.setItem("refresh_token", response.data.refresh_token);
-        localStorage.setItem("user", JSON.stringify(response.data.Result?.user));
+      // Store tokens from API Result shape
+      const accessToken = response.data?.Result?.access_token;
+      const refreshToken = response.data?.Result?.refresh_token;
+      const user = response.data?.Result?.user;
+
+      if (accessToken && refreshToken) {
+        localStorage.setItem("access_token", accessToken);
+        localStorage.setItem("refresh_token", refreshToken);
+      }
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
       }
 
       return response.data;
@@ -207,7 +214,7 @@ const authSlice = createSlice({
     builder.addCase(loginUser.fulfilled, (state, action) => {
       state.loading = false;
       state.user = action.payload.Result?.user;
-      state.token = action.payload.access;
+      state.token = action.payload.Result?.access_token;
       state.isAuthenticated = true;
       state.success = true;
     });

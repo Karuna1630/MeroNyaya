@@ -50,7 +50,7 @@ axiosInstance.interceptors.response.use(
                 }
 
                 // Attempt to refresh the access token
-                const response = await axios.post(`${API_URL}/accounts/token/refresh/`, {
+                const response = await axios.post(`${API_URL}/authentications/token/refresh/`, {
                     refresh: refreshToken,
                 });
 
