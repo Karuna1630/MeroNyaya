@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Formik, Form } from "formik";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -7,6 +8,7 @@ import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
 import Declaration from "./Declaration";
+import { submitKyc } from "../slices/kycSlice";
 import { PersonalValidationSchema } from "../utils/kyc/PersonalSchema";
 import { ProfessionalValidationSchema } from "../utils/kyc/ProfessionalSchema";
 import { IdentityValidationSchema } from "../utils/kyc/IdentitySchema";
@@ -63,6 +65,8 @@ const stepFields = {
 };
 
 const KYC = () => {
+  const dispatch = useDispatch();
+  const { submitLoading } = useSelector((state) => state.kyc || {});
   const [activeTab, setActiveTab] = useState("personal");
   const [completedTabs, setCompletedTabs] = useState([]);
 
@@ -120,6 +124,24 @@ const KYC = () => {
     const currentIndex = tabKeys.indexOf(activeTab);
     if (currentIndex > 0) {
       setActiveTab(tabKeys[currentIndex - 1]);
+    }
+  };
+
+  const handleSubmitKyc = async (values) => {
+    if (!(values.confirmAccuracy && values.authorizeVerification && values.agreeTerms)) {
+      return;
+    }
+    try {
+      const action = await dispatch(submitKyc(values));
+      if (submitKyc.fulfilled.match(action)) {
+        toast.success("KYC application submitted successfully!");
+        localStorage.removeItem(KYC_DRAFT_KEY);
+      } else {
+        const message = action.payload?.ErrorMessage || action.error?.message || "Submission failed";
+        toast.error(message);
+      }
+    } catch (error) {
+      toast.error(error?.message || "Submission failed");
     }
   };
 
@@ -210,21 +232,15 @@ const KYC = () => {
                     {activeTab === "declaration" && (
                       <button
                         type="button"
-                        onClick={() => {
-                          if (values.confirmAccuracy && values.authorizeVerification && values.agreeTerms) {
-                            console.log("KYC Submission Payload:", values);
-                            toast.success("KYC application submitted successfully!");
-                            localStorage.removeItem(KYC_DRAFT_KEY);
-                          }
-                        }}
-                        disabled={!(values.confirmAccuracy && values.authorizeVerification && values.agreeTerms)}
+                        onClick={() => handleSubmitKyc(values)}
+                        disabled={submitLoading || !(values.confirmAccuracy && values.authorizeVerification && values.agreeTerms)}
                         className={`px-6 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2
-                          ${values.confirmAccuracy && values.authorizeVerification && values.agreeTerms
+                          ${values.confirmAccuracy && values.authorizeVerification && values.agreeTerms && !submitLoading
                             ? "text-[#0F1A3D] bg-yellow-400 hover:bg-yellow-500"
                             : "text-slate-400 bg-slate-200 cursor-not-allowed"}`}
                       >
                         <Shield size={16} />
-                        Submit for Verification
+                        {submitLoading ? "Submitting..." : "Submit for Verification"}
                       </button>
                     )}
                   </div>

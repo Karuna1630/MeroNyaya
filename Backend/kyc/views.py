@@ -12,6 +12,8 @@ from .serializers import (
     AdminKYCReviewSerializer
 )
 from .permissions import IsLawyer, IsOwnerOrAdmin, IsAdminReviewer
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class SubmitKYCView(generics.CreateAPIView):
@@ -22,6 +24,13 @@ class SubmitKYCView(generics.CreateAPIView):
     serializer_class = LawyerKYCSerializer
     permission_classes = [IsAuthenticated, IsLawyer]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    
+    @swagger_auto_schema(
+        operation_description="Submit KYC for verification",
+        responses={201: LawyerKYCSerializer, 400: "Bad request"},
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
     
     def perform_create(self, serializer):
         serializer.save()
@@ -34,6 +43,13 @@ class MyKYCView(generics.RetrieveAPIView):
     """
     serializer_class = LawyerKYCSerializer
     permission_classes = [IsAuthenticated, IsLawyer]
+    
+    @swagger_auto_schema(
+        operation_description="Get logged-in lawyer's KYC details",
+        responses={200: LawyerKYCSerializer, 404: "Not found"},
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
     
     def get_object(self):
         return get_object_or_404(LawyerKYC, user=self.request.user)
@@ -48,6 +64,20 @@ class UpdateKYCView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsLawyer]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     
+    @swagger_auto_schema(
+        operation_description="Update rejected KYC submission",
+        responses={200: LawyerKYCSerializer, 400: "Bad request"},
+    )
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+    
+    @swagger_auto_schema(
+        operation_description="Partially update rejected KYC submission",
+        responses={200: LawyerKYCSerializer, 400: "Bad request"},
+    )
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+    
     def get_object(self):
         kyc = get_object_or_404(LawyerKYC, user=self.request.user)
         # Serializer validation will check if status == 'rejected'
@@ -61,6 +91,10 @@ class KYCStatusView(APIView):
     """
     permission_classes = [IsAuthenticated, IsLawyer]
     
+    @swagger_auto_schema(
+        operation_description="Get quick KYC status check",
+        responses={200: KYCStatusSerializer, 404: "Not submitted"},
+    )
     def get(self, request):
         try:
             kyc = LawyerKYC.objects.get(user=request.user)

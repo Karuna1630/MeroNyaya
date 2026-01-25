@@ -1,4 +1,5 @@
 from rest_framework.permissions import BasePermission
+from django.db import transaction
 
 
 class IsLawyer(BasePermission):
@@ -21,8 +22,8 @@ class IsOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
         # Get the user from the KYC object
         kyc_user = getattr(obj, 'user', None)
-        if kyc_user is None and hasattr(obj, 'kyc'):
-            kyc_user = getattr(obj.kyc, 'user', None)
+        if kyc_user is None and hasattr(obj, 'lawyer_kyc'):
+            kyc_user = getattr(obj.lawyer_kyc, 'user', None)
         
         # Allow if user is admin or owner
         return bool(
