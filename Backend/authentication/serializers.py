@@ -6,11 +6,12 @@ from .otp import create_otp, send_otp
 # Serializer for User Response
 class UserResponseSerializer(serializers.ModelSerializer):
     profile_image = serializers.SerializerMethodField()
+    kyc_status = serializers.CharField(source='kyc_status', read_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'is_verified','is_lawyer', 'role', 'date_joined', 'profile_image']
-        read_only_fields = ['id', 'date_joined', 'role', 'is_verified', 'profile_image']
+        fields = ['id', 'email', 'name', 'phone', 'is_verified', 'is_kyc_verified', 'is_lawyer', 'role', 'date_joined', 'kyc_status', 'profile_image']
+        read_only_fields = ['id', 'date_joined', 'role', 'is_verified', 'is_kyc_verified', 'kyc_status', 'profile_image']
     
     def get_profile_image(self, obj):
         """Get full URL for profile image"""
@@ -24,11 +25,12 @@ class UserResponseSerializer(serializers.ModelSerializer):
 # Serializer for User Profile Page
 class UserProfileSerializer(serializers.ModelSerializer):
     profile_image = serializers.ImageField(required=False, allow_null=True)
+    kyc_status = serializers.CharField(source='kyc_status', read_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'name', 'email', 'phone', 'city', 'district', 'bio', 'role', 'is_verified', 'profile_image']
-        read_only_fields = ['id', 'email', 'role', 'is_verified']
+        fields = ['id', 'name', 'email', 'phone', 'city', 'district', 'bio', 'role', 'is_verified', 'is_kyc_verified', 'kyc_status', 'profile_image']
+        read_only_fields = ['id', 'email', 'role', 'is_verified', 'is_kyc_verified', 'kyc_status']
 
     def validate_profile_image(self, value):
         """Validate profile image size and format"""

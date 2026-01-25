@@ -1,10 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import StatCard from './Statcard.jsx';
 import DashHeader from './LawyerDashHeader';
-import { Briefcase, DollarSign, Calendar, MessageSquare, Star, Gavel, Trophy, GraduationCap, ArrowRight } from 'lucide-react';
+import { Briefcase, DollarSign, Calendar, MessageSquare, Star, Gavel, Trophy, GraduationCap, ArrowRight, AlertCircle } from 'lucide-react';
+import axiosInstance from '../../axios/axiosinstance';
 
 const LawyerDashboard = () => {
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await axiosInstance.get('/authentication/profile/');
+        setUserData(response.data.result);
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   const getPriorityClasses = (priority) => {
     switch (priority) {
       case 'High Priority':
@@ -188,6 +209,27 @@ const LawyerDashboard = () => {
             notificationCount={3}
           />
         </div>
+
+        {userData && !userData.is_kyc_verified && (
+          <div className="px-6 pt-4 pb-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3 cursor-pointer hover:bg-amber-100 transition" onClick={() => navigate('/kyc')}>
+              <AlertCircle className="text-amber-600 shrink-0" size={20} />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-900">
+                  {userData.kyc_status === 'not_submitted' && "Haven't verified your Lawyer KYC yet?"}
+                  {userData.kyc_status === 'pending' && "Your KYC is under review"}
+                  {userData.kyc_status === 'rejected' && "Your KYC was rejected - Please resubmit"}
+                </p>
+                <p className="text-xs text-amber-700">
+                  {userData.kyc_status === 'not_submitted' && "Complete your identity verification to unlock full platform access"}
+                  {userData.kyc_status === 'pending' && "We're reviewing your documents. You'll be notified once approved"}
+                  {userData.kyc_status === 'rejected' && "Update your documents and resubmit for verification"}
+                </p>
+              </div>
+              <ArrowRight className="text-amber-600 shrink-0" size={20} />
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 p-6 space-y-5 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

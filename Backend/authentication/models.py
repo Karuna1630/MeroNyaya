@@ -25,6 +25,7 @@ class User(AbstractUser):
     district = models.CharField(max_length=100, blank=True, null=True)
     
     is_verified = models.BooleanField(default=False)
+    is_kyc_verified = models.BooleanField(default=False)
     # Role-specific fields
     is_lawyer = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -48,6 +49,17 @@ class User(AbstractUser):
     # String representation of the user
     def __str__(self):
         return f"{self.email} ({self.role})"
+    
+    @property
+    def kyc_status(self):
+        """Get KYC status for lawyers"""
+        if not self.is_lawyer:
+            return None
+        try:
+            return self.lawyer_kyc.status
+        except:
+            return 'not_submitted'
+    
     # Meta information
     class Meta:
         verbose_name = 'User'
