@@ -20,46 +20,46 @@ class LawyerKYC(models.Model):
 class PersonalInfo(models.Model):
     kyc = models.OneToOneField(LawyerKYC, on_delete=models.CASCADE, related_name='personal_info')
     full_name = models.CharField(max_length=255)
-    date_of_birth = models.DateField()
-    gender = models.CharField(max_length=10, choices=[('male', 'Male'), ('female', 'Female'), ('other', 'Other')])
-    phone_number = models.CharField(max_length=20)
-    address = models.TextField()
-    city = models.CharField(max_length=100)
-    district = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    dob = models.DateField()
+    gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')])
+    permanent_address = models.TextField()
+    current_address = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
 class ProfessionalInfo(models.Model):
     kyc = models.OneToOneField(LawyerKYC, on_delete=models.CASCADE, related_name='professional_info')
-    license_number = models.CharField(max_length=100, unique=True)
-    bar_council_name = models.CharField(max_length=255)
-    bar_council_registration = models.CharField(max_length=100)
-    years_of_experience = models.IntegerField()
-    specialization = models.CharField(max_length=255)
+    bar_council_number = models.CharField(max_length=100, unique=True)
+    law_firm_name = models.CharField(max_length=255, blank=True, null=True)
+    years_of_experience = models.CharField(max_length=50)
+    consultation_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    specializations = models.JSONField(default=list)
+    availability_days = models.JSONField(default=list)
+    available_from = models.TimeField()
+    available_until = models.TimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
 class IdentityDocuments(models.Model):
-    DOC_TYPE_CHOICES = [
-        ('passport', 'Passport'),
-        ('national_id', 'National ID'),
-        ('driving_license', 'Driving License'),
-    ]
-    
     kyc = models.OneToOneField(LawyerKYC, on_delete=models.CASCADE, related_name='identity_documents')
-    document_type = models.CharField(max_length=20, choices=DOC_TYPE_CHOICES)
-    document_number = models.CharField(max_length=100)
-    document_file = models.FileField(upload_to='kyc/identity_documents/')
-    license_document = models.FileField(upload_to='kyc/license_documents/')
+    citizenship_front = models.FileField(upload_to='kyc/documents/')
+    citizenship_back = models.FileField(upload_to='kyc/documents/')
+    lawyer_license = models.FileField(upload_to='kyc/documents/')
+    passport_photo = models.FileField(upload_to='kyc/documents/')
+    law_degree = models.FileField(upload_to='kyc/documents/')
+    experience_certificate = models.FileField(upload_to='kyc/documents/')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 
 class Declaration(models.Model):
     kyc = models.OneToOneField(LawyerKYC, on_delete=models.CASCADE, related_name='declaration')
-    agreed_to_terms = models.BooleanField(default=False)
-    declared_accurate = models.BooleanField(default=False)
+    confirm_accuracy = models.BooleanField(default=False)
+    authorize_verification = models.BooleanField(default=False)
+    agree_terms = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

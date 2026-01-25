@@ -1,3 +1,130 @@
-from django.shortcuts import render
+from rest_framework import generics, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
 
-# Create your views here.
+from .models import LawyerKYC
+from .serializers import (
+    LawyerKYCSerializer, 
+    KYCStatusSerializer, 
+    AdminKYCReviewSerializer
+)
+from .permissions import IsLawyer, IsOwnerOrAdmin, IsAdminReviewer
+
+
+class SubmitKYCView(generics.CreateAPIView):
+    """
+    POST /api/kyc/submit/
+    Lawyer submits KYC for verification
+    """
+    serializer_class = LawyerKYCSerializer
+    permission_classes = [IsAuthenticated, IsLawyer]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+class MyKYCView(generics.RetrieveAPIView):
+    """
+    GET /api/kyc/my-kyc/
+    Lawyer views their own KYC status and details
+    """
+    serializer_class = LawyerKYCSerializer
+    permission_classes = [IsAuthenticated, IsLawyer]
+    
+    def get_object(self):
+        return get_object_or_404(LawyerKYC, user=self.request.user)
+
+
+class UpdateKYCView(generics.UpdateAPIView):
+    """
+    PUT/PATCH /api/kyc/update/
+    Lawyer updates rejected KYC
+    """
+    serializer_class = LawyerKYCSerializer
+    permission_classes = [IsAuthenticated, IsLawyer]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    
+    def get_object(self):
+        kyc = get_object_or_404(LawyerKYC, user=self.request.user)
+        # Serializer validation will check if status == 'rejected'
+        return kyc
+
+
+class KYCStatusView(APIView):
+    """
+    GET /api/kyc/status/
+    Quick check of KYC status (used during login)
+    """
+    permission_classes = [IsAuthenticated, IsLawyer]
+    
+    def get(self, request):
+        try:
+            kyc = LawyerKYC.objects.get(user=request.user)
+            serializer = KYCStatusSerializer(kyc)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except LawyerKYC.DoesNotExist:
+            return Response(
+                {"status": "not_submitted", "message": "KYC not yet submitted"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+# Admin Views
+class AdminKYCListView(generics.ListAPIView):
+    """
+    GET /api/kyc/admin/list/
+    Admin views all KYC submissions (can filter by status)
+    """
+    serializer_class = AdminKYCReviewSerializer
+    permission_classes = [IsAuthenticated, IsAdminReviewer]
+    queryset = LawyerKYC.objects.all().order_by('-created_at')
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # Filter by status if provided
+        status_filter = self.request.query_params.get('status', None)
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        return queryset
+
+
+class AdminKYCDetailView(generics.RetrieveAPIView):
+    """
+    GET /api/kyc/admin/detail/<id>/
+    Admin views detailed KYC submission
+    """
+    serializer_class = AdminKYCReviewSerializer
+    permission_classes = [IsAuthenticated, IsAdminReviewer]
+    queryset = LawyerKYC.objects.all()
+    lookup_field = 'id'
+
+
+class AdminKYCReviewView(generics.UpdateAPIView):
+    """
+    PATCH /api/kyc/admin/review/<id>/
+    Admin approves or rejects KYC
+    """
+    serializer_class = AdminKYCReviewSerializer
+    permission_classes = [IsAuthenticated, IsAdminReviewer]
+    queryset = LawyerKYC.objects.all()
+    lookup_field = 'id'
+    
+    def update(self, request, *args, **kwargs):
+        kyc = self.get_object()
+        new_status = request.data.get('status')
+        
+        if new_status not in ['approved', 'rejected']:
+            return Response(
+                {"error": "Status must be 'approved' or 'rejected'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        kyc.status = new_status
+        kyc.save()
+        
+        serializer = self.get_serializer(kyc)
+        return Response(serializer.data, status=status.HTTP_200_OK)
