@@ -20,6 +20,7 @@ from .serializers import (
     ResendOTPSerializer,
     LoginUserSerializer,
     ResetPasswordSerializer,
+    UserProfileSerializer,
 )
 
 from drf_yasg.utils import swagger_auto_schema
@@ -277,7 +278,7 @@ class LoginUserView(TokenObtainPairView):
                user = authenticate(request, email=email, password=password)
 
                if user is not None:
-                  user_data = UserResponseSerializer(user).data
+                  user_data = UserResponseSerializer(user, context={'request': request}).data
                   refresh = RefreshToken.for_user(user)
                   refresh_token = str(refresh)
                   access_token = str(refresh.access_token)
@@ -375,16 +376,118 @@ class UserDetailView(generics.RetrieveAPIView):
                status_code=status.HTTP_200_OK,
                result=serializer.data
            )
-       except User.DoesNotExist:
-           return api_response(
-               is_success=False,
-               error_message="User not found.",
-               status_code=status.HTTP_404_NOT_FOUND,
-           )
        except Exception as e:
            return api_response(
                is_success=False,
                error_message=str(e),
                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
            )
+
+# View to retrieve and update user profile
+class UserProfileView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    @swagger_auto_schema(
+        operation_description="Retrieve the current user's profile information.",
+        responses={
+            200: openapi.Response(description="Profile retrieved successfully.", schema=UserProfileSerializer),
+            401: openapi.Response(description="Unauthorized."),
+            500: openapi.Response(description="Internal server error."),
+        },
+        tags=["Profile"],
+    )
+    # get method to retrieve user profile
+    def get(self, request):
+        try:
+            user = request.user
+            serializer = UserProfileSerializer(user, context={'request': request})
+            return api_response(
+                is_success=True,
+                status_code=status.HTTP_200_OK,
+                result=serializer.data
+            )
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @swagger_auto_schema(
+        operation_description="Update the current user's profile information.",
+        request_body=UserProfileSerializer,
+        responses={
+            200: openapi.Response(description="Profile updated successfully.", schema=UserProfileSerializer),
+            400: openapi.Response(description="Bad request."),
+            401: openapi.Response(description="Unauthorized."),
+            500: openapi.Response(description="Internal server error."),
+        },
+        tags=["Profile"],
+    )
+    # put method to update user profile (full update)
+    def put(self, request):
+        try:
+            user = request.user
+            serializer = UserProfileSerializer(user, data=request.data, context={'request': request})
+            if serializer.is_valid():
+                serializer.save()
+                return api_response(
+                    is_success=True,
+                    status_code=status.HTTP_200_OK,
+                    result={
+                        "message": "Profile updated successfully.",
+                        "user": serializer.data
+                    }
+                )
+            return api_response(
+                is_success=False,
+                error_message=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @swagger_auto_schema(
+        operation_description="Partially update the current user's profile information.",
+        request_body=UserProfileSerializer,
+        responses={
+            200: openapi.Response(description="Profile updated successfully.", schema=UserProfileSerializer),
+            400: openapi.Response(description="Bad request."),
+            401: openapi.Response(description="Unauthorized."),
+            500: openapi.Response(description="Internal server error."),
+        },
+        tags=["Profile"],
+    )
+    # patch method to partially update user profile
+    def patch(self, request):
+        try:
+            user = request.user
+            serializer = UserProfileSerializer(user, data=request.data, partial=True, context={'request': request})
+            if serializer.is_valid():
+                serializer.save()
+                return api_response(
+                    is_success=True,
+                    status_code=status.HTTP_200_OK,
+                    result={
+                        "message": "Profile updated successfully.",
+                        "user": serializer.data
+                    }
+                )
+            return api_response(
+                is_success=False,
+                error_message=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
     
