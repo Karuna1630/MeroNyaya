@@ -8,7 +8,7 @@ import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
 import Declaration from "./Declaration";
-import { submitKyc } from "../slices/kycSlice";
+import { submitKyc, clearKycState } from "../slices/kycSlice";
 import { PersonalValidationSchema } from "../utils/kyc/PersonalSchema";
 import { ProfessionalValidationSchema } from "../utils/kyc/ProfessionalSchema";
 import { IdentityValidationSchema } from "../utils/kyc/IdentitySchema";
@@ -66,7 +66,7 @@ const stepFields = {
 
 const KYC = () => {
   const dispatch = useDispatch();
-  const { submitLoading } = useSelector((state) => state.kyc || {});
+  const { submitLoading, submitError, submitSuccess } = useSelector((state) => state.kyc || {});
   const [activeTab, setActiveTab] = useState("personal");
   const [completedTabs, setCompletedTabs] = useState([]);
 
@@ -136,9 +136,13 @@ const KYC = () => {
       if (submitKyc.fulfilled.match(action)) {
         toast.success("KYC application submitted successfully!");
         localStorage.removeItem(KYC_DRAFT_KEY);
+        // Clear KYC state after success
+        setTimeout(() => {
+          dispatch(clearKycState());
+        }, 2000);
       } else {
-        const message = action.payload?.ErrorMessage || action.error?.message || "Submission failed";
-        toast.error(message);
+        const errorMessage = submitError || action.payload?.message || "Submission failed";
+        toast.error(errorMessage);
       }
     } catch (error) {
       toast.error(error?.message || "Submission failed");
