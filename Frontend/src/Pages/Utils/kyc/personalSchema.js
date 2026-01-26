@@ -5,7 +5,7 @@ export const PersonalInitialValues = {
   email: '',
   phone: '',
   dob: '',
-  gender: 'Female',
+  gender: '',
   permanentAddress: '',
   currentAddress: '',
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Formik, Form } from "formik";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
@@ -64,27 +64,41 @@ const stepFields = {
   declaration: ["confirmAccuracy", "authorizeVerification", "agreeTerms"],
 };
 
-const KYC = () => {
+const KYC = ({ onClose }) => {
   const dispatch = useDispatch();
-  const { submitLoading, submitError, submitSuccess } = useSelector((state) => state.kyc || {});
+  const { submitLoading, submitError } = useSelector((state) => state.kyc || {});
+  const { userProfile } = useSelector((state) => state.profile);
   const [activeTab, setActiveTab] = useState("personal");
   const [completedTabs, setCompletedTabs] = useState([]);
+  const submissionToastShownRef = useRef(false);
 
   const loadDraft = () => {
     const savedDraft = localStorage.getItem(KYC_DRAFT_KEY);
+    
+    // Pre-fill personal info from user profile
+    const profileData = {
+      fullName: userProfile?.name || "",
+      email: userProfile?.email || "",
+      phone: userProfile?.phone || "",
+      dob: userProfile?.date_of_birth || "",
+      gender: userProfile?.gender || "Female",
+      permanentAddress: userProfile?.permanent_address || "",
+      currentAddress: userProfile?.current_address || "",
+    };
+
     if (savedDraft) {
       try {
-        return { ...initialFormValues, ...JSON.parse(savedDraft) };
+        return { ...initialFormValues, ...profileData, ...JSON.parse(savedDraft) };
       } catch (error) {
         console.error("Failed to load draft:", error);
-        return initialFormValues;
+        return { ...initialFormValues, ...profileData };
       }
     }
-    return initialFormValues;
+    return { ...initialFormValues, ...profileData };
   };
 
   const handleSaveDraft = (values) => {
-    const { citizenshipFront, citizenshipBack, lawyerLicense, passportPhoto, lawDegree, experienceCertificate, ...formDataToSave } = values;
+    const { citizenshipFront: _CITIZENSHIP_FRONT, citizenshipBack: _CITIZENSHIP_BACK, lawyerLicense: _LAWYER_LICENSE, passportPhoto: _PASSPORT_PHOTO, lawDegree: _LAW_DEGREE, experienceCertificate: _EXPERIENCE_CERTIFICATE, ...formDataToSave } = values;
     localStorage.setItem(KYC_DRAFT_KEY, JSON.stringify(formDataToSave));
     toast.info("Draft saved successfully!");
   };
@@ -134,12 +148,16 @@ const KYC = () => {
     try {
       const action = await dispatch(submitKyc(values));
       if (submitKyc.fulfilled.match(action)) {
-        toast.success("KYC application submitted successfully!");
+        if (!submissionToastShownRef.current) {
+          toast.success("KYC application submitted successfully!");
+          submissionToastShownRef.current = true;
+        }
         localStorage.removeItem(KYC_DRAFT_KEY);
-        // Clear KYC state after success
+        // Close modal after successful submission
         setTimeout(() => {
+          onClose?.();
           dispatch(clearKycState());
-        }, 2000);
+        }, 1500);
       } else {
         const errorMessage = submitError || action.payload?.message || "Submission failed";
         toast.error(errorMessage);
@@ -150,20 +168,21 @@ const KYC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 flex justify-center">
+    <div className="w-full flex flex-col h-full">
       <ToastContainer />
-      <div className="w-full max-w-6xl flex flex-col">
-        
-        <div className="bg-[#0F1A3D] text-white rounded-t-2xl p-6 flex items-start gap-4">
+      
+        {/* Fixed Header */}
+        <div className="bg-[#0F1A3D] text-white p-6 flex items-start gap-4 shrink-0">
           <Shield size={24} className="shrink-0 mt-1" />
           <p className="text-sm sm:text-base leading-relaxed">
             To ensure platform security and trust, please complete identity verification before accessing the system.
           </p>
         </div>
 
-        <div className="w-full bg-white rounded-b-2xl shadow-sm overflow-hidden flex flex-col flex-1">
+        <div className="w-full bg-white overflow-hidden flex flex-col flex-1 min-h-0">
         
-          <div className="px-6 pt-6 pb-0">
+          {/* Fixed Tabs */}
+          <div className="px-6 pt-6 pb-0 shrink-0">
             <div className="flex gap-3 pb-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
@@ -186,24 +205,27 @@ const KYC = () => {
             </div>
           </div>
 
-          <div className="border-t border-slate-200 my-0 mt-4" />
+          <div className="border-t border-slate-200 my-0 mt-4 shrink-0" />
 
           <Formik
             initialValues={loadDraft()}
             validationSchema={stepSchemas[activeTab]}
             validateOnChange={true}
             validateOnBlur={true}
+            enableReinitialize={true}
           >
             {({ values, setTouched, validateForm }) => (
-              <Form>
-                <div className="px-6 py-6 max-h-[65vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+              <Form className="flex flex-col flex-1 min-h-0">
+                {/* Scrollable Content Area */}
+                <div className="flex-1 px-6 py-6 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
                   {activeTab === "personal" && <PersonalInfo />}
                   {activeTab === "professional" && <ProfessionalInfo />}
                   {activeTab === "identity" && <IdentityDocs />}
                   {activeTab === "declaration" && <Declaration />}
                 </div>
 
-                <div className="border-t border-slate-200 px-6 py-4 bg-white flex items-center justify-between">
+                {/* Fixed Footer */}
+                <div className="border-t border-slate-200 px-6 py-4 bg-white flex items-center justify-between shrink-0">
                   <button
                     type="button"
                     onClick={() => handleSaveDraft(values)}
@@ -253,14 +275,6 @@ const KYC = () => {
             )}
           </Formik>
         </div>
-      </div>
-
-      <style>{`
-        .scrollbar-thin::-webkit-scrollbar { width: 8px; }
-        .scrollbar-thin::-webkit-scrollbar-track { background: #f1f5f9; }
-        .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      `}</style>
     </div>
   );
 };

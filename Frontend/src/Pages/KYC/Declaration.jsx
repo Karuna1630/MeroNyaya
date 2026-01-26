@@ -1,18 +1,16 @@
 import React from "react";
-import { CheckCircle2, Shield } from "lucide-react";
+import { useFormikContext } from "formik";
+import { CheckCircle2 } from "lucide-react";
 
-const Declaration = ({ form, onChange }) => {
+const Declaration = () => {
+  const { values, setFieldValue } = useFormikContext();
+
   const handleCheckboxChange = (fieldName) => {
-    onChange({
-      target: {
-        name: fieldName,
-        value: !form[fieldName],
-      },
-    });
+    setFieldValue(fieldName, !values[fieldName]);
   };
 
   // Check if all required checkboxes are checked
-  const allChecked = form.confirmAccuracy && form.authorizeVerification && form.agreeTerms;
+  const allChecked = values.confirmAccuracy && values.authorizeVerification && values.agreeTerms;
 
   return (
     <div className="space-y-6">
@@ -31,12 +29,12 @@ const Declaration = ({ form, onChange }) => {
             onClick={() => handleCheckboxChange("confirmAccuracy")}
             className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
               ${
-                form.confirmAccuracy
+                values.confirmAccuracy
                   ? "bg-[#0F1A3D] border-[#0F1A3D]"
                   : "bg-white border-slate-300"
               }`}
           >
-            {form.confirmAccuracy && (
+            {values.confirmAccuracy && (
               <svg
                 className="w-4 h-4 text-white"
                 fill="none"
@@ -62,12 +60,12 @@ const Declaration = ({ form, onChange }) => {
             onClick={() => handleCheckboxChange("authorizeVerification")}
             className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
               ${
-                form.authorizeVerification
+                values.authorizeVerification
                   ? "bg-[#0F1A3D] border-[#0F1A3D]"
                   : "bg-white border-slate-300"
               }`}
           >
-            {form.authorizeVerification && (
+            {values.authorizeVerification && (
               <svg
                 className="w-4 h-4 text-white"
                 fill="none"
@@ -93,12 +91,12 @@ const Declaration = ({ form, onChange }) => {
             onClick={() => handleCheckboxChange("agreeTerms")}
             className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
               ${
-                form.agreeTerms
+                values.agreeTerms
                   ? "bg-[#0F1A3D] border-[#0F1A3D]"
                   : "bg-white border-slate-300"
               }`}
           >
-            {form.agreeTerms && (
+            {values.agreeTerms && (
               <svg
                 className="w-4 h-4 text-white"
                 fill="none"
