@@ -26,6 +26,9 @@ import ViewProfile from './Pages/Profile/ViewProfile.jsx';
 import EditProfile from './Pages/Profile/EditProfile.jsx';
 
 
+import AdminDashboard from './Pages/Admin/AdminDashboard.jsx';
+
+
 
 import KYC from './Pages/KYC/KYC.jsx';
 
@@ -64,9 +67,17 @@ function App() {
         <Route path='/lawyermessage' element={<LawyerMessage />} />
         <Route path='/lawyerearning' element={<Earning />} />
 
-         <Route path='/viewprofile' element={<ViewProfile />} />
+        <Route path='/viewprofile' element={<ViewProfile />} />
         <Route path='/edit-profile' element={<EditProfile />} />
 
+        {/* Admin Routes */}
+        <Route path='/admindashboard' element={<AdminDashboard />} />
+        <Route path='/admin/users' element={<AdminDashboard />} />
+        <Route path='/admin/verification' element={<AdminDashboard />} />
+        <Route path='/admin/cases' element={<AdminDashboard />} />
+        <Route path='/admin/payments' element={<AdminDashboard />} />
+        <Route path='/admin/logs' element={<AdminDashboard />} />
+        <Route path='/admin/reports' element={<AdminDashboard />} />
 
          {/* KYC */}
          <Route path='/kyc' element={<KYC/>} />

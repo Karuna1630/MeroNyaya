@@ -1,0 +1,70 @@
+import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  ShieldCheck,
+  Briefcase,
+  DollarSign,
+  FileText,
+  BarChart3,
+} from "lucide-react";
+import { GoLaw } from "react-icons/go";
+
+const Sidebar = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleHome = () => {
+    navigate("/");
+  };
+
+  const menuItems = [
+    { icon: LayoutDashboard, label: "Admin Dashboard", path: "/admindashboard" },
+    { icon: Users, label: "User Management", path: "/admin/users" },
+    { icon: ShieldCheck, label: "Lawyer Verification", path: "/admin/verification" },
+    { icon: Briefcase, label: "Cases Overview", path: "/admin/cases" },
+    { icon: DollarSign, label: "Payments Monitoring", path: "/admin/payments" },
+    { icon: FileText, label: "System Logs", path: "/admin/logs" },
+    { icon: BarChart3, label: "Reports", path: "/admin/reports" },
+  ];
+
+  const isActive = (path) => location.pathname === path;
+
+  return (
+    <aside className="w-64 bg-[#0F1A3D] text-white min-h-screen flex flex-col fixed left-0 top-0">
+      {/* LOGO */}
+      <div 
+        onClick={handleHome} 
+        className="flex items-center gap-2 px-6 py-5 border-b border-blue-800 cursor-pointer hover:opacity-80 transition"
+      >
+        <div className="bg-yellow-500 text-blue-900 p-2 rounded-lg">
+          <GoLaw size={22} />
+        </div>
+        <h1 className="text-lg font-bold">
+          Mero<span className="text-yellow-500">Nyaya</span>
+        </h1>
+      </div>
+
+      {/* MENU */}
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {menuItems.map(({ icon: Icon, label, path }) => (
+          <div
+            key={label}
+            onClick={() => navigate(path)}
+            className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition ${
+              isActive(path)
+                ? "bg-blue-800 text-white border-l-4 border-yellow-500"
+                : "hover:bg-blue-800/50"
+            }`}
+          >
+            <Icon size={18} />
+            <span className="text-sm font-medium">{label}</span>
+          </div>
+        ))}
+      </nav>
+    </aside>
+  );
+};
+
+export default Sidebar;
