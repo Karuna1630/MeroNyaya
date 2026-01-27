@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Formik, Form } from "formik";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
@@ -70,7 +70,6 @@ const KYC = ({ onClose }) => {
   const { userProfile } = useSelector((state) => state.profile);
   const [activeTab, setActiveTab] = useState("personal");
   const [completedTabs, setCompletedTabs] = useState([]);
-  const submissionToastShownRef = useRef(false);
 
   const loadDraft = () => {
     const savedDraft = localStorage.getItem(KYC_DRAFT_KEY);
@@ -148,10 +147,7 @@ const KYC = ({ onClose }) => {
     try {
       const action = await dispatch(submitKyc(values));
       if (submitKyc.fulfilled.match(action)) {
-        if (!submissionToastShownRef.current) {
-          toast.success("KYC application submitted successfully!");
-          submissionToastShownRef.current = true;
-        }
+        toast.success("KYC application submitted successfully!");
         localStorage.removeItem(KYC_DRAFT_KEY);
         // Close modal after successful submission
         setTimeout(() => {

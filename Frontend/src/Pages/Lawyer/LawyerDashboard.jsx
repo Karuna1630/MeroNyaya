@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -13,66 +13,59 @@ import { fetchKycStatus } from '../slices/kycSlice';
 const LawyerDashboard = () => {
   const dispatch = useDispatch();
   const { userProfile } = useSelector((state) => state.profile);
-  const { status, statusSuccess } = useSelector((state) => state.kyc);
+  const { status } = useSelector((state) => state.kyc);
   const [showKycModal, setShowKycModal] = useState(false);
-  const [dismissedApproved, setDismissedApproved] = useState(() => localStorage.getItem('kycApprovedDismissed') === '1');
-  const approvedToastShownRef = useRef(false);
 
+  /* ===== Initial data fetch ===== */
   useEffect(() => {
     dispatch(fetchUserProfile());
-  }, [dispatch]);
-
-  // Poll KYC status periodically; notify when approved
-  useEffect(() => {
-    // initial fetch
     dispatch(fetchKycStatus());
-    const interval = setInterval(() => {
-      dispatch(fetchKycStatus());
-    }, 15000); // 15s polling
-    return () => clearInterval(interval);
   }, [dispatch]);
 
-  const isVerified = (statusObj) => {
-    if (!statusObj) return false;
-    return (
-      statusObj.is_verified === true ||
-      statusObj.is_kyc_verified === true ||
-      statusObj.verified === true ||
-      statusObj.kyc_verified === true ||
-      statusObj.kyc_status === 'verified' ||
-      statusObj.kyc_status === 'approved'
-    );
-  };
-
+  /* ===== KYC Status Helpers ===== */
   const kycStatusValue = status?.status || status?.kyc_status || status?.state;
-  const isKycApproved = isVerified(status) || userProfile?.is_kyc_verified === true || kycStatusValue === 'approved';
-  const isKycPending = !isKycApproved && (kycStatusValue === 'pending' || kycStatusValue === 'under_review' || kycStatusValue === 'in_review');
+  
+  const isKycApproved = 
+    kycStatusValue === 'approved' || userProfile?.is_kyc_verified === true;
+  
+  const isKycPending = 
+    !isKycApproved && 
+    ['pending', 'under_review', 'in_review'].includes(kycStatusValue);
+  
   const isKycNotSubmitted = !isKycApproved && !isKycPending;
   const modalOpen = showKycModal && !isKycApproved;
 
+  /* ===== Poll KYC Status (only until approved) ===== */
   useEffect(() => {
-    if (statusSuccess && isKycApproved) {
-      if (!approvedToastShownRef.current) {
-        toast.success('Your KYC has been approved.');
-        approvedToastShownRef.current = true;
-      }
-      // setShowKycModal(false); // Removed to hide modal automatically
-      if (!userProfile?.is_kyc_verified) {
-        dispatch(fetchUserProfile());
-      }
-    }
-  }, [statusSuccess, isKycApproved, userProfile, dispatch]);
+    if (isKycApproved) return;
 
-  // Lock body scroll when modal is open
+    const interval = setInterval(() => {
+      dispatch(fetchKycStatus());
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [dispatch, isKycApproved]);
+
+  /* ===== Show Toast Once Ever (persists across login/refresh) ===== */
   useEffect(() => {
-    if (modalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
+    if (!isKycApproved) return;
+
+    const toastShown = localStorage.getItem('kycApprovedToastShown') === '1';
+    
+    if (toastShown) return;
+
+    toast.success('Your KYC has been approved.');
+    localStorage.setItem('kycApprovedToastShown', '1');
+
+    if (!userProfile?.is_kyc_verified) {
+      dispatch(fetchUserProfile());
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+  }, [isKycApproved, dispatch, userProfile]);
+
+  /* ===== Lock body scroll when modal is open ===== */
+  useEffect(() => {
+    document.body.style.overflow = modalOpen ? 'hidden' : 'unset';
+    return () => (document.body.style.overflow = 'unset');
   }, [modalOpen]);
 
   const getCaseStatusClasses = (status) => {
@@ -160,34 +153,6 @@ const LawyerDashboard = () => {
               notificationCount={3}
             />
           </div>
-
-          {isKycApproved && !dismissedApproved && (
-            <div className="px-6 pt-4 pb-2">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start gap-3">
-                <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                  <CheckCircle size={20} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 flex-wrap mb-1">
-                    <p className="text-sm font-semibold text-emerald-900">KYC Approved</p>
-                    <span className="inline-flex items-center rounded-full bg-emerald-200 text-emerald-800 px-3 py-1 text-xs font-semibold">Verified</span>
-                  </div>
-                  <p className="text-xs text-emerald-800">Your identity has been verified. Full platform access is enabled.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDismissedApproved(true);
-                    localStorage.setItem('kycApprovedDismissed', '1');
-                  }}
-                  className="text-emerald-700 hover:text-emerald-900"
-                  aria-label="Dismiss KYC approved banner"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-          )}
 
           {isKycPending && (
             <div className="px-6 pt-4 pb-2">
