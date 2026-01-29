@@ -107,9 +107,9 @@ const AdminDashboard = () => {
 
         <div className="p-8">
           {/* Stats Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Statcard
-              icon={<Users size={24} />}
+              icon={<Users size={20} />}
               title="Total Users"
               value={stats.totalUsers.toLocaleString()}
               subtitle={`${stats.totalClients} Clients • ${stats.totalLawyers} Lawyers`}
@@ -118,43 +118,16 @@ const AdminDashboard = () => {
             />
 
             <Statcard
-              icon={<Clock size={24} />}
-              title="Pending KYC Requests"
-              value={stats.pendingKYC}
-              subtitle="Requires verification"
-              bgColor="bg-red-100"
-              iconColor="text-red-600"
+              icon={<Users size={20} />}
+              title="Total Clients"
+              value={stats.totalClients.toLocaleString()}
+              subtitle="Active clients"
+              bgColor="bg-cyan-100"
+              iconColor="text-cyan-600"
             />
 
             <Statcard
-              icon={<Calendar size={24} />}
-              title="Active Appointments"
-              value={stats.activeAppointments}
-              subtitle="This week"
-              bgColor="bg-green-100"
-              iconColor="text-green-600"
-            />
-
-            <Statcard
-              icon={<DollarSign size={24} />}
-              title="Total Revenue"
-              value={stats.totalRevenue}
-              subtitle="This month"
-              bgColor="bg-yellow-100"
-              iconColor="text-yellow-600"
-            />
-
-            <Statcard
-              icon={<FileText size={24} />}
-              title="Active Cases"
-              value={stats.activeCases}
-              subtitle="Currently ongoing"
-              bgColor="bg-purple-100"
-              iconColor="text-purple-600"
-            />
-
-            <Statcard
-              icon={<Scale size={24} />}
+              icon={<Scale size={20} />}
               title="Total Lawyers"
               value={stats.totalLawyers}
               subtitle="Verified professionals"
@@ -163,21 +136,12 @@ const AdminDashboard = () => {
             />
 
             <Statcard
-              icon={<TrendingUp size={24} />}
-              title="Platform Growth"
-              value="+15%"
-              subtitle="From last month"
-              bgColor="bg-teal-100"
-              iconColor="text-teal-600"
-            />
-
-            <Statcard
-              icon={<AlertCircle size={24} />}
-              title="System Issues"
-              value={stats.systemIssues}
-              subtitle="Pending resolution"
-              bgColor="bg-orange-100"
-              iconColor="text-orange-600"
+              icon={<Clock size={20} />}
+              title="Pending KYC Requests"
+              value={stats.pendingKYC}
+              subtitle="Requires verification"
+              bgColor="bg-red-100"
+              iconColor="text-red-600"
             />
           </div>
 

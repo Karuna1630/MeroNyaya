@@ -7,6 +7,7 @@ import { Provider } from 'react-redux';
 import {store} from './Pages/store/store.js'
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
+import ProtectedRoute from './Pages/utils/ProtectedRoute.jsx';
 import FindLawyers from './Pages/Public/FindLawyers.jsx';
 import IndividualLawyer from './Pages/Public/IndividualLawyer.jsx';
 
@@ -27,6 +28,7 @@ import EditProfile from './Pages/Profile/EditProfile.jsx';
 
 
 import AdminDashboard from './Pages/Admin/AdminDashboard.jsx';
+import AdminKYCVerification from './Pages/Admin/AdminKYCVerification.jsx';
 
 
 
@@ -43,45 +45,43 @@ function App() {
     <Provider store={store}>
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route path='/' element={<Home />} />
-        <Route path='/findlawyers' element={<FindLawyers />} />
-        <Route path='/lawyer/:id' element={<IndividualLawyer />} />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         <Route path='/verify-otp' element={<VerifyOtp />} />
         <Route path='/header' element={<Header />} />
-
-        {/*  Client Routes */}
         <Route path='/footer' element={<Footer />} />
-        <Route path='/clientdashboard' element={<ClientDashboard />} />
-        <Route path='/client/findlawyers' element={<ClientFindLawyers />} />
-        <Route path='/clientcase' element={<ClientCase />} />
-        <Route path='/clientappointment' element={<ClientAppointment />} />
-        <Route path='/clientmessage' element={<ClientMessage />} />
-        <Route path='/clientpayment' element={<Payment />} />
 
-        {/*  Lawyer Routes */}
-        <Route path='/lawyerdashboard' element={<LawyerDashboard />} />
-        <Route path='/lawyercase' element={<LawyerCase />} />
-        <Route path='/lawyerappointment' element={<LawyerAppointment />} />
-        <Route path='/lawyermessage' element={<LawyerMessage />} />
-        <Route path='/lawyerearning' element={<Earning />} />
+        {/* Protected Public Routes */}
+        <Route path='/findlawyers' element={<ProtectedRoute allowedRoles={["client", "lawyer"]}><FindLawyers /></ProtectedRoute>} />
+        <Route path='/lawyer/:id' element={<ProtectedRoute allowedRoles={["client", "lawyer"]}><IndividualLawyer /></ProtectedRoute>} />
 
-        <Route path='/viewprofile' element={<ViewProfile />} />
-        <Route path='/edit-profile' element={<EditProfile />} />
+        {/* Client Routes - Protected */}
+        <Route path='/clientdashboard' element={<ProtectedRoute requiredRole="client"><ClientDashboard /></ProtectedRoute>} />
+        <Route path='/client/findlawyers' element={<ProtectedRoute requiredRole="client"><ClientFindLawyers /></ProtectedRoute>} />
+        <Route path='/clientcase' element={<ProtectedRoute requiredRole="client"><ClientCase /></ProtectedRoute>} />
+        <Route path='/clientappointment' element={<ProtectedRoute requiredRole="client"><ClientAppointment /></ProtectedRoute>} />
+        <Route path='/clientmessage' element={<ProtectedRoute requiredRole="client"><ClientMessage /></ProtectedRoute>} />
+        <Route path='/clientpayment' element={<ProtectedRoute requiredRole="client"><Payment /></ProtectedRoute>} />
 
-        {/* Admin Routes */}
-        <Route path='/admindashboard' element={<AdminDashboard />} />
-        <Route path='/admin/users' element={<AdminDashboard />} />
-        <Route path='/admin/verification' element={<AdminDashboard />} />
-        <Route path='/admin/cases' element={<AdminDashboard />} />
-        <Route path='/admin/payments' element={<AdminDashboard />} />
-        <Route path='/admin/logs' element={<AdminDashboard />} />
-        <Route path='/admin/reports' element={<AdminDashboard />} />
+        {/* Lawyer Routes - Protected */}
+        <Route path='/lawyerdashboard' element={<ProtectedRoute requiredRole="lawyer"><LawyerDashboard /></ProtectedRoute>} />
+        <Route path='/lawyercase' element={<ProtectedRoute requiredRole="lawyer"><LawyerCase /></ProtectedRoute>} />
+        <Route path='/lawyerappointment' element={<ProtectedRoute requiredRole="lawyer"><LawyerAppointment /></ProtectedRoute>} />
+        <Route path='/lawyermessage' element={<ProtectedRoute requiredRole="lawyer"><LawyerMessage /></ProtectedRoute>} />
+        <Route path='/lawyerearning' element={<ProtectedRoute requiredRole="lawyer"><Earning /></ProtectedRoute>} />
 
-         {/* KYC */}
-         <Route path='/kyc' element={<KYC/>} />
-        
+        {/* Profile Routes - Protected */}
+        <Route path='/viewprofile' element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
+        <Route path='/edit-profile' element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+
+        {/* Admin Routes - Protected */}
+        <Route path='/admindashboard' element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+        <Route path='/admin/verification' element={<ProtectedRoute requiredRole="admin"><AdminKYCVerification /></ProtectedRoute>} />
+
+        {/* KYC - Protected */}
+        <Route path='/kyc' element={<ProtectedRoute requiredRole="lawyer"><KYC /></ProtectedRoute>} />  
       </Routes>
     </BrowserRouter>
     </Provider>

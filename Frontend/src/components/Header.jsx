@@ -29,9 +29,24 @@ const Header = () => {
   };
 
   const handleProfile = () => {
-    const userRole = user?.role;
-    if (userRole === "Client") navigate("/clientdashboard");
-    if (userRole === "Lawyer") navigate("/lawyerdashboard");
+    const userRole = user?.user_type || user?.role; // Check both field names
+    if (userRole === "client") navigate("/clientdashboard");
+    if (userRole === "lawyer") navigate("/lawyerdashboard");
+    if (userRole === "admin") navigate("/admindashboard");
+  };
+
+  const handleNavigation = (path) => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    const userRole = (user?.user_type || user?.role || user?.type || "").toLowerCase();
+    const isAdmin = user?.is_superuser || user?.is_staff || userRole === "admin";
+    if (isAdmin && path !== "/admindashboard" && path !== "/viewprofile" && path !== "/edit-profile") {
+      navigate("/admindashboard");
+      return;
+    }
+    navigate(path);
   };
 
   const handleHome = () => {
@@ -56,9 +71,9 @@ const Header = () => {
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-200">
             <Link to="/findlawyers" className="hover:text-yellow-400 transition">Find Lawyers</Link>
-            <Link to="/" className="hover:text-yellow-400 transition">Categories</Link>
-            <Link to="/" className="hover:text-yellow-400 transition">Pricing</Link>
-            <Link to="/" className="hover:text-yellow-400 transition">About Us</Link>
+            <button onClick={() => handleNavigation("/")} className="hover:text-yellow-400 transition">Categories</button>
+            <button onClick={() => handleNavigation("/")} className="hover:text-yellow-400 transition">Pricing</button>
+            <button onClick={() => handleNavigation("/")} className="hover:text-yellow-400 transition">About Us</button>
           </nav>
 
           {/* Right Side */}

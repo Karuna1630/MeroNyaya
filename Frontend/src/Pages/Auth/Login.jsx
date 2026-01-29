@@ -48,14 +48,16 @@ const Login = () => {
         toast.success("Login successful!");
         // User data is in result.payload.Result.user
         const user = result.payload.Result?.user;
-        const userRole = user?.role;
+        const rawRole = user?.user_type || user?.role || user?.type;
+        const normalizedRole = (user?.is_superuser || user?.is_staff)
+          ? "admin"
+          : (typeof rawRole === "string" ? rawRole.toLowerCase() : null);
 
-        // // For debugging purposes
-        // console.log("User role:", userRole);
-        
-        if (userRole === "Client") {
+        if (normalizedRole === "admin") {
+          navigate("/admindashboard");
+        } else if (normalizedRole === "client") {
           navigate("/clientdashboard");
-        } else if (userRole === "Lawyer") {
+        } else if (normalizedRole === "lawyer") {
           navigate("/lawyerdashboard");
         } else {
           navigate("/");
@@ -120,8 +122,12 @@ const Login = () => {
                     value={formik.values.email}
                     onChange={formik.handleChange}
                     onBlur={formik.handleBlur}
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                    aria-invalid={formik.touched.email && !!formik.errors.email}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 ${formik.touched.email && formik.errors.email ? "border-red-500" : "border-gray-300"}`}
                   />
+                  {formik.touched.email && formik.errors.email && (
+                    <p className="mt-1 text-xs text-red-600">{formik.errors.email}</p>
+                  )}
                 </div>
 
                 {/* PASSWORD */}
@@ -136,7 +142,8 @@ const Login = () => {
                       value={formik.values.password}
                       onChange={formik.handleChange}
                       onBlur={formik.handleBlur}
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900"
+                      aria-invalid={formik.touched.password && !!formik.errors.password}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900 ${formik.touched.password && formik.errors.password ? "border-red-500" : "border-gray-300"}`}
                     />
                     <button
                       type="button"
@@ -146,6 +153,9 @@ const Login = () => {
                       {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
                     </button>
                   </div>
+                  {formik.touched.password && formik.errors.password && (
+                    <p className="mt-1 text-xs text-red-600">{formik.errors.password}</p>
+                  )}
                 </div>
 
                 {/* REMEMBER ME & FORGOT PASSWORD */}

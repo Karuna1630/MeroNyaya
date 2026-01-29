@@ -9,8 +9,8 @@ class UserResponseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'is_verified', 'is_kyc_verified', 'is_lawyer', 'role', 'date_joined', 'profile_image']
-        read_only_fields = ['id', 'date_joined', 'role', 'is_verified', 'is_kyc_verified', 'profile_image']
+        fields = ['id', 'email', 'name', 'phone', 'is_verified', 'is_kyc_verified', 'is_lawyer', 'is_superuser', 'is_staff', 'role', 'date_joined', 'profile_image']
+        read_only_fields = ['id', 'date_joined', 'role', 'is_verified', 'is_kyc_verified', 'is_superuser', 'is_staff', 'profile_image']
     
     def get_profile_image(self, obj):
         """Get full URL for profile image"""
@@ -128,8 +128,8 @@ class LoginUserSerializer(serializers.Serializer):
             if not user.check_password(password):
                 raise serializers.ValidationError("Invalid email or password.")
             
-            # Check if user is verified
-            if not user.is_verified:
+            # Check if user is verified (superuser/staff can bypass)
+            if not user.is_verified and not (user.is_superuser or user.is_staff):
                 raise serializers.ValidationError("Email not verified. Please verify OTP first.")
 
             
