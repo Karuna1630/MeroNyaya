@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './Sidebar';
 import StatCard from './Statcard.jsx';
 import DashHeader from './LawyerDashHeader';
-import { Briefcase, DollarSign, Calendar, MessageSquare, Star, Gavel, Trophy, GraduationCap, ArrowRight, AlertCircle, X, Clock, CheckCircle } from 'lucide-react';
+import { Briefcase, DollarSign, Calendar, MessageSquare, Star, Gavel, Trophy, GraduationCap, ArrowRight, AlertCircle, X, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import KYC from '../KYC/KYC';
 import { fetchUserProfile } from '../slices/profileSlice';
 import { fetchKycStatus } from '../slices/kycSlice';
@@ -31,8 +31,10 @@ const LawyerDashboard = () => {
   const isKycPending = 
     !isKycApproved && 
     ['pending', 'under_review', 'in_review'].includes(kycStatusValue);
+
+  const isKycRejected = kycStatusValue === 'rejected';
   
-  const isKycNotSubmitted = !isKycApproved && !isKycPending;
+  const isKycNotSubmitted = !isKycApproved && !isKycPending && !isKycRejected;
   const modalOpen = showKycModal && !isKycApproved;
 
   /* ===== Poll KYC Status (only until approved) ===== */
@@ -173,6 +175,40 @@ const LawyerDashboard = () => {
                       <li>Cannot receive payments</li>
                       <li>Profile not visible in Find Lawyers</li>
                     </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isKycRejected && (
+            <div className="px-6 pt-4 pb-2">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex items-start gap-4">
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center text-red-700">
+                  <AlertTriangle size={20} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 flex-wrap mb-1">
+                    <p className="text-sm font-semibold text-red-900">KYC Verification Rejected</p>
+                    <span className="inline-flex items-center rounded-full bg-red-200 text-red-800 px-3 py-1 text-xs font-semibold">Rejected</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-red-800 mb-3">Your KYC verification was not approved. Please review the feedback below and resubmit.</p>
+                  
+                  {status?.rejection_reason && (
+                    <div className="bg-white rounded-xl p-4 border border-red-100 mb-3">
+                      <p className="text-xs font-semibold text-red-900 mb-2">Admin Review:</p>
+                      <p className="text-sm text-red-800">{status.rejection_reason}</p>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowKycModal(true)}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium"
+                    >
+                      Resubmit KYC
+                    </button>
+                    <p className="text-xs text-red-700">You can resubmit your KYC after making the requested corrections.</p>
                   </div>
                 </div>
               </div>

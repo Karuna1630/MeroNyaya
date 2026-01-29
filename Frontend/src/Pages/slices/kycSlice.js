@@ -34,11 +34,21 @@ const buildKycFormData = (values) => {
 		agreeTerms: 'agree_terms',
 	};
 
+	const fileFields = [
+		'citizenshipFront', 'citizenshipBack', 'lawyerLicense',
+		'passportPhoto', 'lawDegree', 'experienceCertificate'
+	];
+
 	const formData = new FormData();
 
 	Object.entries(fieldMap).forEach(([srcKey, destKey]) => {
 		const value = values?.[srcKey];
 		if (value === undefined || value === null) return;
+
+		// Skip URL strings for file fields (already uploaded, don't re-send)
+		if (fileFields.includes(srcKey) && typeof value === 'string') {
+			return;
+		}
 
 		// Arrays need to be stringified for JSONField
 		if (Array.isArray(value)) {
@@ -84,9 +94,7 @@ export const submitKyc = createAsyncThunk(
 	async (formValues, { rejectWithValue }) => {
 		try {
 			const formData = buildKycFormData(formValues);
-			const response = await axiosInstance.post('/kyc/submit/', formData, {
-				headers: { 'Content-Type': 'multipart/form-data' },
-			});
+			const response = await axiosInstance.post('/kyc/submit/', formData);
 			return response.data;
 		} catch (error) {
 			return rejectWithValue(error.response?.data || error.message);
@@ -113,9 +121,7 @@ export const updateKyc = createAsyncThunk(
 	async (formValues, { rejectWithValue }) => {
 		try {
 			const formData = buildKycFormData(formValues);
-			const response = await axiosInstance.put('/kyc/update/', formData, {
-				headers: { 'Content-Type': 'multipart/form-data' },
-			});
+			const response = await axiosInstance.patch('/kyc/update/', formData);
 			return response.data;
 		} catch (error) {
 			return rejectWithValue(error.response?.data || error.message);

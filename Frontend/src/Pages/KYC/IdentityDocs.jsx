@@ -23,9 +23,15 @@ const IdentityDocs = () => {
   };
 
   const truncateFileName = (name, maxLength = 25) => {
-    if (name.length <= maxLength) return name;
-    const ext = name.split('.').pop();
-    const nameWithoutExt = name.slice(0, name.lastIndexOf('.'));
+    // Handle File objects and strings (URLs)
+    const fileName = typeof name === 'object' ? name?.name : name;
+    if (!fileName) return 'Unknown file';
+    
+    const nameStr = String(fileName);
+    if (nameStr.length <= maxLength) return nameStr;
+    
+    const ext = nameStr.split('.').pop();
+    const nameWithoutExt = nameStr.slice(0, nameStr.lastIndexOf('.'));
     const truncated = nameWithoutExt.slice(0, maxLength - ext.length - 5) + "...";
     return truncated + "." + ext;
   };
@@ -66,9 +72,11 @@ const IdentityDocs = () => {
                 <FileText size={24} className="text-[#0F1A3D] shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 truncate">
-                    {truncateFileName(file.name)}
+                    {truncateFileName(file.name || file)}
                   </p>
-                  <p className="text-xs text-slate-500">({formatFileSize(file.size)})</p>
+                  {typeof file === 'object' && file?.size && (
+                    <p className="text-xs text-slate-500">({formatFileSize(file.size)})</p>
+                  )}
                 </div>
               </div>
               <button

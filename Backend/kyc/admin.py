@@ -4,13 +4,13 @@ from .models import LawyerKYC
 
 @admin.register(LawyerKYC)
 class LawyerKYCAdmin(admin.ModelAdmin):
-    list_display = ['user', 'full_name', 'status', 'bar_council_number', 'created_at', 'verified_at']
+    list_display = ['user', 'full_name', 'status', 'bar_council_number', 'created_at', 'verified_at', 'get_rejection_preview']
     list_filter = ['status', 'created_at', 'gender']
-    search_fields = ['full_name', 'email', 'bar_council_number', 'user__email']
-    readonly_fields = ['created_at', 'updated_at', 'verified_at']
+    search_fields = ['full_name', 'email', 'bar_council_number', 'user__email', 'rejection_reason']
+    readonly_fields = ['created_at', 'updated_at', 'verified_at', 'rejection_reason']
     
     fieldsets = (
-        ('KYC Status', {
+        ('KYC Status & Review', {
             'fields': ('user', 'status', 'rejection_reason', 'verified_at')
         }),
         ('Personal Information', {
@@ -36,3 +36,10 @@ class LawyerKYCAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         """Prevent adding KYC from admin panel"""
         return False
+
+    def get_rejection_preview(self, obj):
+        """Display rejection reason preview in list view"""
+        if obj.status == 'rejected' and obj.rejection_reason:
+            return obj.rejection_reason[:50] + '...' if len(obj.rejection_reason) > 50 else obj.rejection_reason
+        return '-'
+    get_rejection_preview.short_description = 'Rejection Review'

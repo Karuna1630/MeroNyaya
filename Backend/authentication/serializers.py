@@ -27,7 +27,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'name', 'email', 'phone', 'city', 'district', 'bio', 'role', 'is_verified', 'is_kyc_verified', 'profile_image']
+        fields = ['id', 'name', 'email', 'phone', 'city', 'district', 'bio', 'role', 'is_verified', 'is_kyc_verified', 'is_superuser', 'is_staff', 'profile_image']
         read_only_fields = ['id', 'email', 'role', 'is_verified', 'is_kyc_verified']
 
     def validate_profile_image(self, value):

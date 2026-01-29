@@ -474,6 +474,15 @@ const AdminKYCVerification = () => {
                     </p>
                   </div>
                 </div>
+
+                {normalizeStatus(selectedDetails.status) === 'rejected' && selectedDetails.rejection_reason && (
+                  <div className="bg-red-50 rounded-2xl p-6 border border-red-200">
+                    <h4 className="text-base font-bold text-red-900 mb-4 uppercase tracking-wide">
+                      Rejection Review
+                    </h4>
+                    <p className="text-sm text-red-800">{selectedDetails.rejection_reason}</p>
+                  </div>
+                )}
               </div>
 
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">

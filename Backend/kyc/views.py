@@ -150,6 +150,7 @@ class AdminKYCReviewView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         kyc = self.get_object()
         new_status = request.data.get('status')
+        rejection_reason = request.data.get('rejection_reason')
         
         if new_status not in ['approved', 'rejected']:
             return Response(
@@ -158,6 +159,8 @@ class AdminKYCReviewView(generics.UpdateAPIView):
             )
         
         kyc.status = new_status
+        if new_status == 'rejected' and rejection_reason:
+            kyc.rejection_reason = rejection_reason
         kyc.save()
         
         serializer = self.get_serializer(kyc)

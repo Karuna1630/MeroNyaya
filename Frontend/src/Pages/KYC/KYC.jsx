@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Formik, Form } from "formik";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
@@ -8,7 +8,7 @@ import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
 import Declaration from "./Declaration";
-import { submitKyc, clearKycState } from "../slices/kycSlice";
+import { submitKyc, updateKyc, clearKycState, fetchKycStatus, fetchMyKyc } from "../slices/kycSlice";
 import { PersonalValidationSchema } from "../utils/kyc/PersonalSchema";
 import { ProfessionalValidationSchema } from "../utils/kyc/ProfessionalSchema";
 import { IdentityValidationSchema } from "../utils/kyc/IdentitySchema";
@@ -22,6 +22,36 @@ const tabs = [
 ];
 
 const KYC_DRAFT_KEY = "lawyer_kyc_draft";
+
+const convertBackendToFormValues = (kycData) => {
+  if (!kycData) return null;
+  return {
+    fullName: kycData.full_name || "",
+    email: kycData.email || "",
+    phone: kycData.phone || "",
+    dob: kycData.dob || "",
+    gender: kycData.gender || "Female",
+    permanentAddress: kycData.permanent_address || "",
+    currentAddress: kycData.current_address || "",
+    barCouncilNumber: kycData.bar_council_number || "",
+    lawFirmName: kycData.law_firm_name || "",
+    yearsOfExperience: kycData.years_of_experience || "",
+    consultationFee: kycData.consultation_fee || "",
+    specializations: Array.isArray(kycData.specializations) ? kycData.specializations : [],
+    availabilityDays: Array.isArray(kycData.availability_days) ? kycData.availability_days : [],
+    availableFrom: kycData.available_from || "",
+    availableUntil: kycData.available_until || "",
+    citizenshipFront: kycData.citizenship_front || null,
+    citizenshipBack: kycData.citizenship_back || null,
+    lawyerLicense: kycData.lawyer_license || null,
+    passportPhoto: kycData.passport_photo || null,
+    lawDegree: kycData.law_degree || null,
+    experienceCertificate: kycData.experience_certificate || null,
+    confirmAccuracy: kycData.confirm_accuracy || false,
+    authorizeVerification: kycData.authorize_verification || false,
+    agreeTerms: kycData.agree_terms || false,
+  };
+};
 
 const initialFormValues = {
   fullName: "",
@@ -66,10 +96,15 @@ const stepFields = {
 
 const KYC = ({ onClose }) => {
   const dispatch = useDispatch();
-  const { submitLoading, submitError } = useSelector((state) => state.kyc || {});
+  const { submitLoading, submitError, status, myKyc } = useSelector((state) => state.kyc || {});
   const { userProfile } = useSelector((state) => state.profile);
   const [activeTab, setActiveTab] = useState("personal");
   const [completedTabs, setCompletedTabs] = useState([]);
+
+  // Fetch existing KYC on component mount
+  useEffect(() => {
+    dispatch(fetchMyKyc());
+  }, [dispatch]);
 
   const loadDraft = () => {
     const savedDraft = localStorage.getItem(KYC_DRAFT_KEY);
@@ -85,6 +120,21 @@ const KYC = ({ onClose }) => {
       currentAddress: userProfile?.current_address || "",
     };
 
+    // If existing KYC exists (rejected or pending), load its data
+    if (myKyc) {
+      const existingKycData = convertBackendToFormValues(myKyc);
+      if (savedDraft) {
+        try {
+          return { ...existingKycData, ...JSON.parse(savedDraft) };
+        } catch (error) {
+          console.error("Failed to load draft:", error);
+          return existingKycData;
+        }
+      }
+      return existingKycData;
+    }
+
+    // New submission - use profile data + saved draft
     if (savedDraft) {
       try {
         return { ...initialFormValues, ...profileData, ...JSON.parse(savedDraft) };
@@ -145,9 +195,18 @@ const KYC = ({ onClose }) => {
       return;
     }
     try {
-      const action = await dispatch(submitKyc(values));
-      if (submitKyc.fulfilled.match(action)) {
-        toast.success("KYC application submitted successfully!");
+      // Check if KYC is being updated (rejected) or submitted for first time
+      const kycStatus = status?.status || status?.kyc_status || status?.state;
+      const isRejected = kycStatus === 'rejected';
+      
+      const submitAction = isRejected ? updateKyc : submitKyc;
+      const action = await dispatch(submitAction(values));
+      
+      if (submitAction.fulfilled.match(action)) {
+        const message = isRejected 
+          ? "KYC resubmitted successfully!" 
+          : "KYC application submitted successfully!";
+        toast.success(message);
         localStorage.removeItem(KYC_DRAFT_KEY);
         // Close modal after successful submission
         setTimeout(() => {

@@ -50,13 +50,15 @@ class LawyerKYCSerializer(serializers.ModelSerializer):
         for field in ['citizenship_front', 'citizenship_back', 'lawyer_license', 'passport_photo', 'law_degree', 'experience_certificate']:
             self._validate_file(attrs.get(field), field)
         
-        # Validate declarations
-        if not attrs.get('confirm_accuracy'):
-            raise serializers.ValidationError("You must confirm accuracy of information")
-        if not attrs.get('authorize_verification'):
-            raise serializers.ValidationError("You must authorize verification")
-        if not attrs.get('agree_terms'):
-            raise serializers.ValidationError("You must agree to terms and conditions")
+        # Only validate declarations on creation (POST), not on updates (PUT/PATCH)
+        # On updates, keep existing values if not provided
+        if self.instance is None:  # Creation
+            if not attrs.get('confirm_accuracy'):
+                raise serializers.ValidationError("You must confirm accuracy of information")
+            if not attrs.get('authorize_verification'):
+                raise serializers.ValidationError("You must authorize verification")
+            if not attrs.get('agree_terms'):
+                raise serializers.ValidationError("You must agree to terms and conditions")
 
         # On create: block duplicate KYC
         if self.instance is None:
