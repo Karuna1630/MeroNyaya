@@ -1,87 +1,51 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { 
   Users, 
   Scale, 
-  Clock, 
-  Calendar, 
-  DollarSign, 
-  FileText, 
-  TrendingUp,
+  Clock,
   AlertCircle 
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import AdminDashHeader from './AdminDashHeader';
 import Statcard from './Statcard';
+import { fetchAdminStats, fetchKycList } from '../slices/adminSlice';
 
 const AdminDashboard = () => {
-  const [stats] = useState({
-    totalUsers: 1336,
-    totalClients: 1247,
-    totalLawyers: 89,
-    pendingKYC: 12,
-    activeAppointments: 45,
-    totalRevenue: "Rs. 2,45,000",
-    activeCases: 127,
-    systemIssues: 3
-  });
+  const dispatch = useDispatch();
+  const { stats, statsLoading, kycList, kycLoading } = useSelector((state) => state.admin);
 
-  const [kycRequests] = useState([
-    {
-      id: 'KYC-001',
-      name: 'Adv. Ram Kumar',
-      contact: 'ram.kumar@email.com',
-      status: 'Pending',
-      date: 'Jan 27, 2026'
-    },
-    {
-      id: 'KYC-002',
-      name: 'Adv. Sita Sharma',
-      contact: 'sita.sharma@email.com',
-      status: 'Pending',
-      date: 'Jan 26, 2026'
-    },
-    {
-      id: 'KYC-003',
-      name: 'Adv. Hari Prasad',
-      contact: 'hari.prasad@email.com',
-      status: 'Approved',
-      date: 'Jan 25, 2026'
-    },
-    {
-      id: 'KYC-004',
-      name: 'Adv. Maya Thapa',
-      contact: 'maya.thapa@email.com',
-      status: 'Rejected',
-      date: 'Jan 24, 2026'
-    },
-    {
-      id: 'KYC-005',
-      name: 'Adv. Krishna Bhattarai',
-      contact: 'krishna.b@email.com',
-      status: 'Pending',
-      date: 'Jan 23, 2026'
-    }
-  ]);
+  useEffect(() => {
+    dispatch(fetchAdminStats());
+    dispatch(fetchKycList());
+  }, [dispatch]);
+
+  // Calculate pending KYC count
+  const pendingKycCount = Array.isArray(kycList) 
+    ? kycList.filter(kyc => (kyc.status || '').toLowerCase() === 'pending').length 
+    : 0;
 
   const getStatusBadge = (status) => {
     const baseClasses = "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold";
     
-    switch (status) {
-      case 'Pending':
+    switch ((status || '').toLowerCase()) {
+      case 'pending':
+      case 'under_review':
+      case 'in_review':
         return (
           <span className={`${baseClasses} bg-[#1e3a5f] text-white`}>
             <span className="w-2 h-2 rounded-full bg-white"></span>
             Pending
           </span>
         );
-      case 'Approved':
+      case 'approved':
         return (
           <span className={`${baseClasses} bg-green-500 text-white`}>
             <span className="w-2 h-2 rounded-full bg-white"></span>
             Approved
           </span>
         );
-      case 'Rejected':
+      case 'rejected':
         return (
           <span className={`${baseClasses} bg-red-500 text-white`}>
             <span className="w-2 h-2 rounded-full bg-white"></span>
@@ -111,7 +75,7 @@ const AdminDashboard = () => {
             <Statcard
               icon={<Users size={20} />}
               title="Total Users"
-              value={stats.totalUsers.toLocaleString()}
+              value={statsLoading ? "..." : stats.totalUsers.toLocaleString()}
               subtitle={`${stats.totalClients} Clients • ${stats.totalLawyers} Lawyers`}
               bgColor="bg-blue-100"
               iconColor="text-blue-600"
@@ -120,7 +84,7 @@ const AdminDashboard = () => {
             <Statcard
               icon={<Users size={20} />}
               title="Total Clients"
-              value={stats.totalClients.toLocaleString()}
+              value={statsLoading ? "..." : stats.totalClients.toLocaleString()}
               subtitle="Active clients"
               bgColor="bg-cyan-100"
               iconColor="text-cyan-600"
@@ -129,7 +93,7 @@ const AdminDashboard = () => {
             <Statcard
               icon={<Scale size={20} />}
               title="Total Lawyers"
-              value={stats.totalLawyers}
+              value={statsLoading ? "..." : stats.totalLawyers}
               subtitle="Verified professionals"
               bgColor="bg-indigo-100"
               iconColor="text-indigo-600"
@@ -138,7 +102,7 @@ const AdminDashboard = () => {
             <Statcard
               icon={<Clock size={20} />}
               title="Pending KYC Requests"
-              value={stats.pendingKYC}
+              value={kycLoading ? "..." : pendingKycCount}
               subtitle="Requires verification"
               bgColor="bg-red-100"
               iconColor="text-red-600"
@@ -161,13 +125,13 @@ const AdminDashboard = () => {
                 <thead>
                   <tr className="border-b-2 border-gray-100">
                     <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      KYC ID
+                      User ID
                     </th>
                     <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Lawyer Name
                     </th>
                     <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Contact
+                      Email
                     </th>
                     <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Status
@@ -178,28 +142,38 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {kycRequests.map((request) => (
-                    <tr 
-                      key={request.id} 
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="py-4.5 px-3 text-sm font-semibold text-gray-900">
-                        {request.id}
-                      </td>
-                      <td className="py-4.5 px-3 text-sm font-medium text-gray-900">
-                        {request.name}
-                      </td>
-                      <td className="py-4.5 px-3 text-sm text-gray-600">
-                        {request.contact}
-                      </td>
-                      <td className="py-4.5 px-3">
-                        {getStatusBadge(request.status)}
-                      </td>
-                      <td className="py-4.5 px-3 text-sm text-gray-600">
-                        {request.date}
-                      </td>
+                  {kycLoading ? (
+                    <tr>
+                      <td colSpan="5" className="py-4 px-3 text-center text-gray-600">Loading...</td>
                     </tr>
-                  ))}
+                  ) : Array.isArray(kycList) && kycList.length > 0 ? (
+                    kycList.slice(0, 10).map((kyc) => (
+                      <tr 
+                        key={kyc.id} 
+                        className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="py-4.5 px-3 text-sm font-semibold text-gray-900">
+                          {kyc.id}
+                        </td>
+                        <td className="py-4.5 px-3 text-sm font-medium text-gray-900">
+                          {kyc.user_name || kyc.user?.name || kyc.lawyer_name || 'N/A'}
+                        </td>
+                        <td className="py-4.5 px-3 text-sm text-gray-600">
+                          {kyc.user_email || kyc.user?.email || kyc.email || 'N/A'}
+                        </td>
+                        <td className="py-4.5 px-3">
+                          {getStatusBadge(kyc.status)}
+                        </td>
+                        <td className="py-4.5 px-3 text-sm text-gray-600">
+                          {kyc.created_at ? new Date(kyc.created_at).toLocaleDateString() : 'N/A'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="py-4 px-3 text-center text-gray-600">No KYC requests found</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

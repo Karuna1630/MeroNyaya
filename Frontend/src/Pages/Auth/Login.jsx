@@ -51,7 +51,11 @@ const Login = () => {
         const rawRole = user?.user_type || user?.role || user?.type;
         const normalizedRole = (user?.is_superuser || user?.is_staff)
           ? "admin"
-          : (typeof rawRole === "string" ? rawRole.toLowerCase() : null);
+          : (typeof rawRole === "string"
+              ? (rawRole.toLowerCase().includes("admin") || rawRole.toLowerCase().includes("super")
+                  ? "admin"
+                  : rawRole.toLowerCase())
+              : null);
 
         if (normalizedRole === "admin") {
           navigate("/admindashboard");

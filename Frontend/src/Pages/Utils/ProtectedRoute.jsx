@@ -6,7 +6,12 @@ const normalizeRole = (user) => {
   if (!user) return null;
   if (user.is_superuser || user.is_staff) return 'admin';
   const raw = user.user_type || user.role || user.type;
-  return typeof raw === 'string' ? raw.toLowerCase() : null;
+  if (typeof raw === 'string') {
+    const lowered = raw.toLowerCase();
+    if (lowered.includes('admin') || lowered.includes('super')) return 'admin';
+    return lowered;
+  }
+  return null;
 };
 
 const ProtectedRoute = ({ children, requiredRole = null, allowedRoles = null }) => {
