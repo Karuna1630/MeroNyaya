@@ -43,6 +43,7 @@ urlpatterns = [
     path("api/authentications/", include("authentication.urls")),
     path("api/kyc/", include("kyc.urls")),
     path("api/reviews/", include("review.urls")),
+    path("api/cases/", include("case.urls")),
     
 ]
 

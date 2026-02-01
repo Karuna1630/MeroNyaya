@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   ChevronDown,
@@ -23,88 +25,64 @@ import {
 } from "lucide-react";
 import Sidebar from "./sidebar";
 import DashHeader from "./ClientDashHeader";
+import { fetchCases } from "../slices/caseSlice";
 
 const ClientCase = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All Cases");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [expandedCase, setExpandedCase] = useState(null);
 
-  // Sample case data - replace with actual API data
-  const cases = [
-    {
-      id: 1,
-      title: "Property Dispute - Land Registration",
-      category: "Property Law",
-      status: "In Progress",
-      lawyer: "Advocate Priya Sharma",
-      createdDate: "Nov 20, 2025",
-      proposalCount: 0,
-    },
-    {
-      id: 2,
-      title: "Divorce Proceedings",
-      category: "Family Law",
-      status: "Accepted",
-      lawyer: "Advocate Sita Karki",
-      createdDate: "Nov 28, 2025",
-      proposalCount: 0,
-    },
-    {
-      id: 3,
-      title: "Business Contract Review",
-      category: "Corporate Law",
-      status: "Completed",
-      lawyer: "Advocate Rajesh Thapa",
-      createdDate: "Nov 1, 2025",
-      proposalCount: 0,
-    },
-    {
-      id: 4,
-      title: "Employment Dispute - Wrongful Termination",
-      category: "Labor Law",
-      status: "Sent to Lawyers",
-      lawyer: "Not assigned",
-      createdDate: "Dec 5, 2025",
-      proposalCount: 0,
-    },
-    {
-      id: 5,
-      title: "Insurance Claim Dispute",
-      category: "Insurance Law",
-      status: "Public",
-      lawyer: "Not assigned",
-      createdDate: "Dec 8, 2025",
-      proposalCount: 3,
-    },
-    {
-      id: 6,
-      title: "Tenant Eviction Case",
-      category: "Property Law",
-      status: "Draft",
-      lawyer: "Not assigned",
-      createdDate: "Dec 10, 2025",
-      proposalCount: 0,
-    },
-    {
-      id: 7,
-      title: "Partnership Agreement Review",
-      category: "Corporate Law",
-      status: "Rejected",
-      lawyer: "Not assigned",
-      createdDate: "Dec 1, 2025",
-      proposalCount: 0,
-    },
-    {
-      id: 8,
-      title: "Medical Malpractice Claim",
-      category: "Tort Law",
-      status: "Public",
-      lawyer: "Not assigned",
-      createdDate: "Dec 15, 2025",
-      proposalCount: 5,
-    },
-  ];
+  const casesData = useSelector((state) => state.case?.cases || []);
+  const casesLoading = useSelector((state) => state.case?.casesLoading);
+  const casesError = useSelector((state) => state.case?.casesError);
+
+  useEffect(() => {
+    dispatch(fetchCases());
+  }, [dispatch]);
+
+  const formatStatus = (status) => {
+    const map = {
+      draft: "Draft",
+      public: "Public",
+      sent_to_lawyers: "Sent to Lawyers",
+      proposals_received: "Proposals",
+      accepted: "Accepted",
+      in_progress: "In Progress",
+      completed: "Completed",
+      cancelled: "Cancelled",
+      rejected: "Rejected",
+    };
+    return map[status] || status;
+  };
+
+  const cases = useMemo(() => {
+    return (casesData || []).map((item) => {
+      const createdDate = item.created_at
+        ? new Date(item.created_at).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : "-";
+
+      return {
+        id: item.id,
+        title: item.case_title || "Untitled",
+        category: item.case_category || "Not specified",
+        status: formatStatus(item.status),
+        lawyer: item.lawyer_name || "Not assigned",
+        createdDate,
+        proposalCount: item.proposal_count || 0,
+      };
+    });
+  }, [casesData]);
+
+  const categoryOptions = useMemo(() => {
+    const categories = cases.map((item) => item.category).filter(Boolean);
+    return ["All Categories", ...Array.from(new Set(categories))];
+  }, [cases]);
 
   // Filter tabs (updated)
   const filterTabs = [
@@ -124,12 +102,16 @@ const ClientCase = () => {
         return "bg-blue-100 text-blue-700";
       case "Accepted":
         return "bg-blue-100 text-blue-700";
+      case "Proposals":
+        return "bg-purple-100 text-purple-700";
       case "Completed":
         return "bg-green-100 text-green-700";
       case "Sent to Lawyers":
         return "bg-yellow-100 text-yellow-700";
       case "Public":
         return "bg-purple-100 text-purple-700";
+      case "Cancelled":
+        return "bg-gray-100 text-gray-700";
       case "Draft":
         return "bg-gray-100 text-gray-700";
       case "Rejected":
@@ -255,7 +237,9 @@ const ClientCase = () => {
     } else if (activeTab === "Public Cases") {
       matchesTab = caseItem.status === "Public";
     } else if (activeTab === "Proposals") {
-      matchesTab = caseItem.status === "Public" && caseItem.proposalCount > 0;
+      matchesTab =
+        (caseItem.status === "Public" || caseItem.status === "Proposals") &&
+        caseItem.proposalCount > 0;
     } else if (activeTab === "Sent to Lawyers") {
       matchesTab = caseItem.status === "Sent to Lawyers";
     } else if (activeTab === "Accepted") {
@@ -266,7 +250,11 @@ const ClientCase = () => {
       matchesTab = caseItem.status === "Completed";
     }
 
-    return matchesSearch && matchesTab;
+    const matchesCategory =
+      categoryFilter === "All Categories" ||
+      caseItem.category === categoryFilter;
+
+    return matchesSearch && matchesTab && matchesCategory;
   });
 
   return (
@@ -395,14 +383,24 @@ const ClientCase = () => {
 
               {/* Category Dropdown */}
               <div className="relative">
-                <button className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50">
-                  {categoryFilter}
-                  <ChevronDown size={18} />
-                </button>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
+                >
+                  {categoryOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Create Case Button */}
-              <button className="px-6 py-3 bg-blue-700 text-white rounded-lg font-medium hover:bg-blue-800 transition-colors">
+              <button 
+                onClick={() => navigate('/client/create-case')}
+                className="px-6 py-3 bg-blue-700 text-white rounded-lg font-medium hover:bg-blue-800 transition-colors"
+              >
                 + Create Case
               </button>
             </div>
@@ -437,7 +435,19 @@ const ClientCase = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredCases.length > 0 ? (
+                    {casesLoading ? (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-12 text-center">
+                          <p className="text-slate-500">Loading cases...</p>
+                        </td>
+                      </tr>
+                    ) : casesError ? (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-12 text-center">
+                          <p className="text-red-600">{casesError}</p>
+                        </td>
+                      </tr>
+                    ) : filteredCases.length > 0 ? (
                       filteredCases.map((caseItem, index) => (
                         <tr
                           key={index}

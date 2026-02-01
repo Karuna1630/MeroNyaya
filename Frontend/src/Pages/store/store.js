@@ -5,6 +5,7 @@ import kycReducer from '../slices/kycSlice';
 import adminReducer from '../slices/adminSlice';
 import lawyerReducer from '../slices/lawyerSlice';
 import reviewReducer from '../slices/reviewSlice';
+import caseReducer from '../slices/caseSlice';
 
 // Configure the Redux store with the auth reducer
 export const store = configureStore({
@@ -15,6 +16,7 @@ export const store = configureStore({
     admin: adminReducer,
     lawyer: lawyerReducer,
     review: reviewReducer,
+    case: caseReducer,
   },
   devTools: import.meta.env.DEV,
 });

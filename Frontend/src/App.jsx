@@ -17,6 +17,7 @@ import ClientAppointment from './Pages/Client/ClientAppointment.jsx';
 import ClientMessage from './Pages/Client/ClientMessage.jsx';
 import Payment from './Pages/Client/Payment.jsx';
 import ClientFindLawyers from './Pages/Client/ClientFindLawyers.jsx';
+import ClientCreateCase from './Pages/Client/case/ClientCreateCase.jsx';
 
 import LawyerDashboard from './Pages/Lawyer/LawyerDashboard.jsx';
 import LawyerMessage from './Pages/Lawyer/LawyerMessage.jsx';
@@ -61,6 +62,7 @@ function App() {
         <Route path='/clientdashboard' element={<ProtectedRoute requiredRole="client"><ClientDashboard /></ProtectedRoute>} />
         <Route path='/client/findlawyers' element={<ProtectedRoute requiredRole="client"><ClientFindLawyers /></ProtectedRoute>} />
         <Route path='/clientcase' element={<ProtectedRoute requiredRole="client"><ClientCase /></ProtectedRoute>} />
+        <Route path='/client/create-case' element={<ProtectedRoute requiredRole="client"><ClientCreateCase /></ProtectedRoute>} />
         <Route path='/clientappointment' element={<ProtectedRoute requiredRole="client"><ClientAppointment /></ProtectedRoute>} />
         <Route path='/clientmessage' element={<ProtectedRoute requiredRole="client"><ClientMessage /></ProtectedRoute>} />
         <Route path='/clientpayment' element={<ProtectedRoute requiredRole="client"><Payment /></ProtectedRoute>} />

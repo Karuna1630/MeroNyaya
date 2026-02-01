@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     #My apps
     'authentication', 
     'kyc',
-    'review'
+    'review',
+    'case',
     
 ]
 
