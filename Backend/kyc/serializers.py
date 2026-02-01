@@ -4,41 +4,86 @@ from django.db import transaction
 from authentication.models import User
 
 
-class VerifiedLawyerPublicSerializer(serializers.ModelSerializer):
-    """Serializer for public display of verified lawyers"""
-    # User profile fields
-    name = serializers.CharField(source='user.name', read_only=True)
-    email = serializers.CharField(source='user.email', read_only=True)
-    phone = serializers.CharField(source='user.phone', read_only=True)
+class LawyerDirectorySerializer(serializers.ModelSerializer):
+    """Public lawyer directory serializer using profile + optional KYC data"""
     profile_image = serializers.SerializerMethodField()
-    bio = serializers.CharField(source='user.bio', read_only=True)
-    city = serializers.CharField(source='user.city', read_only=True)
-    district = serializers.CharField(source='user.district', read_only=True)
-    
-    # KYC fields for professional info
-    kyc_status = serializers.CharField(source='status', read_only=True)
-    
+
+    kyc_status = serializers.SerializerMethodField()
+    bar_council_number = serializers.SerializerMethodField()
+    law_firm_name = serializers.SerializerMethodField()
+    years_of_experience = serializers.SerializerMethodField()
+    consultation_fee = serializers.SerializerMethodField()
+    specializations = serializers.SerializerMethodField()
+    availability_days = serializers.SerializerMethodField()
+    available_from = serializers.SerializerMethodField()
+    available_until = serializers.SerializerMethodField()
+    verified_at = serializers.SerializerMethodField()
+    dob = serializers.SerializerMethodField()
+
     class Meta:
-        model = LawyerKYC
+        model = User
         fields = [
-            'id',
-            # User profile data
-            'name', 'email', 'phone', 'profile_image', 'bio', 'city', 'district',
-            # KYC professional data
-            'kyc_status', 'bar_council_number', 'law_firm_name', 
+            'id', 'name', 'email', 'phone', 'profile_image', 'bio', 'city', 'district',
+            'kyc_status', 'bar_council_number', 'law_firm_name',
             'years_of_experience', 'consultation_fee', 'specializations',
             'availability_days', 'available_from', 'available_until',
-            'verified_at'
+            'verified_at', 'dob'
         ]
-    
+
     def get_profile_image(self, obj):
-        """Get full URL for profile image"""
-        if obj.user and obj.user.profile_image:
+        if obj.profile_image:
             request = self.context.get('request')
             if request:
-                return request.build_absolute_uri(obj.user.profile_image.url)
-            return obj.user.profile_image.url
+                return request.build_absolute_uri(obj.profile_image.url)
+            return obj.profile_image.url
         return None
+
+    def _get_kyc(self, obj):
+        return getattr(obj, 'lawyer_kyc', None)
+
+    def get_kyc_status(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.status if kyc else None
+
+    def get_bar_council_number(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.bar_council_number if kyc else None
+
+    def get_law_firm_name(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.law_firm_name if kyc else None
+
+    def get_years_of_experience(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.years_of_experience if kyc else None
+
+    def get_consultation_fee(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.consultation_fee if kyc else None
+
+    def get_specializations(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.specializations if kyc else None
+
+    def get_availability_days(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.availability_days if kyc else None
+
+    def get_available_from(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.available_from if kyc else None
+
+    def get_available_until(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.available_until if kyc else None
+
+    def get_verified_at(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.verified_at if kyc else None
+
+    def get_dob(self, obj):
+        kyc = self._get_kyc(obj)
+        return kyc.dob if kyc else None
 
 
 class LawyerKYCSerializer(serializers.ModelSerializer):

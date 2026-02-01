@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Sidebar from "./sidebar";
 import ClientDashHeader from "./ClientDashHeader";
-import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader } from "lucide-react";
+import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCircle2, MessageSquare, Video, Filter } from "lucide-react";
 import axiosInstance from "../../axios/axiosinstance";
 
 const specializations = [
@@ -28,12 +28,10 @@ const sortOptions = [
 const FindLawyers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialization, setSelectedSpecialization] = useState("All Specializations");
-  const [selectedLocation, setSelectedLocation] = useState("All Locations");
   const [sortBy, setSortBy] = useState("Top Rated");
   const [lawyers, setLawyers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [locations, setLocations] = useState(["All Locations"]);
 
   // Fetch verified lawyers from backend
   useEffect(() => {
@@ -41,38 +39,49 @@ const FindLawyers = () => {
       try {
         setLoading(true);
         const response = await axiosInstance.get("/kyc/verified-lawyers/");
+        console.log("Lawyers API response:", response.data); // Debug log
         
         // Transform backend data to frontend format
-        const transformedLawyers = response.data.map((lawyer) => ({
-          id: lawyer.id,
-          name: lawyer.name || "Unknown",
-          specialization: lawyer.specializations || "General Practice",
-          experience: lawyer.years_of_experience || 0,
-          rating: 4.5, // Default rating, update when you have a rating system
-          reviews: 0, // Default reviews, update when you have a review system
-          location: lawyer.city || lawyer.district || "Nepal",
-          fee: lawyer.consultation_fee || 0,
-          status: "Available", // Default status, can be updated based on availability
-          verified: lawyer.kyc_status === "approved",
-          image: lawyer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(lawyer.name || "User")}&background=4F46E5&color=fff`,
-          phone: lawyer.phone,
-          email: lawyer.email,
-          bio: lawyer.bio,
-          barCouncilNumber: lawyer.bar_council_number,
-          lawFirm: lawyer.law_firm_name,
-          availabilityDays: lawyer.availability_days,
-          availableFrom: lawyer.available_from,
-          availableUntil: lawyer.available_until,
-        }));
+        const transformedLawyers = response.data
+          .filter(lawyer => lawyer) 
+          .map((lawyer) => {
+            // Handle specializations - it might be a string, array, or null
+            let specialization = "General Practice";
+            if (lawyer.specializations) {
+              if (typeof lawyer.specializations === 'string') {
+                specialization = lawyer.specializations;
+              } else if (Array.isArray(lawyer.specializations)) {
+                specialization = lawyer.specializations.join(", ") || "General Practice";
+              }
+            }
+
+            return {
+              id: lawyer.id,
+              name: lawyer.name || "Unknown",
+              specialization: specialization,
+              experience: lawyer.years_of_experience || 0,
+              rating: 4.5, // Default rating, update when you have a rating system
+              reviews: 0, // Default reviews, update when you have a review system
+              location: lawyer.city || lawyer.district || "Nepal",
+              fee: lawyer.consultation_fee || 0,
+              status: "Available", // Default status, can be updated based on availability
+              verified: lawyer.kyc_status === "approved",
+              image: lawyer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(lawyer.name || "User")}&background=4F46E5&color=fff`,
+              phone: lawyer.phone,
+              email: lawyer.email,
+              bio: lawyer.bio,
+              dob: lawyer.dob,
+              district: lawyer.district,
+              barCouncilNumber: lawyer.bar_council_number,
+              lawFirm: lawyer.law_firm_name,
+              availabilityDays: lawyer.availability_days,
+              availableFrom: lawyer.available_from,
+              availableUntil: lawyer.available_until,
+            };
+          });
 
         setLawyers(transformedLawyers);
-
-        // Extract unique locations
-        const uniqueLocations = ["All Locations", ...new Set(
-          transformedLawyers.map(l => l.location).filter(Boolean)
-        )];
-        setLocations(uniqueLocations);
-
+        console.log("Transformed lawyers:", transformedLawyers); // Debug log
         setLoading(false);
       } catch (err) {
         console.error("Error fetching lawyers:", err);
@@ -97,27 +106,35 @@ const FindLawyers = () => {
     return address.split(",")[0].trim(); // Return first part of address
   };
 
-  // Filter lawyers based on search, specialization, and location
-
-  // Filter lawyers based on search, specialization, and location
+  // Filter lawyers based on search and specialization
   const filteredLawyers = useMemo(() => {
-    return lawyers.filter((lawyer) => {
+    console.log("Filtering with searchQuery:", searchQuery, "selectedSpec:", selectedSpecialization);
+    
+    const filtered = lawyers.filter((lawyer) => {
+      if (!lawyer) return false;
+
+      // If no specialization filter is selected, match all
       const matchesSpec =
         selectedSpecialization === "All Specializations" ||
-        lawyer.specialization === selectedSpecialization;
+        !selectedSpecialization ||
+        (lawyer.specialization && 
+         String(lawyer.specialization).toLowerCase().includes(String(selectedSpecialization).toLowerCase()));
       
-      const matchesLocation =
-        selectedLocation === "All Locations" ||
-        lawyer.location === selectedLocation;
-      
+      // If search is empty, show all matching specialization
+      // If search has text, match against name, specialization, or location
       const matchesSearch =
-        lawyer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lawyer.specialization.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lawyer.location.toLowerCase().includes(searchQuery.toLowerCase());
+        !searchQuery ||
+        searchQuery.trim() === "" ||
+        (lawyer.name && String(lawyer.name).toLowerCase().includes(String(searchQuery).toLowerCase())) ||
+        (lawyer.specialization && String(lawyer.specialization).toLowerCase().includes(String(searchQuery).toLowerCase())) ||
+        (lawyer.location && String(lawyer.location).toLowerCase().includes(String(searchQuery).toLowerCase()));
 
-      return matchesSpec && matchesLocation && matchesSearch;
+      return matchesSpec && matchesSearch;
     });
-  }, [searchQuery, selectedSpecialization, selectedLocation]);
+    
+    console.log("Filtered result:", filtered);
+    return filtered;
+  }, [searchQuery, selectedSpecialization, lawyers]);
 
   // Sort filtered lawyers
   const sortedLawyers = useMemo(() => {
@@ -147,17 +164,17 @@ const FindLawyers = () => {
 
         <div className="flex-1 p-8">
           {/* Search and Filter Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <div className="flex gap-4 flex-wrap">
+          <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+            <div className="flex gap-4 items-center">
               {/* Search Bar */}
-              <div className="flex-1 min-w-[300px] relative">
+              <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
                   placeholder="Search by name, specialization, or location..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0F1A3D] text-sm"
                 />
               </div>
 
@@ -166,7 +183,7 @@ const FindLawyers = () => {
                 <select
                   value={selectedSpecialization}
                   onChange={(e) => setSelectedSpecialization(e.target.value)}
-                  className="appearance-none px-6 py-3 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent bg-white cursor-pointer"
+                  className="appearance-none pl-4 pr-10 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0F1A3D] bg-white cursor-pointer text-sm text-gray-600 min-w-[200px]"
                 >
                   {specializations.map((spec) => (
                     <option key={spec} value={spec}>
@@ -174,40 +191,14 @@ const FindLawyers = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
 
-              {/* Location Dropdown */}
-              <div className="relative">
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="appearance-none px-6 py-3 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent bg-white cursor-pointer"
-                >
-                  {locations.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {loc}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-              </div>
-
-              {/* Sort By Dropdown */}
-              <div className="relative">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none px-6 py-3 pr-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent bg-white cursor-pointer"
-                >
-                  {sortOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
-              </div>
+              {/* Filters Button */}
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
+                <Filter size={16} />
+                <span>Filters</span>
+              </button>
             </div>
           </div>
 
@@ -228,7 +219,14 @@ const FindLawyers = () => {
 
           {/* Results Count */}
           {!loading && !error && (
-            <p className="text-gray-600 mb-6">Showing {sortedLawyers.length} lawyers</p>
+            <>
+              <p className="text-gray-600 mb-6">Showing {sortedLawyers.length} of {lawyers.length} lawyers</p>
+              {sortedLawyers.length === 0 && lawyers.length > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                  <p className="text-yellow-800">No lawyers match current filters. Total lawyers available: {lawyers.length}</p>
+                </div>
+              )}
+            </>
           )}
 
           {/* Lawyers Grid */}
@@ -237,78 +235,80 @@ const FindLawyers = () => {
             {sortedLawyers.map((lawyer) => (
               <div
                 key={lawyer.id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-100"
+                className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100 flex flex-col"
               >
-                {/* Card Header with Avatar and Status */}
-                <div className="bg-[#0F1A3D] p-6 relative">
-                  <div className="flex items-start justify-between">
-                    <div className="relative">
-                      <img
-                        src={lawyer.image}
-                        alt={lawyer.name}
-                        className="w-16 h-16 rounded-full border-4 border-white"
-                      />
-                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-                    </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        lawyer.status === "Available"
-                          ? "bg-slate-700 text-green-400"
-                          : "bg-slate-700 text-gray-400"
-                      }`}
-                    >
-                      {lawyer.status}
-                    </span>
+                {/* Header Section: Avatar and Name */}
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="relative">
+                    <img
+                      src={lawyer.image}
+                      alt={lawyer.name}
+                      className="w-20 h-20 rounded-full object-cover border border-gray-100"
+                    />
+                    <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
                   </div>
-
-                  {/* Verified Badge */}
-                  {lawyer.verified && (
-                    <div className="flex items-center gap-1 mt-3 text-white">
-                      <Shield size={16} />
-                      <span className="text-sm font-medium">Verified</span>
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <h3 className="font-bold text-[#0F1A3D] text-lg">{lawyer.name}</h3>
+                      {lawyer.verified && (
+                        <CheckCircle2 size={18} className="text-gray-400" />
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {/* Card Body */}
-                <div className="p-6">
-                  {/* Name and Rating */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-[#0F1A3D] mb-1">{lawyer.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Briefcase size={14} />
-                        <span>{lawyer.specialization}</span>
+                    
+                    <span className="inline-block px-3 py-1 bg-[#1A2B5A] text-white text-[11px] font-medium rounded-full mb-3 uppercase tracking-wider">
+                      {lawyer.specialization}
+                    </span>
+                    
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Briefcase size={14} className="text-gray-400" />
+                        <span>{lawyer.experience} yrs</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                        <span className="text-gray-700 font-semibold">{lawyer.rating}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                      <span className="font-semibold text-gray-800">{lawyer.rating}</span>
-                      <span className="text-gray-500 text-sm">({lawyer.reviews})</span>
+                  </div>
+                </div>
+
+                {/* Location and Price Section */}
+                <div className="flex items-center justify-between mb-5 px-1">
+                  <div className="flex items-center gap-1.5 text-gray-500 text-sm">
+                    <MapPin size={16} className="text-gray-400" />
+                    <span>{lawyer.location}</span>
+                  </div>
+                  <div className="text-[#0F1A3D] font-bold">
+                    Rs. {lawyer.fee.toLocaleString()}
+                  </div>
+                </div>
+
+                {/* Bio and Details */}
+                <div className="mb-5 space-y-2 text-sm text-gray-600">
+                  {lawyer.bio && (
+                    <p className="text-gray-500 line-clamp-2">{lawyer.bio}</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-gray-400">Date of Birth</p>
+                      <p className="text-gray-700">{lawyer.dob || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">District</p>
+                      <p className="text-gray-700">{lawyer.district || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Phone</p>
+                      <p className="text-gray-700">{lawyer.phone || "N/A"}</p>
                     </div>
                   </div>
+                </div>
 
-                  {/* Experience and Location */}
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                    <div className="flex items-center gap-1">
-                      <Briefcase size={14} />
-                      <span>{lawyer.experience} yrs exp.</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MapPin size={14} />
-                      <span>{lawyer.location}</span>
-                    </div>
-                  </div>
-
-                  {/* Consultation Fee */}
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-gray-600">Consultation from</span>
-                    <span className="text-lg font-bold text-[#0F1A3D]">Rs. {lawyer.fee.toLocaleString()}</span>
-                  </div>
-
-                  {/* Action Button */}
-                  <button className="w-full bg-[#0F1A3D] text-white py-3 rounded-lg font-semibold hover:bg-[#1a2b5a] transition">
-                    View Profile
+                {/* Footer Action */}
+                <div className="mt-auto">
+                  <button className="w-full py-2.5 px-4 bg-[#0F1A3D] text-white rounded-lg font-semibold text-sm hover:bg-[#1a2b5a] transition">
+                    Request Consultation
                   </button>
                 </div>
               </div>
