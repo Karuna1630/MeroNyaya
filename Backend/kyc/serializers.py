@@ -19,6 +19,10 @@ class LawyerDirectorySerializer(serializers.ModelSerializer):
     available_until = serializers.SerializerMethodField()
     verified_at = serializers.SerializerMethodField()
     dob = serializers.SerializerMethodField()
+    
+    # Review statistics
+    average_rating = serializers.SerializerMethodField()
+    total_reviews = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -27,7 +31,7 @@ class LawyerDirectorySerializer(serializers.ModelSerializer):
             'kyc_status', 'bar_council_number', 'law_firm_name',
             'years_of_experience', 'consultation_fee', 'specializations',
             'availability_days', 'available_from', 'available_until',
-            'verified_at', 'dob'
+            'verified_at', 'dob', 'average_rating', 'total_reviews'
         ]
 
     def get_profile_image(self, obj):
@@ -84,6 +88,19 @@ class LawyerDirectorySerializer(serializers.ModelSerializer):
     def get_dob(self, obj):
         kyc = self._get_kyc(obj)
         return kyc.dob if kyc else None
+
+    def get_average_rating(self, obj):
+        """Get average rating from reviews"""
+        from django.db.models import Avg
+        from review.models import Review
+        
+        avg = Review.objects.filter(lawyer=obj).aggregate(Avg('rating'))['rating__avg']
+        return round(avg, 2) if avg else 0.0
+    
+    def get_total_reviews(self, obj):
+        """Get total review count"""
+        from review.models import Review
+        return Review.objects.filter(lawyer=obj).count()
 
 
 class LawyerKYCSerializer(serializers.ModelSerializer):

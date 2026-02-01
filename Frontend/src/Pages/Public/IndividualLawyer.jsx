@@ -18,6 +18,7 @@ import {
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
 import { fetchLawyerDetails } from "../slices/lawyerSlice.js";
+import { submitReview, getLawyerReviews, clearSubmitStatus } from "../slices/reviewSlice.js";
 
 const IndividualLawyer = () => {
   const { id } = useParams();
@@ -27,6 +28,11 @@ const IndividualLawyer = () => {
   const lawyerData = useSelector((state) => state.lawyer.lawyerDetails);
   const loading = useSelector((state) => state.lawyer.lawyerDetailsLoading);
   const error = useSelector((state) => state.lawyer.lawyerDetailsError);
+  const submitLoading = useSelector((state) => state.review.submitLoading);
+  const submitSuccess = useSelector((state) => state.review.submitSuccess);
+  const submitError = useSelector((state) => state.review.submitError);
+  const reviews = useSelector((state) => state.review.reviews);
+  const reviewsLoading = useSelector((state) => state.review.reviewsLoading);
 
   // Local component state
   // State for booking
@@ -36,14 +42,6 @@ const IndividualLawyer = () => {
   const [selectedTime, setSelectedTime] = useState("10:00 AM");
   const [reviewText, setReviewText] = useState("");
   const [selectedRating, setSelectedRating] = useState(5);
-  const [reviews, setReviews] = useState([]);
-
-  // Fetch lawyer data on component mount
-  useEffect(() => {
-    if (id) {
-      dispatch(fetchLawyerDetails(id));
-    }
-  }, [id, dispatch]);
 
   // Helper function to get initials from name
   const getInitials = (name) => {
@@ -77,25 +75,58 @@ const IndividualLawyer = () => {
       }
     : null;
 
+  // Fetch lawyer data on component mount
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchLawyerDetails(id));
+    }
+  }, [id, dispatch]);
+
+  // Fetch reviews when lawyer data is available
+  useEffect(() => {
+    if (lawyer?.id) {
+      dispatch(getLawyerReviews(lawyer.id));
+    }
+  }, [lawyer?.id, dispatch]);
+
   const handleBooking = () => {
     alert("Payment integration coming soon!");
     setShowBookingModal(false);
   };
 
-  const handleSubmitReview = () => {
-    if (reviewText.trim()) {
-      const newReview = {
-        id: reviews.length + 1,
-        name: "You",
-        rating: selectedRating,
-        text: reviewText,
-        time: new Date().toLocaleDateString(),
-      };
-      setReviews([newReview, ...reviews]);
-      setReviewText("");
-      setSelectedRating(5);
+  const handleSubmitReview = async () => {
+    if (reviewText.trim() && lawyer) {
+      // Dispatch review submission to Redux
+      const result = await dispatch(
+        submitReview({
+          lawyerId: lawyer.id,
+          comment: reviewText,
+          rating: selectedRating,
+          title: "",
+        })
+      );
+
+      if (result.type === submitReview.fulfilled.type) {
+        // Success - reset form and refresh reviews
+        setReviewText("");
+        setSelectedRating(5);
+        // Refresh reviews list
+        if (lawyer?.id) {
+          dispatch(getLawyerReviews(lawyer.id));
+        }
+      }
     }
   };
+
+  // Clear success message after 2 seconds
+  useEffect(() => {
+    if (submitSuccess) {
+      const timer = setTimeout(() => {
+        dispatch(clearSubmitStatus());
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [submitSuccess, dispatch]);
 
   const consultationTypes = [
     { icon: Video, label: "Video", value: "Video" },
@@ -273,14 +304,37 @@ const IndividualLawyer = () => {
                         placeholder="Share your feedback about this lawyer..."
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 resize-none"
                         rows="3"
+                        disabled={submitLoading}
                       />
+
+                      {/* Success/Error Messages */}
+                      {submitSuccess && (
+                        <div className="mt-3 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm text-green-700 font-semibold">Review submitted successfully!</p>
+                        </div>
+                      )}
+                      {submitError && (
+                        <div className="mt-3 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-700 font-semibold">{submitError}</p>
+                        </div>
+                      )}
+
                       <button
                         onClick={handleSubmitReview}
-                        disabled={!reviewText.trim()}
+                        disabled={!reviewText.trim() || submitLoading}
                         className="mt-3 flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Send size={16} />
-                        Post Review
+                        {submitLoading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Posting...
+                          </>
+                        ) : (
+                          <>
+                            <Send size={16} />
+                            Post Review
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -288,19 +342,35 @@ const IndividualLawyer = () => {
 
                 {/* Reviews List */}
                 <div className="space-y-6">
-                  {reviews.length > 0 ? (
-                    reviews.map((review) => (
+                  {reviewsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto mb-2"></div>
+                      <p className="text-sm text-slate-600">Loading reviews...</p>
+                    </div>
+                  ) : reviews && reviews.length > 0 ? (
+                    reviews.slice(0, 3).map((review) => (
                       <div key={review.id} className="pb-6 border-b border-slate-200 last:border-b-0 last:pb-0">
                         <div className="flex items-start gap-4">
-                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                            <span className="text-sm font-semibold text-slate-600">
-                              {review.name[0]}
-                            </span>
+                          {/* Avatar */}
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
+                            {review.client_profile_image ? (
+                              <img
+                                src={review.client_profile_image}
+                                alt={review.client_name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-sm font-semibold text-slate-600">
+                                {review.client_name?.[0]?.toUpperCase() || "A"}
+                              </span>
+                            )}
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
-                              <p className="font-semibold text-slate-900">{review.name}</p>
-                              <p className="text-xs text-slate-500">{review.time}</p>
+                              <p className="font-semibold text-slate-900">{review.client_name || "Anonymous"}</p>
+                              <p className="text-xs text-slate-500">
+                                {review.created_at ? new Date(review.created_at).toLocaleDateString() : "Recently"}
+                              </p>
                             </div>
                             <div className="flex items-center gap-1 mb-2">
                               {[...Array(5)].map((_, i) => (
@@ -314,15 +384,22 @@ const IndividualLawyer = () => {
                                   }
                                 />
                               ))}
+                              <span className="text-xs text-slate-600 ml-2">{review.rating}/5</span>
                             </div>
-                            <p className="text-sm text-slate-700 leading-relaxed">{review.text}</p>
+                            <p className="text-sm text-slate-700 leading-relaxed">{review.comment}</p>
                           </div>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-slate-600 py-8">No reviews yet. Be the first to share your feedback!</p>
-                  )}
+                    <p className="text-center text-slate-600 py-8">No reviews yet. Be the first to share your feedback!</p>                  )
+                  }
+                  {reviews && reviews.length > 3 && (
+                    <div className="text-center pt-4">
+                      <button className="text-sm text-slate-900 font-semibold hover:underline">
+                        View all {reviews.length} reviews
+                      </button>
+                    </div>                  )}
                 </div>
               </div>
             </div>

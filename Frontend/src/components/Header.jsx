@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { GoLaw } from "react-icons/go";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Home } from "lucide-react";
 import { logoutUser } from "../Pages/slices/auth"; 
 import { fetchUserProfile } from "../Pages/slices/profileSlice";
 
@@ -29,10 +29,10 @@ const Header = () => {
   };
 
   const handleProfile = () => {
-    const userRole = user?.user_type || user?.role; // Check both field names
+    const userRole = (user?.user_type || user?.role || "").toLowerCase();
     if (userRole === "client") navigate("/clientdashboard");
     if (userRole === "lawyer") navigate("/lawyerdashboard");
-    if (userRole === "admin") navigate("/admindashboard");
+    if (userRole === "admin" || user?.is_superuser) navigate("/admindashboard");
   };
 
   const handleNavigation = (path) => {
@@ -130,8 +130,9 @@ const Header = () => {
                     {/* Menu Items */}
                     <button
                       onClick={handleProfile}
-                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition"
+                      className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition border-t border-slate-700"
                     >
+                      <Home size={16} />
                       Go to Dashboard
                     </button>
 

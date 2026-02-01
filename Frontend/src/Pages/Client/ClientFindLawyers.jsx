@@ -58,8 +58,8 @@ const FindLawyers = () => {
           name: lawyer.name || "Unknown",
           specialization: specialization,
           experience: lawyer.years_of_experience || 0,
-          rating: 4.5, // Default rating, update when you have a rating system
-          reviews: 0, // Default reviews, update when you have a review system
+          rating: lawyer.average_rating || 0,
+          reviews: lawyer.total_reviews || 0,
           location: lawyer.city || lawyer.district || "Nepal",
           fee: lawyer.consultation_fee || 0,
           status: "Available", // Default status, can be updated based on availability
@@ -232,8 +232,10 @@ const FindLawyers = () => {
                         <span>{lawyer.experience} yrs</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                        <span className="text-gray-700 font-semibold">{lawyer.rating}</span>
+                        <Star size={14} className={lawyer.rating > 0 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
+                        <span className="text-gray-700 font-semibold">
+                          {lawyer.rating > 0 ? lawyer.rating.toFixed(1) : "No reviews"}
+                        </span>
                       </div>
                     </div>
                   </div>
