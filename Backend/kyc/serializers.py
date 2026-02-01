@@ -1,10 +1,49 @@
 from rest_framework import serializers
 from .models import LawyerKYC
 from django.db import transaction
+from authentication.models import User
+
+
+class VerifiedLawyerPublicSerializer(serializers.ModelSerializer):
+    """Serializer for public display of verified lawyers"""
+    # User profile fields
+    name = serializers.CharField(source='user.name', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    phone = serializers.CharField(source='user.phone', read_only=True)
+    profile_image = serializers.SerializerMethodField()
+    bio = serializers.CharField(source='user.bio', read_only=True)
+    city = serializers.CharField(source='user.city', read_only=True)
+    district = serializers.CharField(source='user.district', read_only=True)
+    
+    # KYC fields for professional info
+    kyc_status = serializers.CharField(source='status', read_only=True)
+    
+    class Meta:
+        model = LawyerKYC
+        fields = [
+            'id',
+            # User profile data
+            'name', 'email', 'phone', 'profile_image', 'bio', 'city', 'district',
+            # KYC professional data
+            'kyc_status', 'bar_council_number', 'law_firm_name', 
+            'years_of_experience', 'consultation_fee', 'specializations',
+            'availability_days', 'available_from', 'available_until',
+            'verified_at'
+        ]
+    
+    def get_profile_image(self, obj):
+        """Get full URL for profile image"""
+        if obj.user and obj.user.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.user.profile_image.url)
+            return obj.user.profile_image.url
+        return None
 
 
 class LawyerKYCSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)
+    profile_image = serializers.SerializerMethodField()
     
     MAX_FILE_SIZE_MB = 5
     ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.pdf'}
@@ -12,7 +51,7 @@ class LawyerKYCSerializer(serializers.ModelSerializer):
     class Meta:
         model = LawyerKYC
         fields = [
-            'id', 'user', 'user_email', 'status', 'rejection_reason', 'verified_at',
+            'id', 'user', 'user_email', 'profile_image', 'status', 'rejection_reason', 'verified_at',
             # Personal Info
             'full_name', 'email', 'phone', 'dob', 'gender', 'permanent_address', 'current_address',
             # Professional Info
@@ -26,7 +65,16 @@ class LawyerKYCSerializer(serializers.ModelSerializer):
             # Timestamps
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'user', 'user_email', 'status', 'rejection_reason', 'verified_at', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'user_email', 'profile_image', 'status', 'rejection_reason', 'verified_at', 'created_at', 'updated_at']
+
+    def get_profile_image(self, obj):
+        """Get full URL for profile image"""
+        if obj.user and obj.user.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.user.profile_image.url)
+            return obj.user.profile_image.url
+        return None
 
     def _validate_file(self, file_obj, field_name):
         """Validate file size and extension"""

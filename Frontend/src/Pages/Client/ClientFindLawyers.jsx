@@ -1,29 +1,21 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Sidebar from "./sidebar";
 import ClientDashHeader from "./ClientDashHeader";
-import { Search, MapPin, Star, Briefcase, Shield, ChevronDown } from "lucide-react";
+import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader } from "lucide-react";
+import axiosInstance from "../../axios/axiosinstance";
 
 const specializations = [
   "All Specializations",
   "Family Law",
   "Property Law",
   "Criminal Law",
+  "Corporate Law",
   "Civil Litigation",
   "Banking & Finance",
   "Labor Law",
   "Immigration Law",
-];
-
-const locations = [
-  "All Locations",
-  "Kathmandu",
-  "Lalitpur",
-  "Pokhara",
-  "Butwal",
-  "Bharatpur",
-  "Biratnagar",
-  "Birgunj",
-  "Bhaktapur",
+  "Insurance Law",
+  "Tort Law",
 ];
 
 const sortOptions = [
@@ -33,92 +25,79 @@ const sortOptions = [
   "Experience",
 ];
 
-const lawyers = [
-  {
-    id: 1,
-    name: "Adv. Priya Sharma",
-    specialization: "Property Law",
-    experience: 12,
-    rating: 4.9,
-    reviews: 15,
-    location: "Kathmandu",
-    fee: 2500,
-    status: "Available",
-    verified: true,
-    image: "https://ui-avatars.com/api/?name=Priya+Sharma&background=4F46E5&color=fff",
-  },
-  {
-    id: 2,
-    name: "Adv. Rajesh Thapa",
-    specialization: "Banking & Finance",
-    experience: 15,
-    rating: 4.8,
-    reviews: 12,
-    location: "Lalitpur",
-    fee: 5000,
-    status: "Available",
-    verified: true,
-    image: "https://ui-avatars.com/api/?name=Rajesh+Thapa&background=4F46E5&color=fff",
-  },
-  {
-    id: 3,
-    name: "Adv. Sita Karki",
-    specialization: "Family Law",
-    experience: 8,
-    rating: 4.7,
-    reviews: 8,
-    location: "Bhaktapur",
-    fee: 2500,
-    status: "Busy",
-    verified: true,
-    image: "https://ui-avatars.com/api/?name=Sita+Karki&background=4F46E5&color=fff",
-  },
-  {
-    id: 4,
-    name: "Adv. Anita Gurung",
-    specialization: "Criminal Law",
-    experience: 10,
-    rating: 4.6,
-    reviews: 10,
-    location: "Kathmandu",
-    fee: 4000,
-    status: "Available",
-    verified: true,
-    image: "https://ui-avatars.com/api/?name=Anita+Gurung&background=4F46E5&color=fff",
-  },
-  {
-    id: 5,
-    name: "Adv. Kumar Shrestha",
-    specialization: "Civil Litigation",
-    experience: 14,
-    rating: 4.9,
-    reviews: 25,
-    location: "Pokhara",
-    fee: 3500,
-    status: "Available",
-    verified: true,
-    image: "https://ui-avatars.com/api/?name=Kumar+Shrestha&background=4F46E5&color=fff",
-  },
-  {
-    id: 6,
-    name: "Adv. Deepak Khadka",
-    specialization: "Immigration Law",
-    experience: 11,
-    rating: 4.8,
-    reviews: 19,
-    location: "Biratnagar",
-    fee: 3800,
-    status: "Available",
-    verified: true,
-    image: "https://ui-avatars.com/api/?name=Deepak+Khadka&background=4F46E5&color=fff",
-  },
-];
-
 const FindLawyers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialization, setSelectedSpecialization] = useState("All Specializations");
   const [selectedLocation, setSelectedLocation] = useState("All Locations");
   const [sortBy, setSortBy] = useState("Top Rated");
+  const [lawyers, setLawyers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [locations, setLocations] = useState(["All Locations"]);
+
+  // Fetch verified lawyers from backend
+  useEffect(() => {
+    const fetchLawyers = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get("/kyc/verified-lawyers/");
+        
+        // Transform backend data to frontend format
+        const transformedLawyers = response.data.map((lawyer) => ({
+          id: lawyer.id,
+          name: lawyer.name || "Unknown",
+          specialization: lawyer.specializations || "General Practice",
+          experience: lawyer.years_of_experience || 0,
+          rating: 4.5, // Default rating, update when you have a rating system
+          reviews: 0, // Default reviews, update when you have a review system
+          location: lawyer.city || lawyer.district || "Nepal",
+          fee: lawyer.consultation_fee || 0,
+          status: "Available", // Default status, can be updated based on availability
+          verified: lawyer.kyc_status === "approved",
+          image: lawyer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(lawyer.name || "User")}&background=4F46E5&color=fff`,
+          phone: lawyer.phone,
+          email: lawyer.email,
+          bio: lawyer.bio,
+          barCouncilNumber: lawyer.bar_council_number,
+          lawFirm: lawyer.law_firm_name,
+          availabilityDays: lawyer.availability_days,
+          availableFrom: lawyer.available_from,
+          availableUntil: lawyer.available_until,
+        }));
+
+        setLawyers(transformedLawyers);
+
+        // Extract unique locations
+        const uniqueLocations = ["All Locations", ...new Set(
+          transformedLawyers.map(l => l.location).filter(Boolean)
+        )];
+        setLocations(uniqueLocations);
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching lawyers:", err);
+        setError("Failed to load lawyers. Please try again later.");
+        setLoading(false);
+      }
+    };
+
+    fetchLawyers();
+  }, []);
+
+  // Helper function to extract city from address
+  const extractCity = (address) => {
+    if (!address) return "Nepal";
+    // Try to extract city name from address
+    const cities = ["Kathmandu", "Lalitpur", "Bhaktapur", "Pokhara", "Biratnagar", "Birgunj", "Bharatpur", "Butwal"];
+    for (const city of cities) {
+      if (address.toLowerCase().includes(city.toLowerCase())) {
+        return city;
+      }
+    }
+    return address.split(",")[0].trim(); // Return first part of address
+  };
+
+  // Filter lawyers based on search, specialization, and location
 
   // Filter lawyers based on search, specialization, and location
   const filteredLawyers = useMemo(() => {
@@ -232,11 +211,29 @@ const FindLawyers = () => {
             </div>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center items-center py-20">
+              <Loader className="animate-spin text-[#0F1A3D]" size={48} />
+              <p className="ml-4 text-gray-600 text-lg">Loading lawyers...</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+              <p className="text-red-700 text-center">{error}</p>
+            </div>
+          )}
+
           {/* Results Count */}
-          <p className="text-gray-600 mb-6">Showing {sortedLawyers.length} lawyers</p>
+          {!loading && !error && (
+            <p className="text-gray-600 mb-6">Showing {sortedLawyers.length} lawyers</p>
+          )}
 
           {/* Lawyers Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {!loading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedLawyers.map((lawyer) => (
               <div
                 key={lawyer.id}
@@ -317,9 +314,10 @@ const FindLawyers = () => {
               </div>
             ))}
           </div>
+          )}
 
           {/* No Results Message */}
-          {sortedLawyers.length === 0 && (
+          {!loading && !error && sortedLawyers.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">No lawyers found matching your criteria</p>
               <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or search terms</p>

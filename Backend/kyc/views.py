@@ -2,14 +2,15 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 
 from .models import LawyerKYC
 from .serializers import (
     LawyerKYCSerializer, 
     KYCStatusSerializer, 
-    AdminKYCReviewSerializer
+    AdminKYCReviewSerializer,
+    VerifiedLawyerPublicSerializer
 )
 from .permissions import IsLawyer, IsOwnerOrAdmin, IsAdminReviewer
 from drf_yasg.utils import swagger_auto_schema
@@ -164,4 +165,50 @@ class AdminKYCReviewView(generics.UpdateAPIView):
         kyc.save()
         
         serializer = self.get_serializer(kyc)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class VerifiedLawyersListView(generics.ListAPIView):
+    """
+    GET /api/kyc/verified-lawyers/
+    Public endpoint to get all verified lawyers with their KYC details
+    """
+    serializer_class = VerifiedLawyerPublicSerializer
+    permission_classes = [AllowAny]
+    queryset = LawyerKYC.objects.filter(status='approved').select_related('user').order_by('-verified_at')
+    
+    @swagger_auto_schema(
+        operation_description="Get all verified lawyers for public view",
+        manual_parameters=[
+            openapi.Parameter('specialization', openapi.IN_QUERY, description="Filter by specialization", type=openapi.TYPE_STRING),
+            openapi.Parameter('city', openapi.IN_QUERY, description="Filter by city/location", type=openapi.TYPE_STRING),
+            openapi.Parameter('min_experience', openapi.IN_QUERY, description="Minimum years of experience", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('max_fee', openapi.IN_QUERY, description="Maximum consultation fee", type=openapi.TYPE_NUMBER),
+        ],
+        responses={200: VerifiedLawyerPublicSerializer(many=True)},
+    )
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        
+        # Filter by specialization
+        specialization = request.query_params.get('specialization', None)
+        if specialization:
+            queryset = queryset.filter(specializations__icontains=specialization)
+        
+        # Filter by city
+        city = request.query_params.get('city', None)
+        if city:
+            queryset = queryset.filter(user__city__icontains=city)
+        
+        # Filter by minimum experience
+        min_experience = request.query_params.get('min_experience', None)
+        if min_experience:
+            queryset = queryset.filter(years_of_experience__gte=int(min_experience))
+        
+        # Filter by maximum fee
+        max_fee = request.query_params.get('max_fee', None)
+        if max_fee:
+            queryset = queryset.filter(consultation_fee__lte=float(max_fee))
+        
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
