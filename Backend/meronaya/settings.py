@@ -51,7 +51,9 @@ INSTALLED_APPS = [
     
     #My apps
     'authentication', 
-    'kyc'
+    'kyc',
+    'review'
+    
 ]
 
 MIDDLEWARE = [

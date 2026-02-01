@@ -7,12 +7,14 @@ from .views import (
     AdminKYCListView,
     AdminKYCDetailView,
     AdminKYCReviewView,
-    VerifiedLawyersListView
+    VerifiedLawyersListView,
+    LawyerDetailView
 )
 
 urlpatterns = [
     # Public endpoints
     path('verified-lawyers/', VerifiedLawyersListView.as_view(), name='verified-lawyers'),
+    path('lawyer/<int:id>/', LawyerDetailView.as_view(), name='lawyer-detail'),
     
     # Lawyer endpoints
     path('submit/', SubmitKYCView.as_view(), name='kyc-submit'),

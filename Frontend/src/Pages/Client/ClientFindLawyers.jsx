@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "./sidebar";
 import ClientDashHeader from "./ClientDashHeader";
 import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCircle2, MessageSquare, Video, Filter } from "lucide-react";
-import axiosInstance from "../../axios/axiosinstance";
+import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
 
 const specializations = [
   "All Specializations",
@@ -18,93 +20,67 @@ const specializations = [
   "Tort Law",
 ];
 
-const sortOptions = [
-  "Top Rated",
-  "Price: Low to High",
-  "Price: High to Low",
-  "Experience",
-];
-
 const FindLawyers = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Redux selectors
+  const lawyersData = useSelector((state) => state.lawyer.verifiedLawyers);
+  const loading = useSelector((state) => state.lawyer.verifiedLawyersLoading);
+  const error = useSelector((state) => state.lawyer.verifiedLawyersError);
+
+  // Local component state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialization, setSelectedSpecialization] = useState("All Specializations");
-  const [sortBy, setSortBy] = useState("Top Rated");
-  const [lawyers, setLawyers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Fetch verified lawyers from backend
+  // Fetch verified lawyers on component mount
   useEffect(() => {
-    const fetchLawyers = async () => {
-      try {
-        setLoading(true);
-        const response = await axiosInstance.get("/kyc/verified-lawyers/");
-        console.log("Lawyers API response:", response.data); // Debug log
-        
-        // Transform backend data to frontend format
-        const transformedLawyers = response.data
-          .filter(lawyer => lawyer) 
-          .map((lawyer) => {
-            // Handle specializations - it might be a string, array, or null
-            let specialization = "General Practice";
-            if (lawyer.specializations) {
-              if (typeof lawyer.specializations === 'string') {
-                specialization = lawyer.specializations;
-              } else if (Array.isArray(lawyer.specializations)) {
-                specialization = lawyer.specializations.join(", ") || "General Practice";
-              }
-            }
+    dispatch(fetchVerifiedLawyers());
+  }, [dispatch]);
 
-            return {
-              id: lawyer.id,
-              name: lawyer.name || "Unknown",
-              specialization: specialization,
-              experience: lawyer.years_of_experience || 0,
-              rating: 4.5, // Default rating, update when you have a rating system
-              reviews: 0, // Default reviews, update when you have a review system
-              location: lawyer.city || lawyer.district || "Nepal",
-              fee: lawyer.consultation_fee || 0,
-              status: "Available", // Default status, can be updated based on availability
-              verified: lawyer.kyc_status === "approved",
-              image: lawyer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(lawyer.name || "User")}&background=4F46E5&color=fff`,
-              phone: lawyer.phone,
-              email: lawyer.email,
-              bio: lawyer.bio,
-              dob: lawyer.dob,
-              district: lawyer.district,
-              barCouncilNumber: lawyer.bar_council_number,
-              lawFirm: lawyer.law_firm_name,
-              availabilityDays: lawyer.availability_days,
-              availableFrom: lawyer.available_from,
-              availableUntil: lawyer.available_until,
-            };
-          });
+  // Transform backend data to frontend format
+  const lawyers = useMemo(() => {
+    return lawyersData
+      .filter(lawyer => lawyer) 
+      .map((lawyer) => {
+        // Handle specializations - it might be a string, array, or null
+        let specialization = "General Practice";
+        if (lawyer.specializations) {
+          if (typeof lawyer.specializations === 'string') {
+            specialization = lawyer.specializations;
+          } else if (Array.isArray(lawyer.specializations)) {
+            specialization = lawyer.specializations.join(", ") || "General Practice";
+          }
+        }
 
-        setLawyers(transformedLawyers);
-        console.log("Transformed lawyers:", transformedLawyers); // Debug log
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching lawyers:", err);
-        setError("Failed to load lawyers. Please try again later.");
-        setLoading(false);
-      }
-    };
-
-    fetchLawyers();
-  }, []);
+        return {
+          id: lawyer.id,
+          name: lawyer.name || "Unknown",
+          specialization: specialization,
+          experience: lawyer.years_of_experience || 0,
+          rating: 4.5, // Default rating, update when you have a rating system
+          reviews: 0, // Default reviews, update when you have a review system
+          location: lawyer.city || lawyer.district || "Nepal",
+          fee: lawyer.consultation_fee || 0,
+          status: "Available", // Default status, can be updated based on availability
+          verified: lawyer.kyc_status === "approved",
+          image: lawyer.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(lawyer.name || "User")}&background=4F46E5&color=fff`,
+          phone: lawyer.phone,
+          email: lawyer.email,
+          bio: lawyer.bio,
+          dob: lawyer.dob,
+          district: lawyer.district,
+          barCouncilNumber: lawyer.bar_council_number,
+          lawFirm: lawyer.law_firm_name,
+          availabilityDays: lawyer.availability_days,
+          availableFrom: lawyer.available_from,
+          availableUntil: lawyer.available_until,
+        };
+      });
+  }, [lawyersData]);
 
   // Helper function to extract city from address
-  const extractCity = (address) => {
-    if (!address) return "Nepal";
-    // Try to extract city name from address
-    const cities = ["Kathmandu", "Lalitpur", "Bhaktapur", "Pokhara", "Biratnagar", "Birgunj", "Bharatpur", "Butwal"];
-    for (const city of cities) {
-      if (address.toLowerCase().includes(city.toLowerCase())) {
-        return city;
-      }
-    }
-    return address.split(",")[0].trim(); // Return first part of address
-  };
+  // (Removed unused extractCity function)
 
   // Filter lawyers based on search and specialization
   const filteredLawyers = useMemo(() => {
@@ -138,19 +114,9 @@ const FindLawyers = () => {
 
   // Sort filtered lawyers
   const sortedLawyers = useMemo(() => {
-    const clone = [...filteredLawyers];
-
-    switch (sortBy) {
-      case "Price: Low to High":
-        return clone.sort((a, b) => a.fee - b.fee);
-      case "Price: High to Low":
-        return clone.sort((a, b) => b.fee - a.fee);
-      case "Experience":
-        return clone.sort((a, b) => b.experience - a.experience);
-      default: // "Top Rated"
-        return clone.sort((a, b) => b.rating - a.rating);
-    }
-  }, [filteredLawyers, sortBy]);
+    // Default: sort by rating (Top Rated)
+    return [...filteredLawyers].sort((a, b) => b.rating - a.rating);
+  }, [filteredLawyers]);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -307,7 +273,10 @@ const FindLawyers = () => {
 
                 {/* Footer Action */}
                 <div className="mt-auto">
-                  <button className="w-full py-2.5 px-4 bg-[#0F1A3D] text-white rounded-lg font-semibold text-sm hover:bg-[#1a2b5a] transition">
+                  <button 
+                    onClick={() => navigate(`/lawyer/${lawyer.id}`)}
+                    className="w-full py-2.5 px-4 bg-[#0F1A3D] text-white rounded-lg font-semibold text-sm hover:bg-[#1a2b5a] transition"
+                  >
                     Request Consultation
                   </button>
                 </div>

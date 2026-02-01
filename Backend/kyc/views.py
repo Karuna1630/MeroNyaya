@@ -169,6 +169,17 @@ class AdminKYCReviewView(generics.UpdateAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class LawyerDetailView(generics.RetrieveAPIView):
+    """
+    GET /api/kyc/lawyer/<id>/
+    Public endpoint to get a single lawyer's detailed profile
+    """
+    serializer_class = LawyerDirectorySerializer
+    permission_classes = [AllowAny]
+    queryset = User.objects.filter(is_lawyer=True).select_related('lawyer_kyc')
+    lookup_field = 'id'
+
+
 class VerifiedLawyersListView(generics.ListAPIView):
     """
     GET /api/kyc/verified-lawyers/
