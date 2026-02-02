@@ -24,6 +24,8 @@ import LawyerMessage from './Pages/Lawyer/LawyerMessage.jsx';
 import LawyerAppointment from './Pages/Lawyer/LawyerAppointment.jsx';
 import Earning from './Pages/Lawyer/Earning.jsx';
 import LawyerCase from './Pages/Lawyer/LawyerCase.jsx';
+import LawyerFindCases from './Pages/Lawyer/LawyerFindCases.jsx';
+import LawyerCaseRequest from './Pages/Lawyer/LawyerCaseRequest.jsx';
 import ViewProfile from './Pages/Profile/ViewProfile.jsx';
 import EditProfile from './Pages/Profile/EditProfile.jsx';
 
@@ -69,6 +71,8 @@ function App() {
 
         {/* Lawyer Routes - Protected */}
         <Route path='/lawyerdashboard' element={<ProtectedRoute requiredRole="lawyer"><LawyerDashboard /></ProtectedRoute>} />
+        <Route path='/lawyerfindcases' element={<ProtectedRoute requiredRole="lawyer"><LawyerFindCases /></ProtectedRoute>} />
+        <Route path='/lawyercaserequest' element={<ProtectedRoute requiredRole="lawyer"><LawyerCaseRequest /></ProtectedRoute>} />
         <Route path='/lawyercase' element={<ProtectedRoute requiredRole="lawyer"><LawyerCase /></ProtectedRoute>} />
         <Route path='/lawyerappointment' element={<ProtectedRoute requiredRole="lawyer"><LawyerAppointment /></ProtectedRoute>} />
         <Route path='/lawyermessage' element={<ProtectedRoute requiredRole="lawyer"><LawyerMessage /></ProtectedRoute>} />

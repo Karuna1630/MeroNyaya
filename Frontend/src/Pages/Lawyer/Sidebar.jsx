@@ -1,12 +1,15 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  Home,
+  Grid,
   Briefcase,
   Calendar,
   MessageSquare,
   DollarSign,
   LogOut,
+  Inbox,
+  FolderOpen,
+  Search,
 } from "lucide-react";
 import { GoLaw } from "react-icons/go";
 
@@ -19,8 +22,10 @@ const Sidebar = () => {
   };
 
   const menuItems = [
-    { icon: Home, label: "Dashboard", path: "/lawyerdashboard" },
-    { icon: Briefcase, label: "My Cases", path: "/lawyercase" },
+    { icon: Grid, label: "Dashboard", path: "/lawyerdashboard" },
+    { icon: Search, label: "Find Cases", path: "/lawyerfindcases" },
+    { icon: Inbox, label: "Case Requests", path: "/lawyercaserequest" },
+    { icon: FolderOpen, label: "My Cases", path: "/lawyercase" },
     { icon: Calendar, label: "Appointments", path: "/lawyerappointment" },
     { icon: MessageSquare, label: "Messages", path: "/lawyermessage", badge: 1 },
     { icon: DollarSign, label: "Earnings", path: "/lawyerearning" },
