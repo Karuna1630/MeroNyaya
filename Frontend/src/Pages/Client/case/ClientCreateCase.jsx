@@ -49,6 +49,7 @@ const ClientCreateCase = () => {
     return list.filter((lawyer) => (lawyer.name || '').toLowerCase().includes(term));
   }, [verifiedLawyers, lawyerSearchTerm]);
 
+
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -146,8 +147,19 @@ const ClientCreateCase = () => {
                 validateOnChange={true}
                 validateOnBlur={true}
               >
-                {({ values, isSubmitting, resetForm, setFieldValue, setFieldError, setFieldTouched }) => (
-                  <Form className="bg-white border border-gray-200 rounded-lg p-8">
+                {({ values, isSubmitting, resetForm, setFieldValue, setFieldError, setFieldTouched }) => {
+                  const selectedIds = Array.isArray(values.selectedLawyerIds)
+                    ? values.selectedLawyerIds.map(String)
+                    : [];
+                  const selectedLawyers = (Array.isArray(verifiedLawyers) ? verifiedLawyers : []).filter(
+                    (lawyer) => selectedIds.includes(String(lawyer.id))
+                  );
+                  const availableLawyers = filteredLawyers.filter(
+                    (lawyer) => !selectedIds.includes(String(lawyer.id))
+                  );
+
+                  return (
+                    <Form className="bg-white border border-gray-200 rounded-lg p-8">
               
               {/* Section 1: Case Information */}
               <div className="mb-8">
@@ -315,39 +327,33 @@ const ClientCreateCase = () => {
                     />
                     <p className="text-xs text-gray-500">Select up to 3 lawyers</p>
 
-                    {Array.isArray(values.selectedLawyerIds) && values.selectedLawyerIds.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {values.selectedLawyerIds.map((id) => {
-                          const selected = (Array.isArray(verifiedLawyers) ? verifiedLawyers : []).find(
-                            (lawyer) => String(lawyer.id) === String(id)
-                          );
-                          return (
+                    {selectedLawyers.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Preferred lawyers</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedLawyers.map((lawyer) => (
                             <span
-                              key={id}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-[#0F1A3D] text-xs font-medium rounded-full border border-blue-100"
+                              key={lawyer.id}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-[#0F1A3D] text-xs font-medium rounded-full border border-blue-200 shadow-sm"
                             >
-                              {selected?.name || `Lawyer #${id}`}
+                              {lawyer.name}
                               <button
                                 type="button"
-                                onClick={() =>
-                                  (() => {
-                                    const updated = values.selectedLawyerIds.filter(
-                                      (item) => String(item) !== String(id)
-                                    );
-                                    setFieldValue('selectedLawyerIds', updated);
-                                    if (updated.length <= 3) {
-                                      setFieldError('selectedLawyerIds', undefined);
-                                    }
-                                  })()
-                                }
+                                onClick={() => {
+                                  const updated = selectedIds.filter((item) => String(item) !== String(lawyer.id));
+                                  setFieldValue('selectedLawyerIds', updated);
+                                  if (updated.length <= 3) {
+                                    setFieldError('selectedLawyerIds', undefined);
+                                  }
+                                }}
                                 className="text-blue-700 hover:text-blue-900 cursor-pointer"
                                 aria-label="Remove lawyer"
                               >
                                 ×
                               </button>
                             </span>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
                     )}
 
@@ -357,34 +363,28 @@ const ClientCreateCase = () => {
                       <p className="text-sm text-red-500">{verifiedLawyersError}</p>
                     ) : lawyerSearchTerm.trim() ? (
                       <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg">
-                        {filteredLawyers.length === 0 ? (
+                        {availableLawyers.length === 0 ? (
                           <p className="text-sm text-gray-500 p-3">No lawyers found.</p>
                         ) : (
-                          filteredLawyers.map((lawyer) => (
+                          availableLawyers.map((lawyer) => (
                             <button
                               key={lawyer.id}
                               type="button"
                               onClick={() => {
                                 const id = String(lawyer.id);
-                                const current = Array.isArray(values.selectedLawyerIds)
-                                  ? values.selectedLawyerIds.map(String)
-                                  : [];
-                                if (current.includes(id)) {
+                                if (selectedIds.includes(id)) {
                                   return;
                                 }
-                                if (current.length >= 3) {
+                                if (selectedIds.length >= 3) {
                                   setFieldTouched('selectedLawyerIds', true, false);
                                   setFieldError('selectedLawyerIds', 'You can select up to 3 lawyers');
                                   return;
                                 }
                                 setFieldError('selectedLawyerIds', undefined);
-                                setFieldValue('selectedLawyerIds', [...current, id]);
+                                setFieldValue('selectedLawyerIds', [...selectedIds, id]);
                               }}
                               className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                                Array.isArray(values.selectedLawyerIds) &&
-                                values.selectedLawyerIds.map(String).includes(String(lawyer.id))
-                                  ? 'bg-blue-50'
-                                  : ''
+                                ''
                               }`}
                             >
                               <p className="text-sm font-medium text-[#0F1A3D]">{lawyer.name}</p>
@@ -550,8 +550,9 @@ const ClientCreateCase = () => {
                 </button>
               </div>
             </Form>
-          )}
-        </Formik>
+                    );
+                }}
+              </Formik>
             </div>
           </div>
         </div>

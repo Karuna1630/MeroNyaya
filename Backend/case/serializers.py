@@ -58,19 +58,34 @@ class CaseSerializer(serializers.ModelSerializer):
 class CaseListSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing cases"""
     client_name = serializers.CharField(source='client.name', read_only=True)
+    client_email = serializers.CharField(source='client.email', read_only=True)
+    client_profile_image = serializers.SerializerMethodField()
     lawyer_name = serializers.CharField(source='lawyer.name', read_only=True, allow_null=True)
+    lawyer_email = serializers.CharField(source='lawyer.email', read_only=True, allow_null=True)
+    lawyer_phone = serializers.CharField(source='lawyer.phone', read_only=True, allow_null=True)
     document_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Case
         fields = [
-            'id', 'case_title', 'case_category', 'status', 'urgency_level',
-            'client_name', 'lawyer_name', 'proposal_count', 'document_count',
-            'created_at', 'updated_at'
+            'id', 'case_title', 'case_category', 'case_description', 'status', 'urgency_level',
+            'lawyer_selection', 'request_consultation',
+            'client_name', 'client_email', 'client_profile_image', 
+            'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone',
+            'proposal_count', 'document_count',
+            'created_at', 'updated_at', 'accepted_at'
         ]
     
     def get_document_count(self, obj):
         return obj.documents.count()
+    
+    def get_client_profile_image(self, obj):
+        if obj.client and obj.client.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.client.profile_image.url)
+            return obj.client.profile_image.url
+        return None
 
 
 class PublicCaseSerializer(serializers.ModelSerializer):

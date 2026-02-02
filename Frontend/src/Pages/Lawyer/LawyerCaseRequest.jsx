@@ -1,18 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
+import { fetchCases, updateCaseStatus } from "../slices/caseSlice";
 import { 
   Eye, 
   Check, 
   X, 
-  Clock, 
-  MapPin, 
-  Video, 
   FileText, 
   Calendar, 
   Phone,
   AlertCircle,
-  TrendingDown,
   TrendingUp,
   Filter
 } from "lucide-react";
@@ -24,88 +22,46 @@ import {
  * It features status summary cards, filterable tabs, and detailed case request cards.
  */
 const LawyerCaseRequest = () => {
+  const dispatch = useDispatch();
+  const { cases, casesLoading, casesError } = useSelector((state) => state.case);
   const [activeTab, setActiveTab] = useState("Pending");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
+  const statusMap = {
+    Pending: "sent_to_lawyers",
+    Accepted: "accepted",
+    Rejected: "rejected",
+  };
 
-  // Mock Data - Representing the structure of case requests
-  const [caseRequests, setCaseRequests] = useState([
-    {
-      id: 1,
-      clientName: "Sita Sharma",
-      clientPhone: "+977-9841234567",
-      receivedDate: "Dec 10, 2025",
-      title: "Property Dispute – Land Registration",
-      category: "Property Law",
-      priority: "High",
-      description: "Need legal assistance for a land registration dispute in Kathmandu. The property was inherited but facing claims from relatives.",
-      budget: "Rs. 50,000 - 75,000",
-      deadline: "Dec 20, 2025",
-      documentsCount: 4,
-      consultationType: "In-Person",
-      status: "Pending",
-      image: "https://i.pravatar.cc/150?u=sita"
-    },
-    {
-      id: 2,
-      clientName: "Hari Prasad",
-      clientPhone: "+977-9851234567",
-      receivedDate: "Dec 11, 2025",
-      title: "Contract Breach – Business Partner",
-      category: "Corporate Law",
-      priority: "Medium",
-      description: "My business partner has breached our partnership agreement. Need to recover damages and protect my business interests.",
-      budget: "Rs. 30,000 - 50,000",
-      deadline: "Dec 25, 2025",
-      documentsCount: 2,
-      consultationType: "Video Call",
-      status: "Pending",
-      image: "https://i.pravatar.cc/150?u=hari"
-    },
-    {
-      id: 3,
-      clientName: "Ram Bahadur",
-      clientPhone: "+977-9801234567",
-      receivedDate: "Dec 08, 2025",
-      title: "Unfair Dismissal – Labor Court",
-      category: "Labor Law",
-      priority: "Low",
-      description: "I was dismissed from my job without proper notice or cause. Seeking legal advice on filing a case in the labor court.",
-      budget: "Rs. 20,000 - 35,000",
-      deadline: "Dec 15, 2025",
-      documentsCount: 1,
-      consultationType: "In-Person",
-      status: "Accepted",
-      image: "https://i.pravatar.cc/150?u=ram"
-    },
-    {
-      id: 4,
-      clientName: "Gita Devi",
-      clientPhone: "+977-9811234567",
-      receivedDate: "Dec 05, 2025",
-      title: "Divorce & Child Custody",
-      category: "Family Law",
-      priority: "High",
-      description: "Seeking legal representation for divorce and child custody proceedings. Urgent attention required for safety concerns.",
-      budget: "Rs. 100,000 - 150,000",
-      deadline: "Dec 12, 2025",
-      documentsCount: 6,
-      consultationType: "Video Call",
-      status: "Rejected",
-      image: "https://i.pravatar.cc/150?u=gita"
-    }
-  ]);
+  useEffect(() => {
+    dispatch(fetchCases());
+  }, [dispatch]);
+
+  const specificCases = useMemo(() => {
+    const list = Array.isArray(cases) ? cases : [];
+    return list.filter((item) => item.lawyer_selection === "specific");
+  }, [cases]);
+
+  const filteredCases = useMemo(() => {
+    const status = statusMap[activeTab];
+    return specificCases.filter((item) => item.status === status);
+  }, [specificCases, activeTab]);
 
   // Summary statistics for the top cards
   const stats = [
-    { label: "Pending", count: caseRequests.filter(c => c.status === "Pending").length, color: "text-orange-500", bg: "bg-orange-50" },
-    { label: "Urgent", count: caseRequests.filter(c => c.priority === "High" && c.status === "Pending").length, color: "text-red-500", bg: "bg-red-50" },
-    { label: "Accepted", count: caseRequests.filter(c => c.status === "Accepted").length, color: "text-green-500", bg: "bg-green-50" },
-    { label: "Rejected", count: caseRequests.filter(c => c.status === "Rejected").length, color: "text-gray-500", bg: "bg-gray-50" }
+    { label: "Pending", count: specificCases.filter(c => c.status === "sent_to_lawyers").length, color: "text-orange-500", bg: "bg-orange-50" },
+    { label: "Urgent", count: specificCases.filter(c => c.urgency_level === "High" && c.status === "sent_to_lawyers").length, color: "text-red-500", bg: "bg-red-50" },
+    { label: "Accepted", count: specificCases.filter(c => c.status === "accepted").length, color: "text-green-500", bg: "bg-green-50" },
+    { label: "Rejected", count: specificCases.filter(c => c.status === "rejected").length, color: "text-gray-500", bg: "bg-gray-50" }
   ];
 
-  const handleAccept = (id) => {
-    setCaseRequests(caseRequests.map(c => c.id === id ? { ...c, status: "Accepted" } : c));
+  const handleAccept = async (id) => {
+    try {
+      await dispatch(updateCaseStatus({ caseId: id, status: "accepted" })).unwrap();
+      await dispatch(fetchCases()).unwrap();
+    } catch (error) {
+      console.error('Failed to accept case:', error);
+    }
   };
 
   const handleReject = (id) => {
@@ -113,12 +69,16 @@ const LawyerCaseRequest = () => {
     setShowRejectModal(true);
   };
 
-  const confirmReject = () => {
-    setCaseRequests(caseRequests.map(c => c.id === selectedCase ? { ...c, status: "Rejected" } : c));
-    setShowRejectModal(false);
+  const confirmReject = async () => {
+    try {
+      await dispatch(updateCaseStatus({ caseId: selectedCase, status: "rejected" })).unwrap();
+      await dispatch(fetchCases()).unwrap();
+      setShowRejectModal(false);
+    } catch (error) {
+      console.error('Failed to reject case:', error);
+      setShowRejectModal(false);
+    }
   };
-
-  const filteredCases = caseRequests.filter(c => c.status === activeTab);
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -127,6 +87,19 @@ const LawyerCaseRequest = () => {
       case "Low": return "bg-blue-100 text-blue-600 border border-blue-200";
       default: return "bg-gray-100 text-gray-600";
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const getInitials = (name = "") => {
+    const parts = name.trim().split(" ");
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
   };
 
   return (
@@ -183,23 +156,44 @@ const LawyerCaseRequest = () => {
 
           {/* Section 3: Case Request List */}
           <div className="space-y-6">
-            {filteredCases.length > 0 ? (
+            {casesLoading ? (
+              <div className="bg-white py-20 rounded-2xl border border-gray-100 flex flex-col items-center justify-center text-gray-500 gap-4">
+                <div className="w-12 h-12 border-4 border-[#0F1A3D] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-medium">Loading case requests...</p>
+              </div>
+            ) : casesError ? (
+              <div className="bg-white py-20 rounded-2xl border border-red-200 flex flex-col items-center justify-center text-red-500 gap-4">
+                <p className="text-lg font-medium">{casesError}</p>
+                <button
+                  onClick={() => dispatch(fetchCases())}
+                  className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-semibold hover:bg-black transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : filteredCases.length > 0 ? (
               filteredCases.map((item) => (
                 <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col xl:flex-row gap-6 hover:shadow-md transition-shadow">
                   {/* Client Information Column */}
                   <div className="w-full xl:w-48 flex flex-row xl:flex-col items-center gap-4 xl:gap-3 xl:border-r border-gray-100 xl:pr-6">
-                    <img 
-                      src={item.image} 
-                      alt={item.clientName} 
-                      className="w-16 h-16 rounded-full object-cover ring-2 ring-gray-50"
-                    />
+                    {item.client_profile_image ? (
+                      <img 
+                        src={item.client_profile_image} 
+                        alt={item.client_name}
+                        className="w-16 h-16 rounded-full object-cover ring-2 ring-gray-50"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-blue-50 text-[#0F1A3D] flex items-center justify-center font-bold ring-2 ring-gray-50 text-xl">
+                        {getInitials(item.client_name)}
+                      </div>
+                    )}
                     <div className="text-left xl:text-center flex-1">
-                      <h3 className="font-bold text-gray-900 leading-tight">{item.clientName}</h3>
+                      <h3 className="font-bold text-gray-900 leading-tight">{item.client_name}</h3>
                       <p className="text-xs text-gray-500 mt-1 flex items-center xl:justify-center gap-1">
                         <Phone size={12} />
-                        {item.clientPhone}
+                        {item.client_email}
                       </p>
-                      <p className="text-[10px] text-gray-400 mt-2">Received: {item.receivedDate}</p>
+                      <p className="text-[10px] text-gray-400 mt-2">Received: {formatDate(item.created_at)}</p>
                     </div>
                   </div>
 
@@ -208,42 +202,62 @@ const LawyerCaseRequest = () => {
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-3">
-                          <h2 className="text-xl font-bold text-[#0F1A3D]">{item.title}</h2>
+                          <h2 className="text-xl font-bold text-[#0F1A3D]">{item.case_title}</h2>
                           <div className="flex gap-2">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getPriorityColor(item.priority)}`}>
-                              {item.priority} priority
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getPriorityColor(item.urgency_level)}`}>
+                              {item.urgency_level} priority
                             </span>
                             <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                              {activeTab}
+                              {item.status.replace(/_/g, " ")}
                             </span>
                           </div>
                         </div>
                         <span className="inline-block bg-[#0F1A3D] text-white px-3 py-1 rounded text-[11px] font-semibold mt-1">
-                          {item.category}
+                          {item.case_category}
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-gray-600 text-sm leading-relaxed max-w-3xl">
-                      {item.description}
+                    <p className="text-gray-600 text-sm leading-relaxed max-w-3xl line-clamp-2">
+                      {item.case_description}
                     </p>
+
+                    {/* Display accepted lawyer info for accepted cases */}
+                    {activeTab === "Accepted" && item.lawyer_name && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm font-semibold text-green-900 flex items-center gap-2">
+                          <Check size={16} className="text-green-600" />
+                          Case Accepted by You
+                        </p>
+                        {item.accepted_at && (
+                          <p className="text-xs text-green-700 mt-1">
+                            Accepted on: {formatDate(item.accepted_at)}
+                          </p>
+                        )}
+                        {item.lawyer_email && (
+                          <p className="text-xs text-green-700">
+                            Contact: {item.lawyer_email}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span className="font-bold text-gray-900">Rs.</span>
-                        {item.budget}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar size={18} className="text-gray-400" />
-                        <span className="font-medium whitespace-nowrap">Deadline: {item.deadline}</span>
+                        <span className="font-medium whitespace-nowrap">Created: {formatDate(item.created_at)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <FileText size={18} className="text-gray-400" />
-                        {item.documentsCount} documents
+                        {item.document_count} documents
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        {item.consultationType === "In-Person" ? <MapPin size={18} className="text-gray-400" /> : <Video size={18} className="text-gray-400" />}
-                        {item.consultationType}
+                        <AlertCircle size={18} className="text-gray-400" />
+                        {item.request_consultation ? "Consultation requested" : "No consultation"}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <TrendingUp size={18} className="text-gray-400" />
+                        {item.proposal_count} proposals
                       </div>
                     </div>
                   </div>

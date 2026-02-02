@@ -40,7 +40,8 @@ class CaseViewSet(viewsets.ModelViewSet):
         elif user.role == 'Lawyer':
             queryset = Case.objects.filter(
                 models.Q(lawyer=user) | 
-                models.Q(status='public', lawyer_selection='public')
+                models.Q(status='public', lawyer_selection='public') |
+                models.Q(status='sent_to_lawyers', preferred_lawyers=user)
             ).select_related('client', 'lawyer').distinct()
         
         # Admin sees all cases
@@ -218,9 +219,11 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         case.status = new_status
         
-        # Update timestamps based on status
-        if new_status == 'completed':
-            from django.utils import timezone
+        # Assign lawyer when accepting and update timestamps
+        if new_status == 'accepted':
+            case.lawyer = request.user
+            case.accepted_at = timezone.now()
+        elif new_status == 'completed':
             case.completed_at = timezone.now()
         
         case.save()
