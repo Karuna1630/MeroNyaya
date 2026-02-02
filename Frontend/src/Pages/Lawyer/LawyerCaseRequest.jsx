@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
+import StatCard from "./Statcard";
 import { fetchCases, updateCaseStatus } from "../slices/caseSlice";
 import { 
   Eye, 
@@ -12,7 +13,11 @@ import {
   Phone,
   AlertCircle,
   TrendingUp,
-  Filter
+  Filter,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 
 /**
@@ -49,10 +54,30 @@ const LawyerCaseRequest = () => {
 
   // Summary statistics for the top cards
   const stats = [
-    { label: "Pending", count: specificCases.filter(c => c.status === "sent_to_lawyers").length, color: "text-orange-500", bg: "bg-orange-50" },
-    { label: "Urgent", count: specificCases.filter(c => c.urgency_level === "High" && c.status === "sent_to_lawyers").length, color: "text-red-500", bg: "bg-red-50" },
-    { label: "Accepted", count: specificCases.filter(c => c.status === "accepted").length, color: "text-green-500", bg: "bg-green-50" },
-    { label: "Rejected", count: specificCases.filter(c => c.status === "rejected").length, color: "text-gray-500", bg: "bg-gray-50" }
+    {
+      label: "Pending",
+      count: specificCases.filter(c => c.status === "sent_to_lawyers").length,
+      icon: <Clock size={20} />,
+      onClick: () => setActiveTab("Pending"),
+    },
+    {
+      label: "Urgent",
+      count: specificCases.filter(c => c.urgency_level === "High" && c.status === "sent_to_lawyers").length,
+      icon: <AlertTriangle size={20} />,
+      onClick: () => setActiveTab("Pending"),
+    },
+    {
+      label: "Accepted",
+      count: specificCases.filter(c => c.status === "accepted").length,
+      icon: <CheckCircle size={20} />,
+      onClick: () => setActiveTab("Accepted"),
+    },
+    {
+      label: "Rejected",
+      count: specificCases.filter(c => c.status === "rejected").length,
+      icon: <XCircle size={20} />,
+      onClick: () => setActiveTab("Rejected"),
+    }
   ];
 
   const handleAccept = async (id) => {
@@ -118,14 +143,15 @@ const LawyerCaseRequest = () => {
           {/* Section 1: Status Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {stats.map((stat, index) => (
-              <button 
+              <StatCard
                 key={index}
-                onClick={() => setActiveTab(stat.label === "Urgent" ? "Pending" : stat.label)}
-                className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2 hover:shadow-md transition-all group"
-              >
-                <span className={`text-4xl font-bold ${stat.color}`}>{stat.count}</span>
-                <span className="text-gray-500 font-medium group-hover:text-gray-700">{stat.label}</span>
-              </button>
+                icon={stat.icon}
+                title={stat.label}
+                value={stat.count}
+                subtitle="Click to view"
+                onClick={stat.onClick}
+                className="w-full text-left hover:shadow-lg transition-shadow"
+              />
             ))}
           </div>
 

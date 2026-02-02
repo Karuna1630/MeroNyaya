@@ -1,289 +1,288 @@
-import React, { useState } from "react";
-import { Search, Filter, MoreVertical, Calendar, FileText, Clock } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Search, Filter, Eye, Calendar, FileText, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import Sidebar from "./Sidebar";
 import LawyerDashHeader from "./LawyerDashHeader";
 import StatCard from "./Statcard";
 import { Briefcase } from "lucide-react";
+import { fetchCases } from "../slices/caseSlice";
 
 const LawyerCase = () => {
-  const [activeTab, setActiveTab] = useState("All Status");
+  const dispatch = useDispatch();
+  const { cases, casesLoading, casesError } = useSelector((state) => state.case);
+  const [activeTab, setActiveTab] = useState("Active");
   const [searchQuery, setSearchQuery] = useState("");
-  const [caseTypeFilter, setCaseTypeFilter] = useState("All Types");
+  const [caseTypeFilter, setCaseTypeFilter] = useState("All Categories");
 
-  // Mock case data
-  const allCases = [
-    {
-      id: "CASE-2024-001",
-      clientName: "Sita Sharma",
-      clientPhone: "+977-9841234567",
-      caseTitle: "Property Dispute - Kathmandu",
-      lawType: "Property Law",
-      nextDate: "Dec 18, 2024",
-      documents: 12,
-      timeAgo: "2 hours ago",
-      location: "Kathmandu District Court",
-      status: "In Progress",
-      avatar: "S",
-    },
-    {
-      id: "CASE-2024-002",
-      clientName: "Hari Prasad",
-      clientPhone: "+977-9851234567",
-      caseTitle: "Contract Breach Case",
-      lawType: "Corporate Law",
-      nextDate: "Dec 20, 2024",
-      documents: 8,
-      timeAgo: "1 day ago",
-      location: "Commercial Court, Kathmandu",
-      status: "In Progress",
-      avatar: "H",
-    },
-    {
-      id: "CASE-2024-003",
-      clientName: "Maya Devi",
-      clientPhone: "+977-9861234567",
-      caseTitle: "Family Settlement",
-      priority: "low",
-      lawType: "Family Law",
-      nextDate: "Dec 25, 2024",
-      documents: 5,
-      timeAgo: "3 days ago",
-      location: "Family Court, Lalitpur",
-      status: "Pending",
-      avatar: "M",
-    },
-    {
-      id: "CASE-2024-004",
-      clientName: "Ram Sharma",
-      clientPhone: "+977-9841234568",
-      caseTitle: "Land Dispute Case",
-      priority: "medium",
-      lawType: "Property Law",
-      nextDate: "Dec 22, 2024",
-      documents: 6,
-      timeAgo: "5 hours ago",
-      location: "District Court, Pokhara",
-      status: "Pending",
-      avatar: "R",
-    },
-    {
-      id: "CASE-2024-005",
-      clientName: "Binod Kumar",
-      clientPhone: "+977-9841234570",
-      caseTitle: "Business Contract Review",
-      priority: "high",
-      lawType: "Corporate Law",
-      nextDate: "Dec 19, 2024",
-      documents: 10,
-      timeAgo: "4 hours ago",
-      location: "Commercial Court, Kathmandu",
-      status: "In Progress",
-      avatar: "B",
-    },
-    {
-      id: "CASE-2024-006",
-      clientName: "Lakshmi Adhikari",
-      clientPhone: "+977-9841234571",
-      caseTitle: "Property Transfer Case",
-      priority: "medium",
-      lawType: "Property Law",
-      nextDate: "Dec 21, 2024",
-      documents: 8,
-      timeAgo: "1 day ago",
-      location: "District Court, Lalitpur",
-      status: "In Progress",
-      avatar: "L",
-    },
-    {
-      id: "CASE-2024-007",
-      clientName: "Sunita Thapa",
-      clientPhone: "+977-9841234569",
-      caseTitle: "Divorce Settlement",
-      priority: "high",
-      lawType: "Family Law",
-      nextDate: "Jan 5, 2025",
-      documents: 15,
-      timeAgo: "1 month ago",
-      location: "Family Court, Kathmandu",
-      status: "Closed",
-      avatar: "S",
-    },
-  ];
+  useEffect(() => {
+    dispatch(fetchCases());
+  }, [dispatch]);
 
-  // Filter cases based on active tab and case type
-  let filteredCases = activeTab === "All Status" ? allCases : allCases.filter(caseItem => caseItem.status === activeTab);
-  
-  // Apply case type filter
-  if (caseTypeFilter !== "All Types") {
-    filteredCases = filteredCases.filter(caseItem => caseItem.lawType === caseTypeFilter);
-  }
-  
-  const cases = filteredCases;
+  // Filter to show only cases where the lawyer is assigned (accepted cases)
+  const myCases = useMemo(() => {
+    return Array.isArray(cases) ? cases.filter(caseItem => caseItem.lawyer !== null) : [];
+  }, [cases]);
 
-  const stats = [
-    { title: "All Cases", value: "7", subtitle: null },
-    { title: "In Progress", value: "4", subtitle: null },
-    { title: "Pending", value: "2", subtitle: null },
-    { title: "Closed", value: "1", subtitle: null },
-  ];
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
-  const tabs = ["All Status", "In Progress", "Pending", "Closed"];
+  // Get initials from name
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
- 
+  // Get relative time (e.g., "2 hours ago")
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000); // difference in seconds
+
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Filter cases based on active tab and search
+  const filteredCases = useMemo(() => {
+    let filtered = myCases;
+
+    // Status filter (Tabs)
+    if (activeTab === "Active") {
+      filtered = filtered.filter(caseItem => caseItem.status !== "completed");
+    } else if (activeTab === "Completed") {
+      filtered = filtered.filter(caseItem => caseItem.status === "completed");
+    }
+
+    // Case type filter
+    if (caseTypeFilter !== "All Categories") {
+      filtered = filtered.filter(caseItem => caseItem.case_category === caseTypeFilter);
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(caseItem =>
+        (caseItem.case_title || '').toLowerCase().includes(query) ||
+        (caseItem.client_name || '').toLowerCase().includes(query) ||
+        (caseItem.case_category || '').toLowerCase().includes(query) ||
+        (caseItem.id || '').toString().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [myCases, activeTab, caseTypeFilter, searchQuery]);
+
+  // Calculate stats
+  const stats = useMemo(() => {
+    const active = myCases.filter(c => c.status !== 'completed').length;
+    const completed = myCases.filter(c => c.status === 'completed').length;
+    const hearings = active > 0 ? 1 : 0;
+    const pendingPayments = active > 1 ? 2 : 0;
+
+    return [
+      { icon: <Briefcase size={20} />, title: "Active Cases", value: active, subtitle: "Assigned to you" },
+      { icon: <Calendar size={20} />, title: "Hearings Scheduled", value: hearings, subtitle: "Upcoming" },
+      { icon: <Clock size={20} />, title: "Pending Payments", value: pendingPayments, subtitle: "Awaiting" },
+      { icon: <CheckCircle size={20} />, title: "Completed", value: completed, subtitle: "Closed cases" },
+    ];
+  }, [myCases]);
+
+  const tabs = ["Active", "Completed"];
+
+  const getDisplayStatus = (status) => {
+    if (status === 'completed') {
+      return 'Completed';
+    }
+    // All other statuses (accepted, in_progress, sent_to_lawyers, etc.) show as Active
+    return 'Active';
+  };
+
+  const getDisplayStatusStyle = (displayStatus) => {
+    if (displayStatus === 'Completed') {
+      return 'bg-green-50 text-green-600 border border-green-100';
+    }
+    return 'bg-blue-50 text-blue-600 border border-blue-100';
+  };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#F8FAFC]">
       <Sidebar />
 
       <div className="flex-1 ml-64">
         <LawyerDashHeader 
-          title="My Cases" 
+          title="Assigned Cases" 
           subtitle="Welcome back, Adv. Ram Kumar" 
           notificationCount={3}
         />
 
         <div className="p-8">
-          {/* Header with New Case Button */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-xl font-bold text-[#0F1A3D]">Case Management</h3>
-              <p className="text-sm text-gray-500">Manage all your client cases</p>
-            </div>
-            <button className="bg-[#0F1A3D] text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-950 transition flex items-center gap-2">
-              <span className="text-lg">+</span>
-              New Case
-            </button>
-          </div>
-
           {/* Stats Cards */}
-          <div className="grid grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
-              <div key={index} className="bg-white rounded-xl p-5 shadow-md">
-                <h4 className="text-3xl font-bold text-center text-[#0F1A3D] mb-1">
-                  {stat.value}
-                </h4>
-                <p className="text-sm text-gray-500 text-center">{stat.title}</p>
-              </div>
+              <StatCard
+                key={index}
+                icon={stat.icon}
+                title={stat.title}
+                value={stat.value}
+                subtitle={stat.subtitle}
+              />
             ))}
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mb-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-8 py-3 font-medium text-sm transition rounded-lg ${
-                  activeTab === tab
-                    ? "bg-white text-[#0F1A3D] shadow-md"
-                    : "bg-white text-gray-600 hover:shadow-sm"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          {/* Tabs & Search Header */}
+          <div className="space-y-6 mb-6">
+            <div className="flex gap-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-2 font-semibold text-sm transition rounded-full ${
+                    activeTab === tab
+                      ? "bg-white text-[#0F1A3D] shadow-sm border border-gray-200"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
 
-          {/* Search & Filters */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
             <div className="flex gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
                   placeholder="Search cases, clients..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent"
+                  className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
                 />
               </div>
-              <select 
-                value={caseTypeFilter}
-                onChange={(e) => setCaseTypeFilter(e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] text-sm"
-              >
-                <option>All Types</option>
-                <option>Property Law</option>
-                <option>Corporate Law</option>
-                <option>Family Law</option>
-              </select>
+              <div className="relative min-w-[200px]">
+                <select 
+                  value={caseTypeFilter}
+                  onChange={(e) => setCaseTypeFilter(e.target.value)}
+                  className="w-full appearance-none px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  <option>All Categories</option>
+                  <option>Property Law</option>
+                  <option>Corporate Law</option>
+                  <option>Family Law</option>
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <Filter size={16} className="text-gray-400" />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Case List */}
-          <div className="bg-white rounded-xl shadow-sm">
-            <div className="divide-y">
-              {cases.map((caseItem) => (
-                <div key={caseItem.id} className="p-6 hover:bg-gray-50 transition">
-                  <div className="flex items-start gap-4">
-                    {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-[#0F1A3D] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
-                      {caseItem.avatar}
-                    </div>
-
-                    {/* Case Details */}
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                            {caseItem.clientName}
-                          </h4>
-                          <p className="text-sm text-gray-500">{caseItem.clientPhone}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 mb-2">
-                        <h5 className="font-semibold text-[#0F1A3D]">{caseItem.caseTitle}</h5>
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#0F1A3D] text-white">
-                          {caseItem.lawType}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                        <span className="flex items-center gap-1">
-                          <Briefcase size={14} />
-                          {caseItem.id}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          Next: {caseItem.nextDate}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <FileText size={14} />
-                          {caseItem.documents} docs
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={14} />
-                          {caseItem.timeAgo}
-                        </span>
-                      </div>
-
-                      <p className="text-sm text-gray-500">{caseItem.location}</p>
-                    </div>
-
-                    {/* Status & Actions */}
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        caseItem.status === "In Progress" ? "bg-blue-100 text-blue-700" :
-                        caseItem.status === "Pending" ? "bg-yellow-100 text-yellow-700" :
-                        caseItem.status === "Closed" ? "bg-red-100 text-red-700" :
-                        "bg-gray-100 text-gray-700"
-                      }`}>
-                        {caseItem.status.toLowerCase()}
-                      </span>
-                      <button className="p-2 hover:bg-gray-200 rounded-lg transition">
-                        <MoreVertical size={18} className="text-gray-600" />
-                      </button>
-                    </div>
-                  </div>
+          {/* Table Container */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {casesLoading ? (
+              <div className="py-20 flex flex-col items-center justify-center text-gray-500 gap-4">
+                <div className="w-12 h-12 border-4 border-[#0F1A3D] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-medium">Loading cases...</p>
+              </div>
+            ) : casesError ? (
+              <div className="py-20 flex flex-col items-center justify-center text-red-500 gap-4">
+                <AlertCircle size={48} className="text-red-300" />
+                <p className="text-lg font-medium">{casesError}</p>
+                <button
+                  onClick={() => dispatch(fetchCases())}
+                  className="px-6 py-2 bg-[#0F1A3D] text-white rounded-xl text-sm font-semibold hover:bg-black transition-all"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : filteredCases.length === 0 ? (
+              <div className="py-20 flex flex-col items-center justify-center text-gray-500 gap-4">
+                <AlertCircle size={48} className="text-gray-200" />
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-gray-900">No cases found</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {myCases.length === 0 
+                      ? "You haven't been assigned any cases yet." 
+                      : "Try adjusting your search or filters."}
+                  </p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50/50 border-b border-gray-100">
+                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Case ID</th>
+                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Client</th>
+                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Last Updated</th>
+                      <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {filteredCases.map((caseItem) => (
+                      <tr key={caseItem.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-gray-900">CASE-2024-{caseItem.id.toString().padStart(3, '0')}</span>
+                            <span className="text-xs text-gray-500 mt-0.5 line-clamp-1">{caseItem.case_title}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            {caseItem.client_profile_image ? (
+                              <img 
+                                src={caseItem.client_profile_image} 
+                                alt=""
+                                className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-100"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                                {getInitials(caseItem.client_name)}
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-gray-900">{caseItem.client_name}</span>
+                              <span className="text-xs text-gray-500">+977-{caseItem.contact_number || '9841234567'}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-600 font-medium">{caseItem.case_category}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${getDisplayStatusStyle(getDisplayStatus(caseItem.status))}`}>
+                            {getDisplayStatus(caseItem.status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-500 font-medium">{getRelativeTime(caseItem.updated_at || caseItem.created_at)}</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-gray-900">
+                            <Eye size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 };
+
 
 export default LawyerCase;
