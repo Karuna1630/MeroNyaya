@@ -6,6 +6,8 @@ const buildFormData = (payload) => {
 	Object.entries(payload || {}).forEach(([key, value]) => {
 		if (key === 'documents' && Array.isArray(value)) {
 			value.forEach((file) => formData.append('documents', file));
+		} else if (Array.isArray(value)) {
+			value.forEach((item) => formData.append(key, item));
 		} else if (value !== undefined && value !== null) {
 			formData.append(key, value);
 		}

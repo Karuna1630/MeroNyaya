@@ -59,6 +59,13 @@ class Case(models.Model):
         blank=True,
         help_text="Lawyer assigned to the case"
     )
+    preferred_lawyers = models.ManyToManyField(
+        User,
+        related_name='cases_preferred',
+        limit_choices_to={'role': 'Lawyer'},
+        blank=True,
+        help_text="Preferred lawyers selected by the client"
+    )
     
     # Case Information
     case_title = models.CharField(

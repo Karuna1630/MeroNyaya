@@ -6,6 +6,7 @@ export const CreateCaseInitialValues = {
   caseDescription: '',
   urgencyLevel: 'Medium',
   lawyerSelection: 'public',
+  selectedLawyerIds: [],
   requestConsultation: false,
   privacyConfirmed: false,
 };
@@ -31,6 +32,12 @@ export const CreateCaseValidationSchema = Yup.object().shape({
   lawyerSelection: Yup.string()
     .oneOf(['specific', 'public'], 'Invalid lawyer selection option')
     .required('Lawyer selection is required'),
+
+  selectedLawyerIds: Yup.array().when('lawyerSelection', {
+    is: 'specific',
+    then: (schema) => schema.min(1, 'Please select at least one lawyer').max(3, 'You can select up to 3 lawyers'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
   
   requestConsultation: Yup.boolean(),
   

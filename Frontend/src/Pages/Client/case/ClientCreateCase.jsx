@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { toast, ToastContainer } from 'react-toastify';
@@ -8,6 +8,7 @@ import ClientDashHeader from '../ClientDashHeader';
 import { FileText, Users, Calendar, Upload, AlertCircle, Info } from 'lucide-react';
 import { CreateCaseInitialValues, CreateCaseValidationSchema } from '../../utils/CreateCaseValidation';
 import { createCase } from '../../slices/caseSlice';
+import { fetchVerifiedLawyers } from '../../slices/lawyerSlice';
 
 const caseCategories = [
   "Family Law",
@@ -25,8 +26,28 @@ const caseCategories = [
 const ClientCreateCase = () => {
   const dispatch = useDispatch();
   const createCaseLoading = useSelector((state) => state.case?.createCaseLoading);
+  const {
+    verifiedLawyers,
+    verifiedLawyersLoading,
+    verifiedLawyersError,
+  } = useSelector((state) => state.lawyer || {});
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
+  const [lawyerSelectionMode, setLawyerSelectionMode] = useState('public');
+  const [lawyerSearchTerm, setLawyerSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (lawyerSelectionMode === 'specific') {
+      dispatch(fetchVerifiedLawyers());
+    }
+  }, [dispatch, lawyerSelectionMode]);
+
+  const filteredLawyers = useMemo(() => {
+    const list = Array.isArray(verifiedLawyers) ? verifiedLawyers : [];
+    if (!lawyerSearchTerm.trim()) return [];
+    const term = lawyerSearchTerm.toLowerCase();
+    return list.filter((lawyer) => (lawyer.name || '').toLowerCase().includes(term));
+  }, [verifiedLawyers, lawyerSearchTerm]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -76,6 +97,7 @@ const ClientCreateCase = () => {
         case_description: values.caseDescription,
         urgency_level: values.urgencyLevel,
         lawyer_selection: values.lawyerSelection,
+        preferred_lawyers: values.lawyerSelection === 'specific' ? values.selectedLawyerIds : [],
         request_consultation: values.requestConsultation,
         documents: uploadedFiles,
       };
@@ -124,7 +146,7 @@ const ClientCreateCase = () => {
                 validateOnChange={true}
                 validateOnBlur={true}
               >
-                {({ values, isSubmitting, resetForm }) => (
+                {({ values, isSubmitting, resetForm, setFieldValue, setFieldError, setFieldTouched }) => (
                   <Form className="bg-white border border-gray-200 rounded-lg p-8">
               
               {/* Section 1: Case Information */}
@@ -257,6 +279,10 @@ const ClientCreateCase = () => {
                       name="lawyerSelection"
                       value="specific"
                       className="w-4 h-4 mt-0.5 text-[#0F1A3D] focus:ring-[#0F1A3D]"
+                      onChange={(e) => {
+                        setFieldValue('lawyerSelection', e.target.value);
+                        setLawyerSelectionMode('specific');
+                      }}
                     />
                     <span className="ml-2 text-sm text-gray-700">Send to a specific lawyer</span>
                   </label>
@@ -267,10 +293,118 @@ const ClientCreateCase = () => {
                       name="lawyerSelection"
                       value="public"
                       className="w-4 h-4 mt-0.5 text-[#0F1A3D] focus:ring-[#0F1A3D]"
+                      onChange={(e) => {
+                        setFieldValue('lawyerSelection', e.target.value);
+                        setFieldValue('selectedLawyerIds', []);
+                        setLawyerSelectionMode('public');
+                      }}
                     />
                     <span className="ml-2 text-sm text-gray-700">Make case public for all lawyers</span>
                   </label>
                 </div>
+
+                {values.lawyerSelection === 'specific' && (
+                  <div className="mt-4 border border-gray-200 rounded-lg p-4 space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">Search Lawyer</label>
+                    <input
+                      type="text"
+                      value={lawyerSearchTerm}
+                      onChange={(e) => setLawyerSearchTerm(e.target.value)}
+                      placeholder="Search by lawyer name"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500">Select up to 3 lawyers</p>
+
+                    {Array.isArray(values.selectedLawyerIds) && values.selectedLawyerIds.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {values.selectedLawyerIds.map((id) => {
+                          const selected = (Array.isArray(verifiedLawyers) ? verifiedLawyers : []).find(
+                            (lawyer) => String(lawyer.id) === String(id)
+                          );
+                          return (
+                            <span
+                              key={id}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-[#0F1A3D] text-xs font-medium rounded-full border border-blue-100"
+                            >
+                              {selected?.name || `Lawyer #${id}`}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  (() => {
+                                    const updated = values.selectedLawyerIds.filter(
+                                      (item) => String(item) !== String(id)
+                                    );
+                                    setFieldValue('selectedLawyerIds', updated);
+                                    if (updated.length <= 3) {
+                                      setFieldError('selectedLawyerIds', undefined);
+                                    }
+                                  })()
+                                }
+                                className="text-blue-700 hover:text-blue-900 cursor-pointer"
+                                aria-label="Remove lawyer"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {verifiedLawyersLoading ? (
+                      <p className="text-sm text-gray-500">Loading lawyers...</p>
+                    ) : verifiedLawyersError ? (
+                      <p className="text-sm text-red-500">{verifiedLawyersError}</p>
+                    ) : lawyerSearchTerm.trim() ? (
+                      <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg">
+                        {filteredLawyers.length === 0 ? (
+                          <p className="text-sm text-gray-500 p-3">No lawyers found.</p>
+                        ) : (
+                          filteredLawyers.map((lawyer) => (
+                            <button
+                              key={lawyer.id}
+                              type="button"
+                              onClick={() => {
+                                const id = String(lawyer.id);
+                                const current = Array.isArray(values.selectedLawyerIds)
+                                  ? values.selectedLawyerIds.map(String)
+                                  : [];
+                                if (current.includes(id)) {
+                                  return;
+                                }
+                                if (current.length >= 3) {
+                                  setFieldTouched('selectedLawyerIds', true, false);
+                                  setFieldError('selectedLawyerIds', 'You can select up to 3 lawyers');
+                                  return;
+                                }
+                                setFieldError('selectedLawyerIds', undefined);
+                                setFieldValue('selectedLawyerIds', [...current, id]);
+                              }}
+                              className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
+                                Array.isArray(values.selectedLawyerIds) &&
+                                values.selectedLawyerIds.map(String).includes(String(lawyer.id))
+                                  ? 'bg-blue-50'
+                                  : ''
+                              }`}
+                            >
+                              <p className="text-sm font-medium text-[#0F1A3D]">{lawyer.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {lawyer.city || 'Unknown city'}{lawyer.law_firm_name ? ` • ${lawyer.law_firm_name}` : ''}
+                              </p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Start typing to see matching lawyers.</p>
+                    )}
+                    <ErrorMessage
+                      name="selectedLawyerIds"
+                      component="p"
+                      className="text-red-500 text-xs mt-1"
+                    />
+                  </div>
+                )}
 
                 {values.lawyerSelection === 'public' && (
                   <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex gap-3">

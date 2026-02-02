@@ -6,6 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
+from authentication.models import User
 
 from .models import Case, CaseDocument
 from .serializers import (
@@ -77,10 +78,27 @@ class CaseViewSet(viewsets.ModelViewSet):
                 {'error': 'Only clients can create cases'},
                 status=status.HTTP_403_FORBIDDEN
             )
+
+        preferred_ids = []
+        if 'preferred_lawyers' in request.data:
+            preferred_ids = request.data.getlist('preferred_lawyers')
+            if len(preferred_ids) == 1 and isinstance(preferred_ids[0], str) and ',' in preferred_ids[0]:
+                preferred_ids = [item.strip() for item in preferred_ids[0].split(',') if item.strip()]
+
+        if preferred_ids:
+            valid_lawyers = User.objects.filter(id__in=preferred_ids, role='Lawyer')
+            if valid_lawyers.count() != len(set(preferred_ids)):
+                return Response(
+                    {'error': 'One or more selected lawyers are invalid'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         case = serializer.save()
+
+        if preferred_ids:
+            case.preferred_lawyers.set(valid_lawyers)
         
         # Handle file uploads
         files = request.FILES.getlist('documents')

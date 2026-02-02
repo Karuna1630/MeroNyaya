@@ -6,7 +6,7 @@ from .models import Case, CaseDocument
 class CaseAdmin(admin.ModelAdmin):
     list_display = ['case_title', 'client', 'lawyer', 'case_category', 'status', 'urgency_level', 'created_at']
     list_filter = ['status', 'case_category', 'urgency_level', 'created_at']
-    search_fields = ['case_title', 'case_description', 'client__name', 'lawyer__name']
+    search_fields = ['case_title', 'case_description', 'client__name', 'lawyer__name', 'preferred_lawyers__name']
     readonly_fields = ['created_at', 'updated_at', 'accepted_at', 'completed_at']
     date_hierarchy = 'created_at'
     
@@ -18,7 +18,7 @@ class CaseAdmin(admin.ModelAdmin):
             'fields': ('urgency_level', 'lawyer_selection', 'request_consultation')
         }),
         ('Relationships', {
-            'fields': ('client', 'lawyer')
+            'fields': ('client', 'lawyer', 'preferred_lawyers')
         }),
         ('Status', {
             'fields': ('status', 'proposal_count', 'rejection_reason', 'notes')

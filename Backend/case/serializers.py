@@ -18,11 +18,17 @@ class CaseSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.name', read_only=True)
     client_email = serializers.CharField(source='client.email', read_only=True)
     lawyer_name = serializers.CharField(source='lawyer.name', read_only=True, allow_null=True)
+    preferred_lawyers = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=User.objects.filter(role='Lawyer'),
+        required=False
+    )
     
     class Meta:
         model = Case
         fields = [
             'id', 'client', 'client_name', 'client_email', 'lawyer', 'lawyer_name',
+            'preferred_lawyers',
             'case_title', 'case_category', 'case_description',
             'urgency_level', 'lawyer_selection', 'request_consultation',
             'status', 'proposal_count', 'rejection_reason', 'notes',
@@ -34,6 +40,7 @@ class CaseSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Set client from request user
         request = self.context.get('request')
+        preferred_lawyers = validated_data.pop('preferred_lawyers', [])
         validated_data['client'] = request.user
         
         # Set initial status based on lawyer_selection
@@ -41,8 +48,11 @@ class CaseSerializer(serializers.ModelSerializer):
             validated_data['status'] = 'public'
         else:
             validated_data['status'] = 'sent_to_lawyers'
-        
-        return super().create(validated_data)
+
+        instance = super().create(validated_data)
+        if preferred_lawyers:
+            instance.preferred_lawyers.set(preferred_lawyers)
+        return instance
 
 
 class CaseListSerializer(serializers.ModelSerializer):
