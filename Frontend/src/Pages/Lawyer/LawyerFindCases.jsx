@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPublicCases } from "../slices/caseSlice";
 import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
 import { 
@@ -16,95 +18,49 @@ import {
 } from "lucide-react";
 
 const LawyerFindCases = () => {
+  const dispatch = useDispatch();
+  const { publicCases, publicCasesLoading, publicCasesError } = useSelector((state) => state.case);
+  
+  // Debug: Check authentication
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    console.log('Access Token:', token ? 'EXISTS' : 'MISSING');
+    if (!token) {
+      console.warn('⚠️ No access token found. User needs to login.');
+    }
+  }, []);
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [priorityFilter, setPriorityFilter] = useState("All");
-  const [locationFilter, setLocationFilter] = useState("All Locations");
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
   const [proposalSent, setProposalSent] = useState(false);
 
-  // Mock Data for Public Cases
-  const [publicCases, setPublicCases] = useState([
-    {
-      id: 1,
-      title: "Land Ownership Dispute - Jhapa",
-      priority: "Medium",
-      category: "Property Law",
-      location: "Jhapa",
-      description: "Facing a dispute over land ownership with neighboring property owner. Need legal assistance to resolve boundary issues and establish proper ownership documentation.",
-      postedDate: "Dec 10, 2025",
-      documentsCount: 3,
-      clientRating: 4.5,
-      budget: "Rs. 40,000 - 60,000",
-      status: "Open"
-    },
-    {
-      id: 2,
-      title: "Insurance Claim Rejection",
-      priority: "Urgent",
-      category: "Insurance Law",
-      location: "Kathmandu",
-      description: "My health insurance claim was rejected without proper explanation. Looking for a lawyer to help me appeal the decision and recover the medical expenses.",
-      postedDate: "Dec 12, 2025",
-      documentsCount: 5,
-      clientRating: 4.8,
-      budget: "Rs. 25,000 - 35,000",
-      status: "Open"
-    },
-    {
-      id: 3,
-      title: "Employment Contract Dispute",
-      priority: "Medium",
-      category: "Labor Law",
-      location: "Lalitpur",
-      description: "Employer refusing to pay final settlement after resignation. Contract terms being violated regarding notice period and pending salary.",
-      postedDate: "Dec 8, 2025",
-      documentsCount: 4,
-      clientRating: 4.2,
-      budget: "Rs. 20,000 - 30,000",
-      status: "Open"
-    },
-    {
-      id: 4,
-      title: "Tenant Eviction Notice",
-      priority: "Urgent",
-      category: "Property Law",
-      location: "Bhaktapur",
-      description: "Received unexpected eviction notice from landlord despite paying rent on time. Need legal help to understand my rights and respond appropriately.",
-      postedDate: "Dec 11, 2025",
-      documentsCount: 2,
-      clientRating: 4.7,
-      budget: "Rs. 15,000 - 25,000",
-      status: "Open"
-    },
-    {
-        id: 5,
-        title: "Wrongful Termination Claim",
-        priority: "Low",
-        category: "Labor Law",
-        location: "Pokhara",
-        description: "Seeking advice on a potential wrongful termination case. Need to review company policies and labor laws.",
-        postedDate: "Dec 5, 2025",
-        documentsCount: 1,
-        clientRating: 4.0,
-        budget: "Rs. 10,000 - 20,000",
-        status: "Open"
-      }
-  ]);
+  useEffect(() => {
+    dispatch(fetchPublicCases());
+  }, [dispatch]);
+
+  // Debug: Log the state
+  useEffect(() => {
+    console.log('Public Cases Data:', publicCases);
+    console.log('Loading:', publicCasesLoading);
+    console.log('Error:', publicCasesError);
+  }, [publicCases, publicCasesLoading, publicCasesError]);
 
   // Filtering Logic
   const filteredCases = useMemo(() => {
+    if (!publicCases || publicCases.length === 0) return [];
+    
     return publicCases.filter((item) => {
-      const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            item.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === "All Categories" || item.category === categoryFilter;
-      const matchesPriority = priorityFilter === "All" || item.priority === priorityFilter;
-      const matchesLocation = locationFilter === "All Locations" || item.location === locationFilter;
+      const matchesSearch = (item.case_title || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            (item.case_description || "").toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === "All Categories" || item.case_category === categoryFilter;
+      const matchesPriority = priorityFilter === "All" || item.urgency_level === priorityFilter;
       
-      return matchesSearch && matchesCategory && matchesPriority && matchesLocation && item.status === "Open";
+      return matchesSearch && matchesCategory && matchesPriority;
     });
-  }, [publicCases, searchTerm, categoryFilter, priorityFilter, locationFilter]);
+  }, [publicCases, searchTerm, categoryFilter, priorityFilter]);
 
   const handleOpenProposal = (item) => {
     setSelectedCase(item);
@@ -115,20 +71,29 @@ const LawyerFindCases = () => {
   const submitProposal = (e) => {
     e.preventDefault();
     setProposalSent(true);
-    // In a real app, this would be an API call
+    // In a real app, this would be an API call to send proposal
     setTimeout(() => {
-      setPublicCases(publicCases.map(c => c.id === selectedCase.id ? { ...c, status: "Proposal Sent" } : c));
       setShowProposalModal(false);
+      // Optionally refresh the public cases list
+      dispatch(fetchPublicCases());
     }, 1500);
   };
 
   const getPriorityClasses = (priority) => {
-    switch (priority) {
-      case "Urgent": return "bg-red-500 text-white shadow-sm";
-      case "Medium": return "bg-amber-100 text-amber-700 border border-amber-200";
-      case "Low": return "bg-blue-100 text-blue-700 border border-blue-200";
+    const upperPriority = (priority || "").toUpperCase();
+    switch (upperPriority) {
+      case "URGENT": return "bg-red-500 text-white shadow-sm";
+      case "HIGH": return "bg-red-500 text-white shadow-sm";
+      case "MEDIUM": return "bg-amber-100 text-amber-700 border border-amber-200";
+      case "LOW": return "bg-blue-100 text-blue-700 border border-blue-200";
       default: return "bg-gray-100 text-gray-700";
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -178,25 +143,9 @@ const LawyerFindCases = () => {
                     onChange={(e) => setPriorityFilter(e.target.value)}
                   >
                     <option value="All">All Priorities</option>
-                    <option value="Urgent">Urgent</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                </div>
-
-                <div className="relative group">
-                  <select 
-                    className="appearance-none bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
-                  >
-                    <option>All Locations</option>
-                    <option>Kathmandu</option>
-                    <option>Jhapa</option>
-                    <option>Lalitpur</option>
-                    <option>Bhaktapur</option>
-                    <option>Pokhara</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
@@ -210,50 +159,61 @@ const LawyerFindCases = () => {
 
           {/* Case List */}
           <div className="space-y-6 pb-8">
-            {filteredCases.length > 0 ? (
+            {publicCasesLoading ? (
+              <div className="bg-white py-24 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-gray-500 gap-4">
+                <div className="w-12 h-12 border-4 border-[#0F1A3D] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-medium">Loading public cases...</p>
+              </div>
+            ) : publicCasesError ? (
+              <div className="bg-white py-24 rounded-3xl border border-red-200 flex flex-col items-center justify-center text-red-500 gap-4">
+                <div className="text-center space-y-2">
+                  <p className="text-xl font-bold">Error Loading Cases</p>
+                  <p className="text-sm">{publicCasesError}</p>
+                  <button 
+                    onClick={() => dispatch(fetchPublicCases())}
+                    className="mt-4 px-6 py-2 bg-[#0F1A3D] text-white rounded-xl text-sm font-bold hover:bg-black transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            ) : filteredCases.length > 0 ? (
               filteredCases.map((item) => (
-                <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row overflow-hidden group">
+                <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
                   <div className="flex-1 p-6 space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-xl font-bold text-[#0F1A3D] group-hover:text-blue-700 transition-colors uppercase tracking-tight">{item.title}</h2>
-                      <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.priority)}`}>
-                        {item.priority}
+                      <h2 className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight">{item.case_title}</h2>
+                      <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.urgency_level)}`}>
+                        {item.urgency_level}
                       </span>
                       <div className="flex gap-2">
-                        <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{item.category}</span>
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase">
-                          <MapPin size={14} />
-                          {item.location}
-                        </span>
+                        <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{item.case_category}</span>
+                        {item.location && (
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase">
+                            <MapPin size={14} />
+                            {item.location}
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 max-w-4xl">
-                      {item.description}
+                      {item.case_description}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-6 pt-2">
                       <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
                         <Calendar size={16} className="text-gray-400" />
-                        Posted: {item.postedDate}
+                        Posted: {formatDate(item.created_at)}
                       </div>
                       <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
                         <FileText size={16} className="text-gray-400" />
-                        {item.documentsCount} documents
-                      </div>
-                      <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
-                        <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                        Client rating: <span className="text-[#0F1A3D]">{item.clientRating}</span>
+                        {item.document_count || 0} documents
                       </div>
                     </div>
                   </div>
 
-                  <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-between items-end gap-6">
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-none">Budget</p>
-                      <h3 className="text-lg font-black text-[#0F1A3D] mt-1">{item.budget}</h3>
-                    </div>
-
+                  <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
                     <div className="flex flex-col gap-3 w-full">
                       <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-xs">
                         <Eye size={18} />
@@ -296,7 +256,7 @@ const LawyerFindCases = () => {
                 </div>
                 <div className="space-y-2">
                     <h2 className="text-3xl font-bold text-[#0F1A3D]">Proposal Sent Successfully!</h2>
-                    <p className="text-gray-500">Your proposal for "{selectedCase?.title}" has been sent to the client. You'll be notified if they accept.</p>
+                    <p className="text-gray-500">Your proposal for "{selectedCase?.case_title}" has been sent to the client. You'll be notified if they accept.</p>
                 </div>
               </div>
             ) : (
@@ -304,7 +264,7 @@ const LawyerFindCases = () => {
                 <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
                   <div className="space-y-1">
                     <h2 className="text-xl font-bold text-[#0F1A3D]">Submit Proposal</h2>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Case: {selectedCase?.title}</p>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Case: {selectedCase?.case_title}</p>
                   </div>
                   <button 
                     onClick={() => setShowProposalModal(false)}
@@ -336,7 +296,6 @@ const LawyerFindCases = () => {
                           className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
                         />
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-1 uppercase">Client Budget: {selectedCase?.budget}</p>
                     </div>
 
                     <div className="space-y-2">
