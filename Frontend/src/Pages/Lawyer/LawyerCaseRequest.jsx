@@ -248,26 +248,6 @@ const LawyerCaseRequest = () => {
                       {item.case_description}
                     </p>
 
-                    {/* Display accepted lawyer info for accepted cases */}
-                    {activeTab === "Accepted" && item.lawyer_name && (
-                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm font-semibold text-green-900 flex items-center gap-2">
-                          <Check size={16} className="text-green-600" />
-                          Case Accepted by You
-                        </p>
-                        {item.accepted_at && (
-                          <p className="text-xs text-green-700 mt-1">
-                            Accepted on: {formatDate(item.accepted_at)}
-                          </p>
-                        )}
-                        {item.lawyer_email && (
-                          <p className="text-xs text-green-700">
-                            Contact: {item.lawyer_email}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar size={18} className="text-gray-400" />

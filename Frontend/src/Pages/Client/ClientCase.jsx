@@ -489,6 +489,11 @@ const ClientCase = () => {
                                 (action, actionIdx) => (
                                   <button
                                     key={actionIdx}
+                                    onClick={() => {
+                                      if (action.label === "View Case") {
+                                        navigate(`/client/case/${caseItem.id}`);
+                                      }
+                                    }}
                                     className={`p-2 rounded-lg hover:bg-slate-100 transition-colors ${action.color}`}
                                     title={action.label}
                                   >

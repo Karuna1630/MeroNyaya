@@ -139,6 +139,18 @@ export const updateCaseStatus = createAsyncThunk(
 	}
 );
 
+export const updateCaseDetails = createAsyncThunk(
+	'cases/updateCaseDetails',
+	async ({ caseId, data }, { rejectWithValue }) => {
+		try {
+			const response = await axiosInstance.patch(`/cases/${caseId}/update_case_details/`, data);
+			return response.data;
+		} catch (error) {
+			return rejectWithValue(error.response?.data?.message || 'Failed to update case details');
+		}
+	}
+);
+
 const initialState = {
 	cases: [],
 	casesLoading: false,
@@ -338,6 +350,22 @@ const caseSlice = createSlice({
 			.addCase(updateCaseStatus.rejected, (state, action) => {
 				state.updateStatusLoading = false;
 				state.updateStatusError = action.payload;
+			})
+			.addCase(updateCaseDetails.pending, (state) => {
+				state.updateCaseLoading = true;
+				state.updateCaseError = null;
+			})
+			.addCase(updateCaseDetails.fulfilled, (state, action) => {
+				state.updateCaseLoading = false;
+				const updated = action.payload;
+				state.cases = state.cases.map((item) => (item.id === updated.id ? updated : item));
+				if (state.caseDetails?.id === updated.id) {
+					state.caseDetails = updated;
+				}
+			})
+			.addCase(updateCaseDetails.rejected, (state, action) => {
+				state.updateCaseLoading = false;
+				state.updateCaseError = action.payload;
 			});
 	},
 });

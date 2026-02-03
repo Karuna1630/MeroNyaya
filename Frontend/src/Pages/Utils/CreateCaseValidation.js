@@ -4,6 +4,7 @@ export const CreateCaseInitialValues = {
   caseTitle: '',
   caseCategory: '',
   caseDescription: '',
+  opposingParty: '',
   urgencyLevel: 'Medium',
   lawyerSelection: 'public',
   selectedLawyerIds: [],
@@ -24,6 +25,9 @@ export const CreateCaseValidationSchema = Yup.object().shape({
     .required('Case description is required')
     .min(50, 'Please provide at least 50 characters to describe your case')
     .max(2000, 'Case description must not exceed 2000 characters'),
+  
+  opposingParty: Yup.string()
+    .max(200, 'Opposing party name must not exceed 200 characters'),
   
   urgencyLevel: Yup.string()
     .oneOf(['Low', 'Medium', 'High'], 'Invalid urgency level')

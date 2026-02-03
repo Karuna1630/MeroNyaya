@@ -18,12 +18,14 @@ import ClientMessage from './Pages/Client/ClientMessage.jsx';
 import Payment from './Pages/Client/Payment.jsx';
 import ClientFindLawyers from './Pages/Client/ClientFindLawyers.jsx';
 import ClientCreateCase from './Pages/Client/case/ClientCreateCase.jsx';
+import ClientCaseDetail from './Pages/Client/case/ClientCaseDetail.jsx';
 
 import LawyerDashboard from './Pages/Lawyer/LawyerDashboard.jsx';
 import LawyerMessage from './Pages/Lawyer/LawyerMessage.jsx';
 import LawyerAppointment from './Pages/Lawyer/LawyerAppointment.jsx';
 import Earning from './Pages/Lawyer/Earning.jsx';
 import LawyerCase from './Pages/Lawyer/LawyerCase.jsx';
+import LawyerCaseDetail from './Pages/Lawyer/LawyerCaseDetail.jsx';
 import LawyerFindCases from './Pages/Lawyer/LawyerFindCases.jsx';
 import LawyerCaseRequest from './Pages/Lawyer/LawyerCaseRequest.jsx';
 import ViewProfile from './Pages/Profile/ViewProfile.jsx';
@@ -64,6 +66,7 @@ function App() {
         <Route path='/clientdashboard' element={<ProtectedRoute requiredRole="client"><ClientDashboard /></ProtectedRoute>} />
         <Route path='/client/findlawyers' element={<ProtectedRoute requiredRole="client"><ClientFindLawyers /></ProtectedRoute>} />
         <Route path='/clientcase' element={<ProtectedRoute requiredRole="client"><ClientCase /></ProtectedRoute>} />
+        <Route path='/client/case/:id' element={<ProtectedRoute requiredRole="client"><ClientCaseDetail /></ProtectedRoute>} />
         <Route path='/client/create-case' element={<ProtectedRoute requiredRole="client"><ClientCreateCase /></ProtectedRoute>} />
         <Route path='/clientappointment' element={<ProtectedRoute requiredRole="client"><ClientAppointment /></ProtectedRoute>} />
         <Route path='/clientmessage' element={<ProtectedRoute requiredRole="client"><ClientMessage /></ProtectedRoute>} />
@@ -74,6 +77,7 @@ function App() {
         <Route path='/lawyerfindcases' element={<ProtectedRoute requiredRole="lawyer"><LawyerFindCases /></ProtectedRoute>} />
         <Route path='/lawyercaserequest' element={<ProtectedRoute requiredRole="lawyer"><LawyerCaseRequest /></ProtectedRoute>} />
         <Route path='/lawyercase' element={<ProtectedRoute requiredRole="lawyer"><LawyerCase /></ProtectedRoute>} />
+        <Route path='/lawyercase/:id' element={<ProtectedRoute requiredRole="lawyer"><LawyerCaseDetail /></ProtectedRoute>} />
         <Route path='/lawyerappointment' element={<ProtectedRoute requiredRole="lawyer"><LawyerAppointment /></ProtectedRoute>} />
         <Route path='/lawyermessage' element={<ProtectedRoute requiredRole="lawyer"><LawyerMessage /></ProtectedRoute>} />
         <Route path='/lawyerearning' element={<ProtectedRoute requiredRole="lawyer"><Earning /></ProtectedRoute>} />

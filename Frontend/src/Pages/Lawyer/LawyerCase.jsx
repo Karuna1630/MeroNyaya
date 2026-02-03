@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { Search, Filter, Eye, Calendar, FileText, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import Sidebar from "./Sidebar";
 import LawyerDashHeader from "./LawyerDashHeader";
@@ -9,6 +10,7 @@ import { fetchCases } from "../slices/caseSlice";
 
 const LawyerCase = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { cases, casesLoading, casesError } = useSelector((state) => state.case);
   const [activeTab, setActiveTab] = useState("Active");
   const [searchQuery, setSearchQuery] = useState("");
@@ -267,7 +269,10 @@ const LawyerCase = () => {
                           <span className="text-sm text-gray-500 font-medium">{getRelativeTime(caseItem.updated_at || caseItem.created_at)}</span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-gray-900">
+                          <button 
+                            onClick={() => navigate(`/lawyercase/${caseItem.id}`)}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-gray-900"
+                          >
                             <Eye size={18} />
                           </button>
                         </td>

@@ -229,3 +229,33 @@ class CaseViewSet(viewsets.ModelViewSet):
         case.save()
         serializer = self.get_serializer(case)
         return Response(serializer.data)
+    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
+    def update_case_details(self, request, pk=None):
+        """
+        Update case details by assigned lawyer (court info, hearing date, case number, etc.)
+        """
+        if request.user.role != 'Lawyer':
+            return Response(
+                {'error': 'Only lawyers can update case details'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        case = self.get_object()
+        
+        # Ensure only the assigned lawyer can update
+        if case.lawyer != request.user:
+            return Response(
+                {'error': 'You can only update cases assigned to you'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Fields that lawyers can update
+        updatable_fields = ['case_number', 'court_name', 'opposing_party', 'next_hearing_date', 'status', 'notes']
+        
+        for field in updatable_fields:
+            if field in request.data:
+                setattr(case, field, request.data[field])
+        
+        case.save()
+        serializer = self.get_serializer(case)
+        return Response(serializer.data)

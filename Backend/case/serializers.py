@@ -32,6 +32,7 @@ class CaseSerializer(serializers.ModelSerializer):
             'case_title', 'case_category', 'case_description',
             'urgency_level', 'lawyer_selection', 'request_consultation',
             'status', 'proposal_count', 'rejection_reason', 'notes',
+            'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
             'created_at', 'updated_at', 'accepted_at', 'completed_at',
             'documents'
         ]
@@ -73,6 +74,7 @@ class CaseListSerializer(serializers.ModelSerializer):
             'client_name', 'client_email', 'client_profile_image', 
             'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone',
             'proposal_count', 'document_count',
+            'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
             'created_at', 'updated_at', 'accepted_at'
         ]
     

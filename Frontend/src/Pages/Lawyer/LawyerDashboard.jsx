@@ -51,7 +51,7 @@ const LawyerDashboard = () => {
   /* ===== Show Toast Once Ever (persists across login/refresh) ===== */
   useEffect(() => {
     if (!isKycApproved) return;
-
+  
     const toastShown = localStorage.getItem('kycApprovedToastShown') === '1';
     
     if (toastShown) return;

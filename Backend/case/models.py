@@ -138,6 +138,31 @@ class Case(models.Model):
         help_text="Additional notes or updates about the case"
     )
     
+    # Lawyer-Updated Information
+    case_number = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Official case number assigned by court"
+    )
+    court_name = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Name of the court handling this case"
+    )
+    opposing_party = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="Name of the opposing party in the case"
+    )
+    next_hearing_date = models.DateField(
+        blank=True,
+        null=True,
+        help_text="Date of the next scheduled hearing"
+    )
+    
     class Meta:
         ordering = ['-created_at']
         verbose_name = _('Case')

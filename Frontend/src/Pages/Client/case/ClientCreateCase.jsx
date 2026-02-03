@@ -96,6 +96,7 @@ const ClientCreateCase = () => {
         case_title: values.caseTitle,
         case_category: values.caseCategory,
         case_description: values.caseDescription,
+        opposing_party: values.opposingParty || '',
         urgency_level: values.urgencyLevel,
         lawyer_selection: values.lawyerSelection,
         preferred_lawyers: values.lawyerSelection === 'specific' ? values.selectedLawyerIds : [],
@@ -209,7 +210,7 @@ const ClientCreateCase = () => {
                 </div>
 
                 {/* Case Description */}
-                <div className="mb-2">
+                <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Case Description <span className="text-red-500">*</span>
                   </label>
@@ -227,6 +228,25 @@ const ClientCreateCase = () => {
                   </div>
                   <ErrorMessage
                     name="caseDescription"
+                    component="p"
+                    className="text-red-500 text-xs mt-1"
+                  />
+                </div>
+
+                {/* Opposing Party */}
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Opposing Party <span className="text-gray-400">(Optional)</span>
+                  </label>
+                  <Field
+                    type="text"
+                    name="opposingParty"
+                    placeholder="Name of the opposing party (if known)"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Enter the name of the person or entity you have a dispute with.</p>
+                  <ErrorMessage
+                    name="opposingParty"
                     component="p"
                     className="text-red-500 text-xs mt-1"
                   />
