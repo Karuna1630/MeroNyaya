@@ -307,6 +307,18 @@ const caseSlice = createSlice({
 			.addCase(uploadCaseDocuments.fulfilled, (state, action) => {
 				state.uploadDocumentsLoading = false;
 				const { caseId, documents } = action.payload;
+				
+				// Update the case in cases array
+				state.cases = state.cases.map((item) => 
+					item.id === caseId
+						? {
+								...item,
+								documents: [...(item.documents || []), ...documents],
+						  }
+						: item
+				);
+				
+				// Also update caseDetails if it matches
 				if (state.caseDetails?.id === caseId) {
 					state.caseDetails = {
 						...state.caseDetails,

@@ -1,12 +1,20 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { FileText, Upload, Download } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { uploadCaseDocuments } from "../../slices/caseSlice";
+import { uploadCaseDocuments, fetchCases } from "../../slices/caseSlice";
+import Pagination from "../../../components/Pagination";
 
 const ClientCaseDocumentCard = ({ caseId, documents = [] }) => {
   const dispatch = useDispatch();
   const fileInputRef = useRef(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const { uploadDocumentsLoading } = useSelector((state) => state.case);
+
+  const itemsPerPage = 6;
+  const totalPages = Math.ceil(documents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedDocuments = documents.slice(startIndex, endIndex);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -17,6 +25,8 @@ const ClientCaseDocumentCard = ({ caseId, documents = [] }) => {
     if (files.length > 0) {
       try {
         await dispatch(uploadCaseDocuments({ caseId, files })).unwrap();
+        // Refresh cases to get updated documents in real-time
+        await dispatch(fetchCases()).unwrap();
         // Reset file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -80,41 +90,51 @@ const ClientCaseDocumentCard = ({ caseId, documents = [] }) => {
           <p>No documents uploaded yet</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {documents.map((doc) => {
-            const isClientUpload = doc.uploaded_by_role === 'Client';
-            return (
-              <div key={doc.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/30 hover:bg-slate-50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                    <FileText size={24} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 text-sm mb-1">{doc.file_name}</h4>
-                    <p className="text-xs text-slate-500">
-                      {formatFileSize(doc.file_size)} • Uploaded on {formatDate(doc.uploaded_at)}
-                    </p>
-                    <div className="mt-1">
-                      <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                        isClientUpload 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        Uploaded by {doc.uploaded_by_name || 'Unknown'} ({doc.uploaded_by_role || 'User'})
-                      </span>
+        <>
+          <div className="space-y-3">
+            {paginatedDocuments.map((doc) => {
+              const isClientUpload = doc.uploaded_by_role === 'Client';
+              return (
+                <div key={doc.id} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/30 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <FileText size={24} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 text-sm mb-1">{doc.file_name}</h4>
+                      <p className="text-xs text-slate-500">
+                        {formatFileSize(doc.file_size)} • Uploaded on {formatDate(doc.uploaded_at)}
+                      </p>
+                      <div className="mt-1">
+                        <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                          isClientUpload 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {doc.uploaded_by_name ? `${doc.uploaded_by_name} (${doc.uploaded_by_role || 'User'})` : 'Unknown Uploader'}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  <button 
+                    onClick={() => handleDownload(doc.file, doc.file_name)}
+                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <Download size={18} className="text-slate-600" />
+                  </button>
                 </div>
-                <button 
-                  onClick={() => handleDownload(doc.file, doc.file_name)}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  <Download size={18} className="text-slate-600" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+          
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={documents.length}
+          />
+        </>
       )}
     </div>
   );

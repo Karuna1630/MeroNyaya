@@ -1,12 +1,20 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { FileText, Upload, Download } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { uploadCaseDocuments } from "../../slices/caseSlice";
+import { uploadCaseDocuments, fetchCases } from "../../slices/caseSlice";
+import Pagination from "../../../components/Pagination";
 
 const LawyerCaseDocumentCard = ({ caseId, documents = [] }) => {
   const dispatch = useDispatch();
   const fileInputRef = useRef(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const { uploadDocumentsLoading } = useSelector((state) => state.case);
+
+  const itemsPerPage = 6;
+  const totalPages = Math.ceil(documents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedDocuments = documents.slice(startIndex, endIndex);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -17,6 +25,8 @@ const LawyerCaseDocumentCard = ({ caseId, documents = [] }) => {
     if (files.length > 0) {
       try {
         await dispatch(uploadCaseDocuments({ caseId, files })).unwrap();
+        // Refresh cases to get updated documents in real-time
+        await dispatch(fetchCases()).unwrap();
         // Reset file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -80,8 +90,9 @@ const LawyerCaseDocumentCard = ({ caseId, documents = [] }) => {
           <p>No documents uploaded yet</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {documents.map((doc) => {
+        <>
+          <div className="space-y-2">
+            {paginatedDocuments.map((doc) => {
             const isClientUpload = doc.uploaded_by_role === 'Client';
             return (
               <div
@@ -103,7 +114,7 @@ const LawyerCaseDocumentCard = ({ caseId, documents = [] }) => {
                           ? 'bg-blue-100 text-blue-700' 
                           : 'bg-amber-100 text-amber-700'
                       }`}>
-                        {doc.uploaded_by_name || 'Unknown'} ({doc.uploaded_by_role || 'User'})
+                        {doc.uploaded_by_name ? `${doc.uploaded_by_name} (${doc.uploaded_by_role || 'User'})` : 'Unknown Uploader'}
                       </span>
                     </div>
                   </div>
@@ -117,7 +128,16 @@ const LawyerCaseDocumentCard = ({ caseId, documents = [] }) => {
               </div>
             );
           })}
-        </div>
+          </div>
+          
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={documents.length}
+          />
+        </>
       )}
     </div>
   );

@@ -5,13 +5,23 @@ from authentication.models import User
 
 class CaseDocumentSerializer(serializers.ModelSerializer):
     """Serializer for case documents"""
-    uploaded_by_name = serializers.CharField(source='uploaded_by.name', read_only=True, allow_null=True)
-    uploaded_by_role = serializers.CharField(source='uploaded_by.role', read_only=True, allow_null=True)
+    uploaded_by_name = serializers.SerializerMethodField()
+    uploaded_by_role = serializers.SerializerMethodField()
     
     class Meta:
         model = CaseDocument
         fields = ['id', 'file', 'file_name', 'file_type', 'file_size', 'uploaded_at', 'uploaded_by', 'uploaded_by_name', 'uploaded_by_role']
         read_only_fields = ['id', 'uploaded_at']
+    
+    def get_uploaded_by_name(self, obj):
+        if obj.uploaded_by:
+            return obj.uploaded_by.name
+        return None
+    
+    def get_uploaded_by_role(self, obj):
+        if obj.uploaded_by:
+            return obj.uploaded_by.role
+        return None
 
 
 class CaseSerializer(serializers.ModelSerializer):
