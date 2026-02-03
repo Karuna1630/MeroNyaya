@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchPublicCases } from "../slices/caseSlice";
 import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
+import LawyerProposalForm from "./LawyerProposalForm";
 import { 
   Search, 
   MapPin, 
@@ -35,7 +36,6 @@ const LawyerFindCases = () => {
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
-  const [proposalSent, setProposalSent] = useState(false);
 
   useEffect(() => {
     dispatch(fetchPublicCases());
@@ -65,18 +65,6 @@ const LawyerFindCases = () => {
   const handleOpenProposal = (item) => {
     setSelectedCase(item);
     setShowProposalModal(true);
-    setProposalSent(false);
-  };
-
-  const submitProposal = (e) => {
-    e.preventDefault();
-    setProposalSent(true);
-    // In a real app, this would be an API call to send proposal
-    setTimeout(() => {
-      setShowProposalModal(false);
-      // Optionally refresh the public cases list
-      dispatch(fetchPublicCases());
-    }, 1500);
   };
 
   const getPriorityClasses = (priority) => {
@@ -215,7 +203,10 @@ const LawyerFindCases = () => {
 
                   <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
                     <div className="flex flex-col gap-3 w-full">
-                      <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-xs">
+                      <button 
+                        onClick={() => handleOpenProposal(item)}
+                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-xs"
+                      >
                         <Eye size={18} />
                         View Details
                       </button>
@@ -245,94 +236,24 @@ const LawyerFindCases = () => {
         </main>
       </div>
 
-      {/* Send Proposal Modal */}
-      {showProposalModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            {proposalSent ? (
-              <div className="p-12 flex flex-col items-center justify-center text-center space-y-6">
-                <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center animate-bounce">
-                  <CheckCircle2 size={48} />
-                </div>
-                <div className="space-y-2">
-                    <h2 className="text-3xl font-bold text-[#0F1A3D]">Proposal Sent Successfully!</h2>
-                    <p className="text-gray-500">Your proposal for "{selectedCase?.case_title}" has been sent to the client. You'll be notified if they accept.</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-bold text-[#0F1A3D]">Submit Proposal</h2>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Case: {selectedCase?.case_title}</p>
-                  </div>
-                  <button 
-                    onClick={() => setShowProposalModal(false)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <X size={24} className="text-gray-400" />
-                  </button>
-                </div>
-
-                <form onSubmit={submitProposal} className="p-8 space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Proposal Message</label>
-                    <textarea 
-                      required
-                      placeholder="Why should the client hire you? Highlight your relevant experience..."
-                      className="w-full h-40 p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm resize-none"
-                    ></textarea>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Your Fee (NPR)</label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">Rs.</span>
-                        <input 
-                          type="number" 
-                          required
-                          placeholder="e.g. 45000"
-                          className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-gray-700 uppercase tracking-wide">Consultation Type</label>
-                      <div className="relative">
-                        <select className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                          <option>Video Call</option>
-                          <option>In-Person Meeting</option>
-                          <option>Phone Call</option>
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 flex gap-4">
-                    <button 
-                      type="button"
-                      onClick={() => setShowProposalModal(false)}
-                      className="flex-1 py-3.5 border border-gray-200 rounded-xl font-bold text-gray-700 hover:bg-gray-50 transition-all text-sm"
-                    >
-                      Discard
-                    </button>
-                    <button 
-                      type="submit"
-                      className="flex-1 py-3.5 bg-[#0F1A3D] text-white rounded-xl font-bold hover:bg-black transition-all flex items-center justify-center gap-2 text-sm shadow-md"
-                    >
-                      <Send size={18} />
-                      Submit Proposal
-                    </button>
-                  </div>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Proposal Form Modal */}
+      <LawyerProposalForm
+        isOpen={showProposalModal}
+        onClose={() => setShowProposalModal(false)}
+        caseData={selectedCase}
+        onSubmit={async (data) => {
+          try {
+            // TODO: Call API to submit proposal
+            console.log("Submitting proposal:", data);
+            // await dispatch(submitProposal(data));
+            setShowProposalModal(false);
+            dispatch(fetchPublicCases());
+          } catch (error) {
+            console.error("Error submitting proposal:", error);
+            throw error;
+          }
+        }}
+      />
     </div>
   );
 };
