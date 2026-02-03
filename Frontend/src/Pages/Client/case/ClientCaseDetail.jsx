@@ -7,11 +7,10 @@ import {
   FileText, 
   MessageSquare, 
   Calendar, 
-  Clock, 
   ChevronLeft, 
   MapPin,
   User,
-  CheckCircle2
+  Clock
 } from "lucide-react";
 import { fetchCases } from "../../slices/caseSlice";
 import ClientCaseTimelineCard from "./ClientCaseTimelineCard";
@@ -30,51 +29,6 @@ const ClientCaseDetail = () => {
   useEffect(() => {
     dispatch(fetchCases());
   }, [dispatch]);
-
-  const milestones = [
-    {
-      title: "Documents Uploaded",
-      description: "Lawyer uploaded court submission documents",
-      date: "Dec 8, 2024",
-      status: "completed"
-    },
-    {
-      title: "Court Hearing",
-      description: "First hearing completed. Next date scheduled for Dec 15.",
-      date: "Dec 5, 2024",
-      status: "completed"
-    },
-    {
-      title: "Evidence Submitted",
-      description: "Land survey report and ownership documents submitted",
-      date: "Nov 28, 2024",
-      status: "completed"
-    },
-    {
-      title: "Case Filed",
-      description: "Official case filing at District Court",
-      date: "Nov 20, 2024",
-      status: "completed"
-    }
-  ];
-
-  const pendingTasks = [
-    {
-      title: "Review court submission documents",
-      due: "Due: Dec 10, 2024",
-      status: "pending"
-    },
-    {
-      title: "Prepare witness statements",
-      due: "Due: Dec 12, 2024",
-      status: "pending"
-    },
-    {
-      title: "Submit additional property photos",
-      due: "Due: Dec 5, 2024",
-      status: "completed"
-    }
-  ];
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -194,7 +148,7 @@ const ClientCaseDetail = () => {
 
                 {/* Timeline Tab */}
                 {activeTab === "Timeline" && (
-                  <ClientCaseTimelineCard milestones={milestones} />
+                  <ClientCaseTimelineCard timeline={caseData?.timeline || []} />
                 )}
 
                 {/* Documents Tab */}
@@ -256,37 +210,6 @@ const ClientCaseDetail = () => {
                     <Calendar size={16} />
                     Schedule Meeting
                   </button>
-                </div>
-              </div>
-
-              {/* Pending Tasks */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                    <Clock size={18} className="text-amber-500" />
-                    Pending Tasks
-                  </h3>
-                    <span className="text-xs font-semibold text-slate-400">2</span>
-                </div>
-
-                <div className="space-y-4">
-                  {pendingTasks.map((task, i) => (
-                    <div key={i} className={`p-4 rounded-xl border transition-all ${
-                      task.status === 'completed' 
-                      ? 'bg-emerald-50/50 border-emerald-100 hover:bg-emerald-50' 
-                      : 'bg-amber-50/50 border-amber-100 hover:bg-amber-50'
-                    }`}>
-                      <div className="flex gap-3">
-                        <div className={`mt-0.5 ${task.status === 'completed' ? 'text-emerald-500' : 'text-amber-500'}`}>
-                          {task.status === 'completed' ? <CheckCircle2 size={16} /> : <Clock size={16} />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-800 leading-tight mb-1">{task.title}</p>
-                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{task.due}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
 

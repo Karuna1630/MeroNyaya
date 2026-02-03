@@ -151,6 +151,18 @@ export const updateCaseDetails = createAsyncThunk(
 	}
 );
 
+export const addTimelineEvent = createAsyncThunk(
+	'cases/addTimelineEvent',
+	async ({ caseId, eventData }, { rejectWithValue }) => {
+		try {
+			const response = await axiosInstance.post(`/cases/${caseId}/add_timeline_event/`, eventData);
+			return { caseId, event: response.data };
+		} catch (error) {
+			return rejectWithValue(error.response?.data?.message || 'Failed to add timeline event');
+		}
+	}
+);
+
 const initialState = {
 	cases: [],
 	casesLoading: false,
@@ -176,6 +188,9 @@ const initialState = {
 
 	uploadDocumentsLoading: false,
 	uploadDocumentsError: null,
+
+	addTimelineEventLoading: false,
+	addTimelineEventError: null,
 
 	acceptCaseLoading: false,
 	acceptCaseError: null,
@@ -378,6 +393,36 @@ const caseSlice = createSlice({
 			.addCase(updateCaseDetails.rejected, (state, action) => {
 				state.updateCaseLoading = false;
 				state.updateCaseError = action.payload;
+			})
+			.addCase(addTimelineEvent.pending, (state) => {
+				state.addTimelineEventLoading = true;
+				state.addTimelineEventError = null;
+			})
+			.addCase(addTimelineEvent.fulfilled, (state, action) => {
+				state.addTimelineEventLoading = false;
+				const { caseId, event } = action.payload;
+				
+				// Update the case in cases array
+				state.cases = state.cases.map((item) => 
+					item.id === caseId
+						? {
+								...item,
+								timeline: [...(item.timeline || []), event],
+						  }
+						: item
+				);
+				
+				// Also update caseDetails if it matches
+				if (state.caseDetails?.id === caseId) {
+					state.caseDetails = {
+						...state.caseDetails,
+						timeline: [...(state.caseDetails.timeline || []), event],
+					};
+				}
+			})
+			.addCase(addTimelineEvent.rejected, (state, action) => {
+				state.addTimelineEventLoading = false;
+				state.addTimelineEventError = action.payload;
 			});
 	},
 });

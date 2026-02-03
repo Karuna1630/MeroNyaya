@@ -10,14 +10,12 @@ import {
   Clock,
   MapPin,
   User,
-  CheckCircle2,
   AlertCircle,
   MessageSquare,
   Mail,
   Phone,
   Building2,
   Edit2,
-  Plus,
 } from "lucide-react";
 import { fetchCases, updateCaseDetails } from "../../slices/caseSlice.js";
 import LawyerCaseTimlineCard from "./LawyerCaseTimelineCard.jsx";
@@ -29,7 +27,6 @@ const LawyerCaseDetail = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("Details");
-  const [newNote, setNewNote] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editFormData, setEditFormData] = useState({
@@ -139,82 +136,6 @@ const LawyerCaseDetail = () => {
     };
     return priorityMap[urgency] || priorityMap.Medium;
   };
-
-  // Mock timeline data
-  const timeline = [
-    {
-      id: 1,
-      title: "Document Review Completed",
-      description: "Reviewed all submitted property documents and verified authenticity.",
-      date: "Dec 17, 2024",
-      by: "You",
-      icon: CheckCircle2,
-      color: "text-green-500",
-      bg: "bg-green-50",
-    },
-    {
-      id: 2,
-      title: "Client Meeting",
-      description: "Discussed case strategy and next steps with the client.",
-      date: "Dec 10, 2024",
-      by: "You",
-      icon: User,
-      color: "text-blue-500",
-      bg: "bg-blue-50",
-    },
-    {
-      id: 3,
-      title: "Hearing Rescheduled",
-      description: "Court hearing rescheduled from Dec 15 to Dec 18, 2024.",
-      date: "Dec 05, 2024",
-      by: "Court",
-      icon: Calendar,
-      color: "text-purple-500",
-      bg: "bg-purple-50",
-    },
-    {
-      id: 4,
-      title: "Evidence Submitted",
-      description: "Submitted property ownership documents to the court.",
-      date: "Nov 28, 2024",
-      by: "You",
-      icon: FileText,
-      color: "text-amber-500",
-      bg: "bg-amber-50",
-    },
-    {
-      id: 5,
-      title: "Case Filed",
-      description: "Case officially filed at Kathmandu District Court.",
-      date: "Oct 30, 2024",
-      by: "You",
-      icon: Building2,
-      color: "text-slate-500",
-      bg: "bg-slate-50",
-    },
-  ];
-
-  // Mock tasks data
-  const tasks = [
-    {
-      id: 1,
-      title: "Prepare court arguments for hearing",
-      due: "Dec 16, 2024",
-      status: "pending",
-    },
-    {
-      id: 2,
-      title: "Submit additional evidence",
-      due: "Dec 17, 2024",
-      status: "pending",
-    },
-    {
-      id: 3,
-      title: "Review opposing party's claims",
-      due: "Dec 15, 2024",
-      status: "completed",
-    },
-  ];
 
   if (casesLoading) {
     return (
@@ -354,9 +275,9 @@ const LawyerCaseDetail = () => {
                   {/* Timeline Tab */}
                   {activeTab === "Timeline" && (
                     <LawyerCaseTimlineCard
-                      newNote={newNote}
-                      onNoteChange={setNewNote}
-                      timeline={timeline}
+                      caseId={parseInt(id)}
+                      timeline={caseData?.timeline || []}
+                      onTimelineUpdate={() => dispatch(fetchCases())}
                     />
                   )}
 
@@ -439,35 +360,6 @@ const LawyerCaseDetail = () => {
                     <Calendar size={16} />
                     Schedule
                   </button>
-                </div>
-              </div>
-
-              {/* Tasks */}
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-sm font-semibold text-gray-900">Tasks</h3>
-                  <button className="p-1 hover:bg-gray-100 rounded">
-                    <Plus size={18} className="text-gray-600" />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {tasks.map((task) => (
-                    <div key={task.id} className="flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        checked={task.status === "completed"}
-                        className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                        readOnly
-                      />
-                      <div className="flex-1">
-                        <p className={`text-sm ${task.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}>
-                          {task.title}
-                        </p>
-                        <p className="text-xs text-gray-500">Due: {task.due}</p>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>

@@ -1,30 +1,48 @@
 import React from "react";
 import { CheckCircle2 } from "lucide-react";
 
-const ClientCaseTimelineCard = ({ milestones }) => {
+const ClientCaseTimelineCard = ({ timeline = [] }) => {
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
   return (
-    <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm relative">
-      <div className="absolute left-[47px] top-12 bottom-12 w-[1px] bg-slate-100" />
-      
-      <div className="space-y-10">
-        {milestones.map((milestone, i) => (
-          <div key={i} className="relative flex gap-6">
-            <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center border-4 border-white shadow-sm transition-transform hover:scale-110 ${
-              milestone.status === 'completed' ? 'bg-emerald-500' : 'bg-slate-200'
-            }`}>
-              <CheckCircle2 size={16} className="text-white" />
-            </div>
-            <div className="flex-1 p-5 rounded-xl border border-slate-50 bg-slate-50/30 hover:bg-slate-50 transition-colors">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-semibold text-slate-900">{milestone.title}</h3>
-                <span className="text-xs font-semibold text-slate-400">{milestone.date}</span>
+    <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">
+      <div className="space-y-6">
+        {timeline.length > 0 ? (
+          timeline.map((event) => (
+            <div key={event.id} className="flex gap-4">
+              {/* Timeline Icon */}
+              <div className="flex flex-col items-center">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={18} className="text-emerald-500" />
+                </div>
               </div>
-              <p className="text-sm text-slate-500 leading-relaxed font-medium">
-                {milestone.description}
-              </p>
+              
+              {/* Content */}
+              <div className="flex-1 pb-6 border-b border-slate-100 last:border-b-0">
+                <div className="flex justify-between items-start gap-4 mb-2">
+                  <h3 className="font-semibold text-slate-900">{event.title}</h3>
+                  <span className="text-xs text-slate-400 whitespace-nowrap">{formatDate(event.created_at)}</span>
+                </div>
+                <p className="text-sm text-slate-600 mb-2">{event.description}</p>
+                {event.created_by_name && (
+                  <p className="text-xs text-slate-400">By: {event.created_by_name}</p>
+                )}
+              </div>
             </div>
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-slate-500">No timeline events yet</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

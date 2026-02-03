@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Case, CaseDocument
+from .models import Case, CaseDocument, CaseTimeline
 
 
 @admin.register(Case)
@@ -40,3 +40,22 @@ class CaseDocumentAdmin(admin.ModelAdmin):
     search_fields = ['file_name', 'case__case_title']
     readonly_fields = ['uploaded_at']
     date_hierarchy = 'uploaded_at'
+
+
+@admin.register(CaseTimeline)
+class CaseTimelineAdmin(admin.ModelAdmin):
+    list_display = ['title', 'case', 'event_type', 'created_by', 'created_at']
+    list_filter = ['event_type', 'created_at']
+    search_fields = ['title', 'description', 'case__case_title']
+    readonly_fields = ['created_at']
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('Timeline Information', {
+            'fields': ('case', 'event_type', 'title', 'description')
+        }),
+        ('Metadata', {
+            'fields': ('created_by', 'created_at'),
+            'classes': ('collapse',)
+        }),
+    )

@@ -229,3 +229,53 @@ class CaseDocument(models.Model):
     
     def __str__(self):
         return f"{self.file_name} - {self.case.case_title}"
+
+
+class CaseTimeline(models.Model):
+    """
+    Model for storing case timeline events and updates
+    """
+    EVENT_TYPE_CHOICES = [
+        ('case_created', 'Case Created'),
+        ('case_accepted', 'Case Accepted'),
+        ('status_changed', 'Status Changed'),
+        ('document_uploaded', 'Document Uploaded'),
+        ('hearing_scheduled', 'Hearing Scheduled'),
+        ('note_added', 'Note Added'),
+        ('case_updated', 'Case Updated'),
+    ]
+    
+    case = models.ForeignKey(
+        Case,
+        on_delete=models.CASCADE,
+        related_name='timeline',
+        help_text="Case this timeline event belongs to"
+    )
+    event_type = models.CharField(
+        max_length=20,
+        choices=EVENT_TYPE_CHOICES,
+        help_text="Type of timeline event"
+    )
+    title = models.CharField(
+        max_length=200,
+        help_text="Title of the event"
+    )
+    description = models.TextField(
+        help_text="Description of the event"
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="User who created this event"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = _('Case Timeline')
+        verbose_name_plural = _('Case Timeline')
+    
+    def __str__(self):
+        return f"{self.title} - {self.case.case_title}"

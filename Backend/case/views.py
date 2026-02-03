@@ -8,7 +8,7 @@ from django.db import models
 from django.utils import timezone
 from authentication.models import User
 
-from .models import Case, CaseDocument
+from .models import Case, CaseDocument, CaseTimeline
 from .serializers import (
     CaseSerializer, 
     CaseListSerializer, 
@@ -101,16 +101,34 @@ class CaseViewSet(viewsets.ModelViewSet):
         if preferred_ids:
             case.preferred_lawyers.set(valid_lawyers)
         
+        # Create timeline event for case creation
+        CaseTimeline.objects.create(
+            case=case,
+            event_type='case_created',
+            title='Case Created',
+            description=f'Case "{case.case_title}" was created by {request.user.name}',
+            created_by=request.user
+        )
+        
         # Handle file uploads
         files = request.FILES.getlist('documents')
         for file in files:
-            CaseDocument.objects.create(
+            doc = CaseDocument.objects.create(
                 case=case,
                 uploaded_by=request.user,
                 file=file,
                 file_name=file.name,
                 file_type=file.name.split('.')[-1].lower(),
                 file_size=file.size
+            )
+            
+            # Create timeline event for document upload
+            CaseTimeline.objects.create(
+                case=case,
+                event_type='document_uploaded',
+                title='Document Uploaded',
+                description=f'Client ({request.user.name}) uploaded: {file.name}',
+                created_by=request.user
             )
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -135,6 +153,7 @@ class CaseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated], parser_classes=[MultiPartParser, FormParser, JSONParser])
     def upload_documents(self, request, pk=None):
         """
         Upload additional documents to a case (by client or assigned lawyer)
@@ -166,6 +185,16 @@ class CaseViewSet(viewsets.ModelViewSet):
                 file_size=file.size
             )
             documents.append(doc)
+            
+            # Create timeline event for document upload
+            uploader_role = "Client" if case.client == request.user else "Lawyer"
+            CaseTimeline.objects.create(
+                case=case,
+                event_type='document_uploaded',
+                title=f'Document Uploaded',
+                description=f'{uploader_role} ({request.user.name}) uploaded: {file.name}',
+                created_by=request.user
+            )
         
         serializer = CaseDocumentSerializer(documents, many=True)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -193,6 +222,15 @@ class CaseViewSet(viewsets.ModelViewSet):
         case.status = 'accepted'
         case.accepted_at = timezone.now()
         case.save()
+        
+        # Create timeline event for case acceptance
+        CaseTimeline.objects.create(
+            case=case,
+            event_type='case_accepted',
+            title='Case Accepted',
+            description=f'Lawyer {request.user.name} accepted the case',
+            created_by=request.user
+        )
         
         serializer = self.get_serializer(case)
         return Response(serializer.data)
@@ -229,6 +267,15 @@ class CaseViewSet(viewsets.ModelViewSet):
             case.completed_at = timezone.now()
         
         case.save()
+        
+        # Create timeline event for status change
+        CaseTimeline.objects.create(
+            case=case,
+            event_type='status_changed',
+            title=f'Status Changed to {new_status.title()}',
+            description=f'Case status changed to {new_status.replace("_", " ").title()}',
+            created_by=request.user
+        )
         serializer = self.get_serializer(case)
         return Response(serializer.data)
     @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
@@ -261,3 +308,46 @@ class CaseViewSet(viewsets.ModelViewSet):
         case.save()
         serializer = self.get_serializer(case)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def add_timeline_event(self, request, pk=None):
+        """
+        Add a timeline event (note) to a case
+        """
+        case = self.get_object()
+        
+        # Allow both client and assigned lawyer to add notes
+        if case.client != request.user and case.lawyer != request.user:
+            return Response(
+                {'error': 'You can only add notes to your own cases or cases assigned to you'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        event_type = request.data.get('event_type', 'note_added')
+        title = request.data.get('title')
+        description = request.data.get('description')
+        
+        # Validate required fields
+        if not title:
+            return Response(
+                {'error': 'Title (topic) is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not description:
+            return Response(
+                {'error': 'Description is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        timeline_event = CaseTimeline.objects.create(
+            case=case,
+            event_type=event_type,
+            title=title,
+            description=description,
+            created_by=request.user
+        )
+        
+        from .serializers import CaseTimelineSerializer
+        serializer = CaseTimelineSerializer(timeline_event)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Case, CaseDocument
+from .models import Case, CaseDocument, CaseTimeline
 from authentication.models import User
 
 
@@ -24,9 +24,31 @@ class CaseDocumentSerializer(serializers.ModelSerializer):
         return None
 
 
+class CaseTimelineSerializer(serializers.ModelSerializer):
+    """Serializer for case timeline events"""
+    created_by_name = serializers.SerializerMethodField()
+    created_by_role = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CaseTimeline
+        fields = ['id', 'event_type', 'title', 'description', 'created_by', 'created_by_name', 'created_by_role', 'created_at']
+        read_only_fields = ['id', 'created_at']
+    
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return obj.created_by.name
+        return 'System'
+    
+    def get_created_by_role(self, obj):
+        if obj.created_by:
+            return obj.created_by.role
+        return 'System'
+
+
 class CaseSerializer(serializers.ModelSerializer):
     """Serializer for creating and updating cases"""
     documents = CaseDocumentSerializer(many=True, read_only=True)
+    timeline = CaseTimelineSerializer(many=True, read_only=True)
     client_name = serializers.CharField(source='client.name', read_only=True)
     client_email = serializers.CharField(source='client.email', read_only=True)
     lawyer_name = serializers.CharField(source='lawyer.name', read_only=True, allow_null=True)
@@ -46,7 +68,7 @@ class CaseSerializer(serializers.ModelSerializer):
             'status', 'proposal_count', 'rejection_reason', 'notes',
             'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
             'created_at', 'updated_at', 'accepted_at', 'completed_at',
-            'documents'
+            'documents', 'timeline'
         ]
         read_only_fields = ['id', 'client', 'proposal_count', 'created_at', 'updated_at', 'accepted_at', 'completed_at']
     
@@ -79,6 +101,7 @@ class CaseListSerializer(serializers.ModelSerializer):
     lawyer_profile_image = serializers.SerializerMethodField()
     document_count = serializers.SerializerMethodField()
     documents = CaseDocumentSerializer(many=True, read_only=True)
+    timeline = CaseTimelineSerializer(many=True, read_only=True)
     
     class Meta:
         model = Case
@@ -87,7 +110,7 @@ class CaseListSerializer(serializers.ModelSerializer):
             'lawyer_selection', 'request_consultation',
             'client_name', 'client_email', 'client_profile_image', 
             'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone', 'lawyer_profile_image',
-            'proposal_count', 'document_count', 'documents',
+            'proposal_count', 'document_count', 'documents', 'timeline',
             'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
             'created_at', 'updated_at', 'accepted_at'
         ]
