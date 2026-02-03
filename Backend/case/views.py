@@ -106,6 +106,7 @@ class CaseViewSet(viewsets.ModelViewSet):
         for file in files:
             CaseDocument.objects.create(
                 case=case,
+                uploaded_by=request.user,
                 file=file,
                 file_name=file.name,
                 file_type=file.name.split('.')[-1].lower(),
@@ -136,14 +137,14 @@ class CaseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def upload_documents(self, request, pk=None):
         """
-        Upload additional documents to a case
+        Upload additional documents to a case (by client or assigned lawyer)
         """
         case = self.get_object()
         
-        # Ensure client owns the case
-        if case.client != request.user:
+        # Allow both client and assigned lawyer to upload documents
+        if case.client != request.user and case.lawyer != request.user:
             return Response(
-                {'error': 'You can only upload documents to your own cases'},
+                {'error': 'You can only upload documents to your own cases or cases assigned to you'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
@@ -158,6 +159,7 @@ class CaseViewSet(viewsets.ModelViewSet):
         for file in files:
             doc = CaseDocument.objects.create(
                 case=case,
+                uploaded_by=request.user,
                 file=file,
                 file_name=file.name,
                 file_type=file.name.split('.')[-1].lower(),

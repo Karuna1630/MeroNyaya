@@ -5,10 +5,12 @@ from authentication.models import User
 
 class CaseDocumentSerializer(serializers.ModelSerializer):
     """Serializer for case documents"""
+    uploaded_by_name = serializers.CharField(source='uploaded_by.name', read_only=True, allow_null=True)
+    uploaded_by_role = serializers.CharField(source='uploaded_by.role', read_only=True, allow_null=True)
     
     class Meta:
         model = CaseDocument
-        fields = ['id', 'file', 'file_name', 'file_type', 'file_size', 'uploaded_at']
+        fields = ['id', 'file', 'file_name', 'file_type', 'file_size', 'uploaded_at', 'uploaded_by', 'uploaded_by_name', 'uploaded_by_role']
         read_only_fields = ['id', 'uploaded_at']
 
 
@@ -66,6 +68,7 @@ class CaseListSerializer(serializers.ModelSerializer):
     lawyer_phone = serializers.CharField(source='lawyer.phone', read_only=True, allow_null=True)
     lawyer_profile_image = serializers.SerializerMethodField()
     document_count = serializers.SerializerMethodField()
+    documents = CaseDocumentSerializer(many=True, read_only=True)
     
     class Meta:
         model = Case
@@ -74,7 +77,7 @@ class CaseListSerializer(serializers.ModelSerializer):
             'lawyer_selection', 'request_consultation',
             'client_name', 'client_email', 'client_profile_image', 
             'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone', 'lawyer_profile_image',
-            'proposal_count', 'document_count',
+            'proposal_count', 'document_count', 'documents',
             'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
             'created_at', 'updated_at', 'accepted_at'
         ]

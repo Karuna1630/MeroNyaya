@@ -198,6 +198,13 @@ class CaseDocument(models.Model):
         related_name='documents',
         help_text="Case this document belongs to"
     )
+    uploaded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="User who uploaded the document"
+    )
     file = models.FileField(
         upload_to='case/documents/%Y/%m/%d/',
         help_text="Uploaded document file"

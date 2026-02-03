@@ -10,21 +10,19 @@ import {
   Clock,
   MapPin,
   User,
-  Upload,
-  Download,
   CheckCircle2,
-  Gavel,
   AlertCircle,
   MessageSquare,
   Mail,
   Phone,
-  Plus,
   Building2,
   Edit2,
-  Save,
-  X,
+  Plus,
 } from "lucide-react";
 import { fetchCases, updateCaseDetails } from "../../slices/caseSlice.js";
+import LawyerCaseTimlineCard from "./LawyerCaseTimelineCard.jsx";
+import LawyerCaseDocumentCard from "./LawyerCaseDocumentCard.jsx";
+import LawyerCaseDetailCard from "./LawyerCaseDetailCard.jsx";
 
 const LawyerCaseDetail = () => {
   const navigate = useNavigate();
@@ -141,46 +139,6 @@ const LawyerCaseDetail = () => {
     };
     return priorityMap[urgency] || priorityMap.Medium;
   };
-
-  // Mock documents data - replace with real data later
-  const documents = [
-    {
-      name: "Property_Deed_2015.pdf",
-      size: "2.4 MB",
-      date: "Oct 15, 2024",
-      uploadedBy: "Client",
-    },
-    {
-      name: "Inheritance_Certificate.pdf",
-      size: "1.1 MB",
-      date: "Oct 16, 2024",
-      uploadedBy: "Client",
-    },
-    {
-      name: "Land_Survey_Report.pdf",
-      size: "3.8 MB",
-      date: "Oct 20, 2024",
-      uploadedBy: "You",
-    },
-    {
-      name: "Tax_Clearance_2024.pdf",
-      size: "856 KB",
-      date: "Oct 20, 2024",
-      uploadedBy: "Client",
-    },
-    {
-      name: "Court_Filing_Receipt.pdf",
-      size: "245 KB",
-      date: "Oct 20, 2024",
-      uploadedBy: "You",
-    },
-    {
-      name: "Witness_Statement.pdf",
-      size: "1.2 MB",
-      date: "Nov 25, 2024",
-      uploadedBy: "You",
-    },
-  ];
 
   // Mock timeline data
   const timeline = [
@@ -357,7 +315,7 @@ const LawyerCaseDetail = () => {
                   <FileText size={16} className="text-purple-600" />
                   <span className="text-xs text-purple-700 font-medium">Documents</span>
                 </div>
-                <p className="text-sm font-semibold text-gray-900">{documents.length} files</p>
+                <p className="text-sm font-semibold text-gray-900">{caseData?.documents?.length || 0} files</p>
               </div>
               <div className="bg-amber-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-1">
@@ -376,12 +334,12 @@ const LawyerCaseDetail = () => {
               <div className="bg-white rounded-lg shadow-sm mb-6">
                 <div className="border-b border-gray-200">
                   <nav className="flex">
-                    {["Timeline", "Documents", "Details"].map((tab) => (
+                    {["Timeline", `Documents (${caseData?.documents?.length || 0})`, "Details"].map((tab) => (
                       <button
                         key={tab}
-                        onClick={() => setActiveTab(tab)}
+                        onClick={() => setActiveTab(tab.includes('Documents') ? 'Documents' : tab)}
                         className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                          activeTab === tab
+                          (activeTab === 'Documents' && tab.includes('Documents')) || activeTab === tab
                             ? "border-[#0F1A3D] text-[#0F1A3D]"
                             : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
                         }`}
@@ -395,223 +353,35 @@ const LawyerCaseDetail = () => {
                 <div className="p-6">
                   {/* Timeline Tab */}
                   {activeTab === "Timeline" && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Case Timeline</h3>
-                      
-                      {/* Add Note Section */}
-                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <textarea
-                          value={newNote}
-                          onChange={(e) => setNewNote(e.target.value)}
-                          placeholder="Add a note or update..."
-                          className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          rows={3}
-                        />
-                        <button className="mt-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
-                          <Plus size={16} />
-                          Add Note
-                        </button>
-                      </div>
-
-                      {/* Timeline Items */}
-                      <div className="space-y-4">
-                        {timeline.map((item) => (
-                          <div key={item.id} className="flex gap-4">
-                            <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
-                              <item.icon size={20} className={item.color} />
-                            </div>
-                            <div className="flex-1 bg-gray-50 p-4 rounded-lg">
-                              <div className="flex justify-between items-start mb-1">
-                                <h4 className="font-semibold text-gray-900">{item.title}</h4>
-                                <span className="text-xs text-gray-500">{item.date}</span>
-                              </div>
-                              <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                              <span className="text-xs text-gray-500">By: {item.by}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <LawyerCaseTimlineCard
+                      newNote={newNote}
+                      onNoteChange={setNewNote}
+                      timeline={timeline}
+                    />
                   )}
 
                   {/* Documents Tab */}
                   {activeTab === "Documents" && (
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-gray-900">Case Documents</h3>
-                        <button className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
-                          <Upload size={16} />
-                          Upload
-                        </button>
-                      </div>
-
-                      <div className="space-y-2">
-                        {documents.map((doc, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <FileText size={20} className="text-blue-600" />
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-medium text-gray-900">{doc.name}</h4>
-                                <p className="text-xs text-gray-600">
-                                  {doc.size} • {doc.date} • Uploaded by {doc.uploadedBy}
-                                </p>
-                              </div>
-                            </div>
-                            <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                              <Download size={18} className="text-gray-600" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <LawyerCaseDocumentCard 
+                      caseId={parseInt(id)} 
+                      documents={caseData?.documents || []} 
+                    />
                   )}
 
                   {/* Details Tab */}
                   {activeTab === "Details" && (
-                    <div>
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900">Case Details</h3>
-                      </div>
-                      <div className="space-y-6">
-                        {/* Description */}
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
-                          <p className="text-sm text-gray-600 leading-relaxed">{caseData.case_description}</p>
-                        </div>
-
-                        {/* Case Info Grid */}
-                        <div className="grid grid-cols-2 gap-6 mb-6">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Case Type</h4>
-                            <p className="text-sm text-gray-900 font-medium">{caseData.case_category}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Status</h4>
-                            {isEditing ? (
-                              <select
-                                name="status"
-                                value={editFormData.status}
-                                onChange={handleEditChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                              >
-                                <option value="accepted">Accepted</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                                <option value="pending">Pending</option>
-                              </select>
-                            ) : (
-                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}>
-                                {statusBadge.label}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Filing Date</h4>
-                            <p className="text-sm text-gray-900 font-medium">{formatDate(caseData.created_at)}</p>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Hearing Time</h4>
-                            <p className="text-sm text-gray-900 font-medium">{formatTime(caseData.next_hearing_date)}</p>
-                          </div>
-                        </div>
-
-                        {/* Court Information */}
-                        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-4">
-                          <h4 className="font-semibold text-gray-900 mb-4">Court Information</h4>
-
-                          <div className="grid grid-cols-2 gap-6">
-                            <div>
-                              <h5 className="text-sm font-medium text-gray-700 mb-2">Case Number</h5>
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  name="case_number"
-                                  value={editFormData.case_number}
-                                  onChange={handleEditChange}
-                                  placeholder="e.g., CASE-2024-001"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                />
-                              ) : (
-                                <p className="text-sm text-gray-900 font-medium">{caseData.case_number || "Not set"}</p>
-                              )}
-                            </div>
-
-                            <div>
-                              <h5 className="text-sm font-medium text-gray-700 mb-2">Court Name</h5>
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  name="court_name"
-                                  value={editFormData.court_name}
-                                  onChange={handleEditChange}
-                                  placeholder="e.g., District Court, Kathmandu"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                />
-                              ) : (
-                                <p className="text-sm text-gray-900 font-medium">{caseData.court_name || "Not assigned"}</p>
-                              )}
-                            </div>
-
-                            <div>
-                              <h5 className="text-sm font-medium text-gray-700 mb-2">Opposing Party</h5>
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  name="opposing_party"
-                                  value={editFormData.opposing_party}
-                                  onChange={handleEditChange}
-                                  placeholder="e.g., Ram Bahadur Thapa"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                />
-                              ) : (
-                                <p className="text-sm text-gray-900 font-medium">{caseData.opposing_party || "Not specified"}</p>
-                              )}
-                            </div>
-
-                            <div>
-                              <h5 className="text-sm font-medium text-gray-700 mb-2">Next Hearing Date</h5>
-                              {isEditing ? (
-                                <input
-                                  type="date"
-                                  name="next_hearing_date"
-                                  value={editFormData.next_hearing_date}
-                                  onChange={handleEditChange}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                />
-                              ) : (
-                                <p className="text-sm text-gray-900 font-medium">{formatDate(caseData.next_hearing_date)}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {isEditing && (
-                          <div className="flex gap-2 pt-4">
-                            <button
-                              onClick={handleSaveChanges}
-                              disabled={isSaving}
-                              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition flex items-center justify-center gap-2 font-medium"
-                            >
-                              <Save size={16} />
-                              {isSaving ? "Saving..." : "Save Changes"}
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              disabled={isSaving}
-                              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 transition flex items-center justify-center gap-2 font-medium"
-                            >
-                              <X size={16} />
-                              Cancel
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <LawyerCaseDetailCard
+                      caseData={caseData}
+                      statusBadge={statusBadge}
+                      formatDate={formatDate}
+                      formatTime={formatTime}
+                      isEditing={isEditing}
+                      editFormData={editFormData}
+                      onEditChange={handleEditChange}
+                      onSave={handleSaveChanges}
+                      onCancel={handleCancelEdit}
+                      isSaving={isSaving}
+                    />
                   )}
                 </div>
               </div>
