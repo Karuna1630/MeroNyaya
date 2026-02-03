@@ -7,18 +7,17 @@ import {
   FileText,
   ChevronLeft,
   Calendar,
+  Clock,
   MapPin,
   User,
-  Scale,
-  Save,
-  Edit,
-  X,
-  Upload,
+  Mail,
+  Phone,
+  MessageSquare,
   Download,
-  CheckCircle2,
-  Clock,
-  Gavel,
-  AlertCircle,
+  Upload,
+  CheckCircle,
+  Circle,
+  Plus,
 } from "lucide-react";
 import { fetchCases, updateCaseDetails } from "../slices/caseSlice";
 
@@ -26,8 +25,9 @@ const LawyerCaseDetail = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
-  const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState("Details");
+  const [isEditing, setIsEditing] = useState(false);
+  const [noteText, setNoteText] = useState("");
 
   const { cases, casesLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
@@ -63,14 +63,15 @@ const LawyerCaseDetail = () => {
 
   const handleSave = async () => {
     try {
-      await dispatch(updateCaseDetails({ 
-        caseId: id, 
-        data: formData 
-      })).unwrap();
+      await dispatch(
+        updateCaseDetails({
+          caseId: id,
+          data: formData,
+        })
+      ).unwrap();
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to update case:", error);
-      alert("Failed to update case details. Please try again.");
     }
   };
 
@@ -82,6 +83,25 @@ const LawyerCaseDetail = () => {
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const getStatusBadge = (status) => {
+    const styles = {
+      accepted: "bg-blue-50 text-blue-600",
+      in_progress: "bg-amber-50 text-amber-600",
+      completed: "bg-green-50 text-green-600",
+      public: "bg-gray-50 text-gray-600",
+    };
+    return styles[status] || "bg-gray-50 text-gray-600";
+  };
+
+  const getUrgencyBadge = (urgency) => {
+    const styles = {
+      High: "bg-red-50 text-red-600",
+      Medium: "bg-amber-50 text-amber-600",
+      Low: "bg-blue-50 text-blue-600",
+    };
+    return styles[urgency] || "bg-gray-50 text-gray-600";
   };
 
   if (casesLoading) {
@@ -100,7 +120,7 @@ const LawyerCaseDetail = () => {
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <AlertCircle size={48} className="text-gray-400" />
+          <FileText size={48} className="text-gray-400" />
           <p className="text-gray-600">Case not found</p>
           <button
             onClick={() => navigate("/lawyercase")}
@@ -118,263 +138,175 @@ const LawyerCaseDetail = () => {
       <Sidebar />
 
       <main className="flex-1 flex flex-col overflow-hidden ml-64">
-        <LawyerDashHeader
-          title="Case Details"
-          subtitle={`CASE-${id}`}
-        />
+        <LawyerDashHeader title="Dashboard" subtitle={`Welcome back, Adv. Ram Kumar`} />
 
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-6">
           {/* Back Button */}
           <button
             onClick={() => navigate("/lawyercase")}
-            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors mb-6 text-sm font-medium"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-6 text-sm font-medium"
           >
             <ChevronLeft size={18} />
-            Back to My Cases
+            Back
           </button>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Case Header */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                      <FileText size={24} className="text-slate-700" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-amber-600 uppercase tracking-wider">
-                          CASE-{id}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${
-                            caseData.status === "completed"
-                              ? "bg-green-50 text-green-600"
-                              : caseData.status === "in_progress"
-                              ? "bg-blue-50 text-blue-600"
-                              : "bg-yellow-50 text-yellow-600"
-                          }`}
-                        >
-                          {caseData.status?.replace(/_/g, " ")}
-                        </span>
-                      </div>
-                      <h1 className="text-xl font-bold text-slate-900 leading-tight mb-1">
-                        {caseData.case_title}
-                      </h1>
-                      <p className="text-sm text-slate-500 font-medium">
-                        {caseData.case_category}
-                      </p>
-                    </div>
-                  </div>
+          {/* Case Header */}
+          <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+                  {caseData.case_title}
+                </h1>
+                <p className="text-sm text-gray-500">
+                  Case ID: CASE-{String(caseData.id).padStart(4, "0")}-{new Date().getFullYear().toString().slice(-3)}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${getUrgencyBadge(
+                    caseData.urgency_level
+                  )}`}
+                >
+                  {caseData.urgency_level} priority
+                </span>
+                <button
+                  onClick={() => navigate(`/lawyermessage`)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition text-sm font-medium"
+                >
+                  <MessageSquare size={16} />
+                  Message Client
+                </button>
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                >
+                  {isEditing ? "Cancel" : "Update Status"}
+                </button>
+              </div>
+            </div>
+          </div>
 
-                  {!isEditing ? (
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-[#0F1A3D] text-white rounded-lg hover:bg-slate-800 transition-all text-sm font-semibold"
-                    >
-                      <Edit size={16} />
-                      Edit Details
-                    </button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-semibold"
-                      >
-                        <Save size={16} />
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setIsEditing(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all text-sm font-semibold"
-                      >
-                        <X size={16} />
-                        Cancel
-                      </button>
-                    </div>
-                  )}
+          {/* Stats Grid */}
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Calendar size={20} className="text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Created Date</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatDate(caseData.created_at)}
+                  </p>
                 </div>
               </div>
+            </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  {
-                    label: "Created Date",
-                    value: formatDate(caseData.created_at),
-                    icon: Calendar,
-                    color: "text-blue-500",
-                    bg: "bg-blue-50",
-                  },
-                  {
-                    label: "Accepted Date",
-                    value: formatDate(caseData.accepted_at),
-                    icon: CheckCircle2,
-                    color: "text-green-500",
-                    bg: "bg-green-50",
-                  },
-                  {
-                    label: "Documents",
-                    value: `${caseData.document_count || 0} Files`,
-                    icon: FileText,
-                    color: "text-slate-500",
-                    bg: "bg-slate-50",
-                  },
-                  {
-                    label: "Urgency",
-                    value: caseData.urgency_level || "Medium",
-                    icon: AlertCircle,
-                    color: "text-amber-500",
-                    bg: "bg-amber-50",
-                  },
-                ].map((stat, i) => (
-                  <div
-                    key={i}
-                    className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3"
-                  >
-                    <div
-                      className={`w-10 h-10 ${stat.bg} rounded-xl flex items-center justify-center`}
-                    >
-                      <stat.icon size={20} className={stat.color} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
-                        {stat.label}
-                      </p>
-                      <p className="text-sm font-bold text-slate-800 break-words">
-                        {stat.value}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                  <Clock size={20} className="text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Next Hearing</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatDate(caseData.next_hearing_date)}
+                  </p>
+                </div>
               </div>
+            </div>
 
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+                  <FileText size={20} className="text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Documents</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {caseData.document_count || 0} files
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+                  <MapPin size={20} className="text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Court</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {caseData.court_name || "Not assigned"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6">
+            {/* Left Column - Main Content */}
+            <div className="col-span-2 space-y-6">
               {/* Tabs */}
-              <div className="space-y-6">
-                <div className="bg-slate-100/50 p-1 rounded-xl flex gap-1 w-fit">
-                  {["Details", "Documents", "Timeline"].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-8 py-2 text-sm font-semibold rounded-lg transition-all ${
-                        activeTab === tab
-                          ? "bg-white text-slate-900 shadow-sm"
-                          : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
+              <div className="bg-white rounded-lg shadow-sm">
+                <div className="border-b border-gray-200">
+                  <div className="flex gap-1 p-1">
+                    {["Timeline", "Documents", "Details"].map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-4 py-2 text-sm font-medium rounded transition ${
+                          activeTab === tab
+                            ? "bg-gray-100 text-gray-900"
+                            : "text-gray-600 hover:text-gray-900"
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Details Tab */}
-                {activeTab === "Details" && (
-                  <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">
-                      Case Information
-                    </h3>
-
-                    <div className="space-y-6">
-                      {/* Editable Fields */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Case Number */}
-                        <div>
-                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                            <Scale size={16} className="text-blue-600" />
-                            Case Number
-                          </label>
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              name="caseNumber"
-                              value={formData.caseNumber}
-                              onChange={handleInputChange}
-                              placeholder="LC-2025-XXXX"
-                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                            />
-                          ) : (
-                            <p className="text-sm font-bold text-slate-900">
-                              {formData.caseNumber || "Not set"}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Court Name */}
-                        <div>
-                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                            <Gavel size={16} className="text-purple-600" />
-                            Court Name
-                          </label>
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              name="courtName"
-                              value={formData.courtName}
-                              onChange={handleInputChange}
-                              placeholder="District Court, Kathmandu"
-                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                            />
-                          ) : (
-                            <p className="text-sm font-bold text-slate-900">
-                              {formData.courtName || "Not set"}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Next Hearing Date */}
-                        <div>
-                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                            <Calendar size={16} className="text-green-600" />
-                            Next Hearing Date
-                          </label>
-                          {isEditing ? (
-                            <input
-                              type="date"
-                              name="nextHearingDate"
-                              value={formData.nextHearingDate}
-                              onChange={handleInputChange}
-                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                            />
-                          ) : (
-                            <p className="text-sm font-bold text-slate-900">
-                              {formatDate(formData.nextHearingDate)}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Opposing Party */}
-                        <div>
-                          <label className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                            <User size={16} className="text-red-600" />
-                            Opposing Party
-                          </label>
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              name="opposingParty"
-                              value={formData.opposingParty}
-                              onChange={handleInputChange}
-                              placeholder="Name of opposing party"
-                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                            />
-                          ) : (
-                            <p className="text-sm font-bold text-slate-900">
-                              {formData.opposingParty || "Not set"}
-                            </p>
-                          )}
-                        </div>
+                {/* Timeline Tab */}
+                {activeTab === "Timeline" && (
+                  <div className="p-6">
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Case Timeline</h3>
+                      <div className="flex gap-2">
+                        <textarea
+                          value={noteText}
+                          onChange={(e) => setNoteText(e.target.value)}
+                          placeholder="Add a note or update..."
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          rows={3}
+                        />
                       </div>
+                      <button className="mt-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition text-sm font-medium">
+                        <Plus size={16} className="inline mr-1" />
+                        Add Note
+                      </button>
+                    </div>
 
-                      {/* Case Description (Read-only) */}
-                      <div className="pt-6 border-t border-slate-100">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                          Case Description
-                        </p>
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                          {caseData.case_description}
-                        </p>
+                    <div className="space-y-4">
+                      {/* Timeline items would go here */}
+                      <div className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <CheckCircle size={16} className="text-green-600" />
+                          </div>
+                          <div className="w-px h-full bg-gray-200"></div>
+                        </div>
+                        <div className="flex-1 pb-8">
+                          <div className="flex justify-between items-start mb-1">
+                            <p className="font-medium text-gray-900">Document Review Completed</p>
+                            <span className="text-xs text-gray-500">Dec 17, 2024</span>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Reviewed all submitted property documents and verified authenticity.
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">By: You</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -382,100 +314,254 @@ const LawyerCaseDetail = () => {
 
                 {/* Documents Tab */}
                 {activeTab === "Documents" && (
-                  <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-lg font-bold text-slate-900">
-                        Case Documents
-                      </h3>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-slate-800 transition-all text-sm font-semibold">
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Case Documents</h3>
+                      <button className="flex items-center gap-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition text-sm font-medium">
                         <Upload size={16} />
-                        Upload Document
+                        Upload
                       </button>
                     </div>
-                    <p className="text-sm text-slate-500">
-                      No documents available. Upload documents to share with your
-                      client.
+                    <p className="text-sm text-gray-500">
+                      No documents uploaded yet. Upload documents to share with your client.
                     </p>
                   </div>
                 )}
 
-                {/* Timeline Tab */}
-                {activeTab === "Timeline" && (
-                  <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">
-                      Case Timeline
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                      Timeline feature coming soon...
-                    </p>
+                {/* Details Tab */}
+                {activeTab === "Details" && (
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-6">Case Details</h3>
+
+                    <div className="space-y-6">
+                      {/* Description */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Description
+                        </label>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          {caseData.case_description}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Case Type */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Case Type
+                          </label>
+                          <p className="text-sm text-gray-900">{caseData.case_category}</p>
+                        </div>
+
+                        {/* Status */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Status
+                          </label>
+                          {isEditing ? (
+                            <select
+                              name="status"
+                              value={formData.status}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            >
+                              <option value="accepted">Accepted</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(
+                                caseData.status
+                              )}`}
+                            >
+                              {caseData.status?.replace(/_/g, " ")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Filing Date */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Filing Date
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {formatDate(caseData.created_at)}
+                          </p>
+                        </div>
+
+                        {/* Hearing Time */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Next Hearing
+                          </label>
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              name="nextHearingDate"
+                              value={formData.nextHearingDate}
+                              onChange={handleInputChange}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            />
+                          ) : (
+                            <p className="text-sm text-gray-900">
+                              {formatDate(caseData.next_hearing_date)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Court Address */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Court Address
+                        </label>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="courtName"
+                            value={formData.courtName}
+                            onChange={handleInputChange}
+                            placeholder="Enter court name"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-900">
+                            {caseData.court_name || "Not assigned"}
+                          </p>
+                        )}
+                      </div>
+
+                      {isEditing && (
+                        <div className="flex gap-2 pt-4">
+                          <button
+                            onClick={handleSave}
+                            className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition text-sm font-medium"
+                          >
+                            Save Changes
+                          </button>
+                          <button
+                            onClick={() => setIsEditing(false)}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-8">
-              {/* Client Info */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
-                  <User size={18} className="text-blue-600" />
+            {/* Right Column - Sidebar */}
+            <div className="space-y-6">
+              {/* Client Information */}
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Client Information
                 </h3>
 
-                <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-3 mb-4">
                   {caseData.client_profile_image ? (
                     <img
                       src={caseData.client_profile_image}
                       alt={caseData.client_name}
-                      className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md"
+                      className="w-12 h-12 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
-                      {caseData.client_name?.charAt(0)}
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span className="text-blue-700 font-semibold">
+                        {caseData.client_name?.charAt(0)}
+                      </span>
                     </div>
                   )}
                   <div>
-                    <h4 className="font-bold text-slate-900">
-                      {caseData.client_name}
-                    </h4>
-                    <p className="text-xs font-medium text-slate-500">
-                      {caseData.client_email}
-                    </p>
+                    <p className="font-semibold text-gray-900">{caseData.client_name}</p>
+                    <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded">
+                      Client
+                    </span>
                   </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone size={16} />
+                    <span>+977-9841234567</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail size={16} />
+                    <span>{caseData.client_email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin size={16} />
+                    <span>Kathmandu, Ward 10</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                  <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
+                    <MessageSquare size={16} />
+                    Message
+                  </button>
+                  <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
+                    <Calendar size={16} />
+                    Schedule
+                  </button>
                 </div>
               </div>
 
-              {/* Status Update */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <Clock size={18} className="text-amber-500" />
-                  Update Status
-                </h3>
+              {/* Tasks */}
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Tasks</h3>
+                  <button className="text-gray-400 hover:text-gray-600">
+                    <Plus size={20} />
+                  </button>
+                </div>
 
-                {isEditing ? (
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
-                  >
-                    <option value="accepted">Accepted</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                ) : (
-                  <p
-                    className={`px-3 py-2 rounded-lg text-sm font-bold ${
-                      formData.status === "completed"
-                        ? "bg-green-50 text-green-600"
-                        : formData.status === "in_progress"
-                        ? "bg-blue-50 text-blue-600"
-                        : "bg-yellow-50 text-yellow-600"
-                    }`}
-                  >
-                    {formData.status?.replace(/_/g, " ").toUpperCase()}
-                  </p>
-                )}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900">
+                        Prepare court arguments for hearing
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Due: Dec 16, 2024</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900">Submit additional evidence</p>
+                      <p className="text-xs text-gray-500 mt-1">Due: Dec 17, 2024</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked
+                      readOnly
+                      className="mt-1 w-4 h-4 text-green-600 border-green-300 rounded focus:ring-green-500"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-900 line-through">
+                        Review opposing party's claims
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Due: Dec 15, 2024</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

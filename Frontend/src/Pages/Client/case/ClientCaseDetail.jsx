@@ -162,7 +162,7 @@ const ClientCaseDetail = () => {
                           'bg-gray-50 text-gray-600'
                         }`}>{caseData?.status?.replace(/_/g, ' ') || 'Pending'}</span>
                       </div>
-                      <h1 className="text-xl font-bold text-slate-900 leading-tight mb-1">{caseData?.case_title || 'Case Title'}</h1>
+                      <h1 className="text-xl font-semibold text-slate-900 leading-tight mb-1">{caseData?.case_title || 'Case Title'}</h1>
                       <p className="text-sm text-slate-500 font-medium">{caseData?.case_category || 'Category'}</p>
                     </div>
                   </div>
@@ -211,7 +211,7 @@ const ClientCaseDetail = () => {
                     </div>
                     <div>
                       <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">{stat.label}</p>
-                      <p className="text-sm font-bold text-slate-800 break-words">{stat.value}</p>
+                      <p className="text-sm font-semibold text-slate-800 break-words">{stat.value}</p>
                     </div>
                   </div>
                 ))}
@@ -248,7 +248,7 @@ const ClientCaseDetail = () => {
                           </div>
                           <div className="flex-1 p-5 rounded-xl border border-slate-50 bg-slate-50/30 hover:bg-slate-50 transition-colors">
                             <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-slate-900">{milestone.title}</h3>
+                              <h3 className="font-semibold text-slate-900">{milestone.title}</h3>
                               <span className="text-xs font-semibold text-slate-400">{milestone.date}</span>
                             </div>
                             <p className="text-sm text-slate-500 leading-relaxed font-medium">
@@ -280,7 +280,7 @@ const ClientCaseDetail = () => {
                               <FileText size={24} className="text-blue-600" />
                             </div>
                             <div>
-                              <h4 className="font-bold text-slate-900 text-sm mb-1">{doc.name}</h4>
+                              <h4 className="font-semibold text-slate-900 text-sm mb-1">{doc.name}</h4>
                               <p className="text-xs text-slate-500">
                                 {doc.size} • Uploaded by {doc.uploadedBy} on {doc.uploadedDate}
                               </p>
@@ -309,7 +309,7 @@ const ClientCaseDetail = () => {
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Case Number</p>
-                            <p className="text-sm font-bold text-slate-900">{caseData?.case_number || 'Not assigned yet'}</p>
+                            <p className="text-sm font-semibold text-slate-900">{caseData?.case_number || 'Not assigned yet'}</p>
                           </div>
                         </div>
 
@@ -319,7 +319,7 @@ const ClientCaseDetail = () => {
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Filing Date</p>
-                            <p className="text-sm font-bold text-slate-900">{caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</p>
+                            <p className="text-sm font-semibold text-slate-900">{caseData?.created_at ? new Date(caseData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}</p>
                           </div>
                         </div>
 
@@ -329,7 +329,7 @@ const ClientCaseDetail = () => {
                           </div>
                           <div>
                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Court Name</p>
-                            <p className="text-sm font-bold text-slate-900">{caseData?.court_name || 'Not assigned yet'}</p>
+                            <p className="text-sm font-semibold text-slate-900">{caseData?.court_name || 'Not assigned yet'}</p>
                           </div>
                         </div>
                       </div>
@@ -337,7 +337,7 @@ const ClientCaseDetail = () => {
                       {/* Opposing Party */}
                       <div className="pb-6 border-b border-slate-100">
                         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Opposing Party</p>
-                        <p className="text-sm font-bold text-slate-900">{caseData?.opposing_party || 'Not specified'}</p>
+                        <p className="text-sm font-semibold text-slate-900">{caseData?.opposing_party || 'Not specified'}</p>
                       </div>
 
                       {/* Case Description */}
@@ -381,17 +381,17 @@ const ClientCaseDetail = () => {
                     {caseData?.lawyer_name && <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>}
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900">{caseData?.lawyer_name || 'No lawyer assigned yet'}</h4>
+                    <h4 className="font-semibold text-slate-900">{caseData?.lawyer_name || 'No lawyer assigned yet'}</h4>
                     <p className="text-xs font-medium text-slate-500">{caseData?.case_category || ''}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all text-sm font-bold text-slate-700">
+                  <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all text-sm font-semibold text-slate-700">
                     <MessageSquare size={16} />
                     Send Message
                   </button>
-                  <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all text-sm font-bold text-slate-700">
+                  <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all text-sm font-semibold text-slate-700">
                     <Calendar size={16} />
                     Schedule Meeting
                   </button>
@@ -405,7 +405,7 @@ const ClientCaseDetail = () => {
                     <Clock size={18} className="text-amber-500" />
                     Pending Tasks
                   </h3>
-                  <span className="text-xs font-bold text-slate-400">2</span>
+                    <span className="text-xs font-semibold text-slate-400">2</span>
                 </div>
 
                 <div className="space-y-4">
@@ -420,8 +420,8 @@ const ClientCaseDetail = () => {
                           {task.status === 'completed' ? <CheckCircle2 size={16} /> : <Clock size={16} />}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-800 leading-tight mb-1">{task.title}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{task.due}</p>
+                          <p className="text-sm font-semibold text-slate-800 leading-tight mb-1">{task.title}</p>
+                          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{task.due}</p>
                         </div>
                       </div>
                     </div>

@@ -1,0 +1,711 @@
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import Sidebar from "./../Sidebar";
+import LawyerDashHeader from "../LawyerDashHeader.jsx";
+import {
+  FileText,
+  ChevronLeft,
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  Upload,
+  Download,
+  CheckCircle2,
+  Gavel,
+  AlertCircle,
+  MessageSquare,
+  Mail,
+  Phone,
+  Plus,
+  Building2,
+  Edit2,
+  Save,
+  X,
+} from "lucide-react";
+import { fetchCases, updateCaseDetails } from "../../slices/caseSlice.js";
+
+const LawyerCaseDetail = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { id } = useParams();
+  const [activeTab, setActiveTab] = useState("Details");
+  const [newNote, setNewNote] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    case_number: "",
+    court_name: "",
+    opposing_party: "",
+    next_hearing_date: "",
+    status: "",
+  });
+
+  const { cases, casesLoading } = useSelector((state) => state.case);
+  const caseData = cases?.find((c) => c.id === parseInt(id));
+
+  useEffect(() => {
+    dispatch(fetchCases());
+  }, [dispatch]);
+
+  // Initialize edit form data when caseData changes
+  useEffect(() => {
+    if (caseData) {
+      setEditFormData({
+        case_number: caseData.case_number || "",
+        court_name: caseData.court_name || "",
+        opposing_party: caseData.opposing_party || "",
+        next_hearing_date: caseData.next_hearing_date || "",
+        status: caseData.status || "",
+      });
+    }
+  }, [caseData]);
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    // Reset form data to original values
+    if (caseData) {
+      setEditFormData({
+        case_number: caseData.case_number || "",
+        court_name: caseData.court_name || "",
+        opposing_party: caseData.opposing_party || "",
+        next_hearing_date: caseData.next_hearing_date || "",
+        status: caseData.status || "",
+      });
+    }
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      setIsSaving(true);
+      await dispatch(
+        updateCaseDetails({
+          caseId: caseData.id,
+          data: editFormData,
+        })
+      ).unwrap();
+      setIsEditing(false);
+      // Refresh cases to get updated data
+      dispatch(fetchCases());
+    } catch (error) {
+      console.error("Error updating case details:", error);
+      alert("Failed to update case details. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not set";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return "Not set";
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      in_progress: { bg: "bg-blue-100", text: "text-blue-700", label: "In Progress" },
+      completed: { bg: "bg-green-100", text: "text-green-700", label: "Completed" },
+      accepted: { bg: "bg-amber-100", text: "text-amber-700", label: "Accepted" },
+      pending: { bg: "bg-gray-100", text: "text-gray-700", label: "Pending" },
+    };
+    return statusMap[status] || statusMap.pending;
+  };
+
+  const getPriorityBadge = (urgency) => {
+    const priorityMap = {
+      High: { bg: "bg-red-100", text: "text-red-700", label: "high priority" },
+      Medium: { bg: "bg-amber-100", text: "text-amber-700", label: "medium priority" },
+      Low: { bg: "bg-blue-100", text: "text-blue-700", label: "low priority" },
+    };
+    return priorityMap[urgency] || priorityMap.Medium;
+  };
+
+  // Mock documents data - replace with real data later
+  const documents = [
+    {
+      name: "Property_Deed_2015.pdf",
+      size: "2.4 MB",
+      date: "Oct 15, 2024",
+      uploadedBy: "Client",
+    },
+    {
+      name: "Inheritance_Certificate.pdf",
+      size: "1.1 MB",
+      date: "Oct 16, 2024",
+      uploadedBy: "Client",
+    },
+    {
+      name: "Land_Survey_Report.pdf",
+      size: "3.8 MB",
+      date: "Oct 20, 2024",
+      uploadedBy: "You",
+    },
+    {
+      name: "Tax_Clearance_2024.pdf",
+      size: "856 KB",
+      date: "Oct 20, 2024",
+      uploadedBy: "Client",
+    },
+    {
+      name: "Court_Filing_Receipt.pdf",
+      size: "245 KB",
+      date: "Oct 20, 2024",
+      uploadedBy: "You",
+    },
+    {
+      name: "Witness_Statement.pdf",
+      size: "1.2 MB",
+      date: "Nov 25, 2024",
+      uploadedBy: "You",
+    },
+  ];
+
+  // Mock timeline data
+  const timeline = [
+    {
+      id: 1,
+      title: "Document Review Completed",
+      description: "Reviewed all submitted property documents and verified authenticity.",
+      date: "Dec 17, 2024",
+      by: "You",
+      icon: CheckCircle2,
+      color: "text-green-500",
+      bg: "bg-green-50",
+    },
+    {
+      id: 2,
+      title: "Client Meeting",
+      description: "Discussed case strategy and next steps with the client.",
+      date: "Dec 10, 2024",
+      by: "You",
+      icon: User,
+      color: "text-blue-500",
+      bg: "bg-blue-50",
+    },
+    {
+      id: 3,
+      title: "Hearing Rescheduled",
+      description: "Court hearing rescheduled from Dec 15 to Dec 18, 2024.",
+      date: "Dec 05, 2024",
+      by: "Court",
+      icon: Calendar,
+      color: "text-purple-500",
+      bg: "bg-purple-50",
+    },
+    {
+      id: 4,
+      title: "Evidence Submitted",
+      description: "Submitted property ownership documents to the court.",
+      date: "Nov 28, 2024",
+      by: "You",
+      icon: FileText,
+      color: "text-amber-500",
+      bg: "bg-amber-50",
+    },
+    {
+      id: 5,
+      title: "Case Filed",
+      description: "Case officially filed at Kathmandu District Court.",
+      date: "Oct 30, 2024",
+      by: "You",
+      icon: Building2,
+      color: "text-slate-500",
+      bg: "bg-slate-50",
+    },
+  ];
+
+  // Mock tasks data
+  const tasks = [
+    {
+      id: 1,
+      title: "Prepare court arguments for hearing",
+      due: "Dec 16, 2024",
+      status: "pending",
+    },
+    {
+      id: 2,
+      title: "Submit additional evidence",
+      due: "Dec 17, 2024",
+      status: "pending",
+    },
+    {
+      id: 3,
+      title: "Review opposing party's claims",
+      due: "Dec 15, 2024",
+      status: "completed",
+    },
+  ];
+
+  if (casesLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center ml-64">
+          <div className="w-12 h-12 border-4 border-[#0F1A3D] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!caseData) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 ml-64">
+          <AlertCircle size={48} className="text-gray-400" />
+          <p className="text-gray-600">Case not found</p>
+          <button
+            onClick={() => navigate("/lawyercase")}
+            className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition"
+          >
+            Back to Cases
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const statusBadge = getStatusBadge(caseData.status);
+  const priorityBadge = getPriorityBadge(caseData.urgency_level);
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar />
+
+      <main className="flex-1 flex flex-col overflow-hidden ml-64">
+        <LawyerDashHeader title="Dashboard" subtitle={`Welcome back, Adv. Ram Kumar`} />
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate("/lawyercase")}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 text-sm font-medium"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          {/* Header Section */}
+          <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-bold text-gray-900">{caseData.case_title}</h1>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${priorityBadge.bg} ${priorityBadge.text}`}>
+                    {priorityBadge.label}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">Case ID: CASE-2024-{String(id).padStart(3, "0")}</p>
+              </div>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+                  <MessageSquare size={16} />
+                  Message Client
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("Details");
+                    setIsEditing(true);
+                  }}
+                  className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2"
+                >
+                  <Edit2 size={16} />
+                  Edit Details
+                </button>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar size={16} className="text-gray-600" />
+                  <span className="text-xs text-gray-600 font-medium">Created Date</span>
+                </div>
+                <p className="text-sm font-semibold text-gray-900">{formatDate(caseData.created_at)}</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock size={16} className="text-green-600" />
+                  <span className="text-xs text-green-700 font-medium">Next Hearing</span>
+                </div>
+                <p className="text-sm font-semibold text-gray-900">{formatDate(caseData.next_hearing_date)}</p>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <FileText size={16} className="text-purple-600" />
+                  <span className="text-xs text-purple-700 font-medium">Documents</span>
+                </div>
+                <p className="text-sm font-semibold text-gray-900">{documents.length} files</p>
+              </div>
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPin size={16} className="text-amber-600" />
+                  <span className="text-xs text-amber-700 font-medium">Court</span>
+                </div>
+                <p className="text-sm font-semibold text-gray-900">{caseData.court_name || "Not assigned"}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6">
+            {/* Main Content */}
+            <div className="col-span-2">
+              {/* Tabs */}
+              <div className="bg-white rounded-lg shadow-sm mb-6">
+                <div className="border-b border-gray-200">
+                  <nav className="flex">
+                    {["Timeline", "Documents", "Details"].map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                          activeTab === tab
+                            ? "border-[#0F1A3D] text-[#0F1A3D]"
+                            : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                        }`}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+
+                <div className="p-6">
+                  {/* Timeline Tab */}
+                  {activeTab === "Timeline" && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Case Timeline</h3>
+                      
+                      {/* Add Note Section */}
+                      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <textarea
+                          value={newNote}
+                          onChange={(e) => setNewNote(e.target.value)}
+                          placeholder="Add a note or update..."
+                          className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows={3}
+                        />
+                        <button className="mt-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
+                          <Plus size={16} />
+                          Add Note
+                        </button>
+                      </div>
+
+                      {/* Timeline Items */}
+                      <div className="space-y-4">
+                        {timeline.map((item) => (
+                          <div key={item.id} className="flex gap-4">
+                            <div className={`w-10 h-10 rounded-lg ${item.bg} flex items-center justify-center shrink-0`}>
+                              <item.icon size={20} className={item.color} />
+                            </div>
+                            <div className="flex-1 bg-gray-50 p-4 rounded-lg">
+                              <div className="flex justify-between items-start mb-1">
+                                <h4 className="font-semibold text-gray-900">{item.title}</h4>
+                                <span className="text-xs text-gray-500">{item.date}</span>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                              <span className="text-xs text-gray-500">By: {item.by}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Documents Tab */}
+                  {activeTab === "Documents" && (
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Case Documents</h3>
+                        <button className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2">
+                          <Upload size={16} />
+                          Upload
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {documents.map((doc, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <FileText size={20} className="text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900">{doc.name}</h4>
+                                <p className="text-xs text-gray-600">
+                                  {doc.size} • {doc.date} • Uploaded by {doc.uploadedBy}
+                                </p>
+                              </div>
+                            </div>
+                            <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                              <Download size={18} className="text-gray-600" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Details Tab */}
+                  {activeTab === "Details" && (
+                    <div>
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900">Case Details</h3>
+                      </div>
+                      <div className="space-y-6">
+                        {/* Description */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
+                          <p className="text-sm text-gray-600 leading-relaxed">{caseData.case_description}</p>
+                        </div>
+
+                        {/* Case Info Grid */}
+                        <div className="grid grid-cols-2 gap-6 mb-6">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Case Type</h4>
+                            <p className="text-sm text-gray-900 font-medium">{caseData.case_category}</p>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Status</h4>
+                            {isEditing ? (
+                              <select
+                                name="status"
+                                value={editFormData.status}
+                                onChange={handleEditChange}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              >
+                                <option value="accepted">Accepted</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="pending">Pending</option>
+                              </select>
+                            ) : (
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}>
+                                {statusBadge.label}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Filing Date</h4>
+                            <p className="text-sm text-gray-900 font-medium">{formatDate(caseData.created_at)}</p>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Hearing Time</h4>
+                            <p className="text-sm text-gray-900 font-medium">{formatTime(caseData.next_hearing_date)}</p>
+                          </div>
+                        </div>
+
+                        {/* Court Information */}
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm space-y-4">
+                          <h4 className="font-semibold text-gray-900 mb-4">Court Information</h4>
+
+                          <div className="grid grid-cols-2 gap-6">
+                            <div>
+                              <h5 className="text-sm font-medium text-gray-700 mb-2">Case Number</h5>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  name="case_number"
+                                  value={editFormData.case_number}
+                                  onChange={handleEditChange}
+                                  placeholder="e.g., CASE-2024-001"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                />
+                              ) : (
+                                <p className="text-sm text-gray-900 font-medium">{caseData.case_number || "Not set"}</p>
+                              )}
+                            </div>
+
+                            <div>
+                              <h5 className="text-sm font-medium text-gray-700 mb-2">Court Name</h5>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  name="court_name"
+                                  value={editFormData.court_name}
+                                  onChange={handleEditChange}
+                                  placeholder="e.g., District Court, Kathmandu"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                />
+                              ) : (
+                                <p className="text-sm text-gray-900 font-medium">{caseData.court_name || "Not assigned"}</p>
+                              )}
+                            </div>
+
+                            <div>
+                              <h5 className="text-sm font-medium text-gray-700 mb-2">Opposing Party</h5>
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  name="opposing_party"
+                                  value={editFormData.opposing_party}
+                                  onChange={handleEditChange}
+                                  placeholder="e.g., Ram Bahadur Thapa"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                />
+                              ) : (
+                                <p className="text-sm text-gray-900 font-medium">{caseData.opposing_party || "Not specified"}</p>
+                              )}
+                            </div>
+
+                            <div>
+                              <h5 className="text-sm font-medium text-gray-700 mb-2">Next Hearing Date</h5>
+                              {isEditing ? (
+                                <input
+                                  type="date"
+                                  name="next_hearing_date"
+                                  value={editFormData.next_hearing_date}
+                                  onChange={handleEditChange}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                />
+                              ) : (
+                                <p className="text-sm text-gray-900 font-medium">{formatDate(caseData.next_hearing_date)}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {isEditing && (
+                          <div className="flex gap-2 pt-4">
+                            <button
+                              onClick={handleSaveChanges}
+                              disabled={isSaving}
+                              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition flex items-center justify-center gap-2 font-medium"
+                            >
+                              <Save size={16} />
+                              {isSaving ? "Saving..." : "Save Changes"}
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              disabled={isSaving}
+                              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 transition flex items-center justify-center gap-2 font-medium"
+                            >
+                              <X size={16} />
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Client Information */}
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">Client Information</h3>
+                
+                <div className="flex items-center gap-3 mb-4">
+                  {caseData.client_profile_image ? (
+                    <img
+                      src={caseData.client_profile_image}
+                      alt={caseData.client_name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
+                      <span className="text-pink-700 font-semibold text-lg">
+                        {caseData.client_name?.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{caseData.client_name}</h4>
+                    <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                      Client
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone size={16} />
+                    <span>+977-9841234567</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail size={16} />
+                    <span>{caseData.client_email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin size={16} />
+                    <span>Kathmandu, Ward 10</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mt-4">
+                  <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                    <MessageSquare size={16} />
+                    Message
+                  </button>
+                  <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                    <Calendar size={16} />
+                    Schedule
+                  </button>
+                </div>
+              </div>
+
+              {/* Tasks */}
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Tasks</h3>
+                  <button className="p-1 hover:bg-gray-100 rounded">
+                    <Plus size={18} className="text-gray-600" />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {tasks.map((task) => (
+                    <div key={task.id} className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        checked={task.status === "completed"}
+                        className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        readOnly
+                      />
+                      <div className="flex-1">
+                        <p className={`text-sm ${task.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}>
+                          {task.title}
+                        </p>
+                        <p className="text-xs text-gray-500">Due: {task.due}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default LawyerCaseDetail;

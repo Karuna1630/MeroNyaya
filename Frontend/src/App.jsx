@@ -25,7 +25,7 @@ import LawyerMessage from './Pages/Lawyer/LawyerMessage.jsx';
 import LawyerAppointment from './Pages/Lawyer/LawyerAppointment.jsx';
 import Earning from './Pages/Lawyer/Earning.jsx';
 import LawyerCase from './Pages/Lawyer/LawyerCase.jsx';
-import LawyerCaseDetail from './Pages/Lawyer/LawyerCaseDetail.jsx';
+import LawyerCaseDetail from './Pages/Lawyer/case/LawyerCaseDetail.jsx';
 import LawyerFindCases from './Pages/Lawyer/LawyerFindCases.jsx';
 import LawyerCaseRequest from './Pages/Lawyer/LawyerCaseRequest.jsx';
 import ViewProfile from './Pages/Profile/ViewProfile.jsx';

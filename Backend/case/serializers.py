@@ -64,6 +64,7 @@ class CaseListSerializer(serializers.ModelSerializer):
     lawyer_name = serializers.CharField(source='lawyer.name', read_only=True, allow_null=True)
     lawyer_email = serializers.CharField(source='lawyer.email', read_only=True, allow_null=True)
     lawyer_phone = serializers.CharField(source='lawyer.phone', read_only=True, allow_null=True)
+    lawyer_profile_image = serializers.SerializerMethodField()
     document_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -72,7 +73,7 @@ class CaseListSerializer(serializers.ModelSerializer):
             'id', 'case_title', 'case_category', 'case_description', 'status', 'urgency_level',
             'lawyer_selection', 'request_consultation',
             'client_name', 'client_email', 'client_profile_image', 
-            'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone',
+            'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone', 'lawyer_profile_image',
             'proposal_count', 'document_count',
             'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
             'created_at', 'updated_at', 'accepted_at'
@@ -87,6 +88,14 @@ class CaseListSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.client.profile_image.url)
             return obj.client.profile_image.url
+        return None
+
+    def get_lawyer_profile_image(self, obj):
+        if obj.lawyer and obj.lawyer.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.lawyer.profile_image.url)
+            return obj.lawyer.profile_image.url
         return None
 
 

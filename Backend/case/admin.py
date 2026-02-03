@@ -4,9 +4,9 @@ from .models import Case, CaseDocument
 
 @admin.register(Case)
 class CaseAdmin(admin.ModelAdmin):
-    list_display = ['case_title', 'client', 'lawyer', 'case_category', 'status', 'urgency_level', 'created_at']
+    list_display = ['case_title', 'case_number', 'client', 'lawyer', 'case_category', 'status', 'court_name', 'next_hearing_date', 'created_at']
     list_filter = ['status', 'case_category', 'urgency_level', 'created_at']
-    search_fields = ['case_title', 'case_description', 'client__name', 'lawyer__name', 'preferred_lawyers__name']
+    search_fields = ['case_title', 'case_number', 'case_description', 'client__name', 'lawyer__name', 'preferred_lawyers__name', 'court_name', 'opposing_party']
     readonly_fields = ['created_at', 'updated_at', 'accepted_at', 'completed_at']
     date_hierarchy = 'created_at'
     
@@ -19,6 +19,9 @@ class CaseAdmin(admin.ModelAdmin):
         }),
         ('Relationships', {
             'fields': ('client', 'lawyer', 'preferred_lawyers')
+        }),
+        ('Court Information', {
+            'fields': ('case_number', 'court_name', 'opposing_party', 'next_hearing_date')
         }),
         ('Status', {
             'fields': ('status', 'proposal_count', 'rejection_reason', 'notes')
