@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { useFormik } from "formik";
 import {
   MapPin,
   Star,
@@ -20,6 +21,7 @@ import AuthGate from "../utils/AuthGate.jsx";
 import { fetchLawyerDetails } from "../slices/lawyerSlice.js";
 import { createConsultation } from "../slices/consultationSlice.js";
 import { submitReview, getLawyerReviews, clearSubmitStatus } from "../slices/reviewSlice.js";
+import { consultationValidationSchema } from "../utils/consultationValidation.js";
 
 const IndividualLawyer = () => {
   const { id } = useParams();
@@ -44,10 +46,55 @@ const IndividualLawyer = () => {
   const [selectedConsultationType, setSelectedConsultationType] = useState("Video");
   const [selectedDay, setSelectedDay] = useState("Mon");
   const [selectedTime, setSelectedTime] = useState("10:00 AM");
+  const [bookingError, setBookingError] = useState("");
   const [reviewText, setReviewText] = useState("");
   const [selectedRating, setSelectedRating] = useState(5);
 
-  // Helper function to get initials from name
+  // Formik hook for consultation form validation
+  const formik = useFormik({
+    initialValues: {
+      title: "",
+      meetingLocation: "",
+      phoneNumber: "",
+    },
+    validationSchema: consultationValidationSchema,
+    onSubmit: async (values) => {
+      if (!lawyer?.id) return;
+
+      setBookingError("");
+
+      const modeMap = {
+        Video: "video",
+        "In-Person": "in_person",
+      };
+
+      const payload = {
+        lawyer_id: lawyer.id,
+        mode: modeMap[selectedConsultationType] || "video",
+        requested_day: selectedDay,
+        requested_time: selectedTime,
+        title: values.title,
+        meeting_location: values.meetingLocation,
+        phone_number: values.phoneNumber,
+      };
+
+      dispatch(createConsultation(payload)).then((res) => {
+        if (!res?.error) {
+          setShowBookingModal(false);
+          setBookingError("");
+          formik.resetForm();
+          const role = (user?.user_type || user?.role || "").toLowerCase();
+          if (role === "client") {
+            navigate("/client/consultation");
+          }
+        } else {
+          setBookingError(res?.error?.message || "Failed to create consultation. Please try again.");
+        }
+      });
+    },
+    validateOnChange: true,
+    validateOnBlur: true,
+  });
   const getInitials = (name) => {
     if (!name) return "A";
     return name
@@ -93,8 +140,37 @@ const IndividualLawyer = () => {
     }
   }, [lawyer?.id, dispatch]);
 
+  const validateForm = () => {
+    const errors = {};
+
+    // Meeting Location validation
+    if (!meetingLocation.trim()) {
+      errors.meetingLocation = "Meeting location is required";
+    } else if (meetingLocation.trim().length < 3) {
+      errors.meetingLocation = "Meeting location must be at least 3 characters";
+    }
+
+    // Phone Number validation
+    if (!phoneNumber.trim()) {
+      errors.phoneNumber = "Phone number is required";
+    } else if (!/^[0-9+\-\s()]{7,20}$/.test(phoneNumber.replace(/\s/g, ""))) {
+      errors.phoneNumber = "Phone number must be 7-20 digits (can include +, -, spaces, parentheses)";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleBooking = () => {
     if (!lawyer?.id) return;
+
+    // Validate form
+    if (!validateForm()) {
+      setBookingError("Please fix the errors below");
+      return;
+    }
+
+    setBookingError("");
 
     const modeMap = {
       Video: "video",
@@ -106,15 +182,23 @@ const IndividualLawyer = () => {
       mode: modeMap[selectedConsultationType] || "video",
       requested_day: selectedDay,
       requested_time: selectedTime,
+      meeting_location: meetingLocation,
+      phone_number: phoneNumber,
     };
 
     dispatch(createConsultation(payload)).then((res) => {
       if (!res?.error) {
         setShowBookingModal(false);
+        setBookingError("");
+        setFieldErrors({});
+        setMeetingLocation("");
+        setPhoneNumber("");
         const role = (user?.user_type || user?.role || "").toLowerCase();
         if (role === "client") {
           navigate("/client/consultation");
         }
+      } else {
+        setBookingError(res?.error?.message || "Failed to create consultation. Please try again.");
       }
     });
   };
@@ -591,6 +675,13 @@ const IndividualLawyer = () => {
               </button>
             </div>
 
+            {bookingError && (
+              <div className="mb-4 flex items-start gap-3 rounded-lg bg-red-50 p-4 border border-red-200">
+                <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+                <p className="text-sm text-red-700">{bookingError}</p>
+              </div>
+            )}
+
             <div className="space-y-4 mb-6 pb-6 border-b border-slate-200">
               <div>
                 <p className="text-sm text-slate-600">Lawyer</p>
@@ -603,6 +694,74 @@ const IndividualLawyer = () => {
                 <p className="text-base font-semibold text-slate-900">
                   {selectedConsultationType}
                 </p>
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-600" htmlFor="title">
+                  Consultation Topic <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="title"
+                  name="title"
+                  type="text"
+                  value={formik.values.title}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="e.g., Property dispute, Contract review, Divorce case"
+                  className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 ${
+                    formik.touched.title && formik.errors.title
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-slate-200 focus:ring-slate-900"
+                  }`}
+                />
+                {formik.touched.title && formik.errors.title && (
+                  <p className="mt-1 text-xs text-red-500">{formik.errors.title}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-600" htmlFor="meetingLocation">
+                  Meeting Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="meetingLocation"
+                  name="meetingLocation"
+                  type="text"
+                  value={formik.values.meetingLocation}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Enter address or location (e.g., Kathmandu, Nepal)"
+                  className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 ${
+                    formik.touched.meetingLocation && formik.errors.meetingLocation
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-slate-200 focus:ring-slate-900"
+                  }`}
+                />
+                {formik.touched.meetingLocation && formik.errors.meetingLocation && (
+                  <p className="mt-1 text-xs text-red-500">{formik.errors.meetingLocation}</p>
+                )}
+              </div>
+              <div>
+                <label className="text-sm text-slate-600" htmlFor="phoneNumber">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  value={formik.values.phoneNumber}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  placeholder="Enter your phone number (e.g., +977 9800000000 or 9800000000)"
+                  className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 ${
+                    formik.touched.phoneNumber && formik.errors.phoneNumber
+                      ? "border-red-300 focus:ring-red-500"
+                      : "border-slate-200 focus:ring-slate-900"
+                  }`}
+                />
+                {formik.touched.phoneNumber && formik.errors.phoneNumber && (
+                  <p className="mt-1 text-xs text-red-500">{formik.errors.phoneNumber}</p>
+                )}
               </div>
               <div>
                 <p className="text-sm text-slate-600">Date & Time</p>
@@ -619,14 +778,18 @@ const IndividualLawyer = () => {
             </div>
 
             <button
-              onClick={handleBooking}
-              disabled={createLoading}
+              onClick={formik.handleSubmit}
+              disabled={createLoading || !formik.isValid}
               className="w-full px-4 py-3 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition mb-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {createLoading ? "Submitting..." : "Proceed to Payment"}
+              {createLoading ? "Submitting..." : "Request Consultation"}
             </button>
             <button
-              onClick={() => setShowBookingModal(false)}
+              onClick={() => {
+                setShowBookingModal(false);
+                formik.resetForm();
+                setBookingError("");
+              }}
               className="w-full px-4 py-3 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
             >
               Cancel
