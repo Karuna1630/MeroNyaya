@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, User, Mail, Phone, MapPin, CheckCircle } from "lucide-react";
@@ -10,8 +10,7 @@ const ViewProfile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { userProfile, fetchLoading } = useSelector((state) => state.profile);
-  const [isEditing, setIsEditing] = useState(false);
+  const { userProfile } = useSelector((state) => state.profile);
 
   // Prefer richer profile slice data; fall back to auth.user
   const profile = userProfile || user;
