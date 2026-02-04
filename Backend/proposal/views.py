@@ -66,8 +66,11 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if lawyer already submitted a proposal
-        existing_proposal = Proposal.objects.filter(case=case, lawyer=request.user).first()
+        # Check if lawyer already submitted a proposal for this case
+        existing_proposal = Proposal.objects.filter(
+            case=case,
+            lawyer=request.user
+        ).first()
         if existing_proposal:
             return Response(
                 {'error': 'You have already submitted a proposal for this case'},
@@ -78,9 +81,10 @@ class ProposalViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         proposal = serializer.save()
         
-        # Update case proposal count
+        # Update case proposal count and status
         case.proposal_count += 1
-        if case.status == 'public' or case.status == 'sent_to_lawyers':
+        # Mark that proposals are being received (but still accepting more)
+        if case.status in ['public', 'sent_to_lawyers']:
             case.status = 'proposals_received'
         case.save()
         

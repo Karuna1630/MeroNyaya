@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchPublicCases } from "../slices/caseSlice";
-import { submitProposal, clearSubmitProposalStatus } from "../slices/proposalSlice";
+import { fetchProposals, submitProposal, clearSubmitProposalStatus } from "../slices/proposalSlice";
 import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
 import LawyerProposalForm from "./LawyerProposalForm";
+import { LAW_CATEGORIES, URGENCY_LEVELS } from "../../utils/lawCategories";
+import Pagination from "../../components/Pagination";
 import { 
   Search, 
   MapPin, 
@@ -22,7 +24,7 @@ import {
 const LawyerFindCases = () => {
   const dispatch = useDispatch();
   const { publicCases, publicCasesLoading, publicCasesError } = useSelector((state) => state.case);
-  const { submitProposalLoading, submitProposalSuccess, submitProposalError } = useSelector((state) => state.proposal);
+  const { proposals, submitProposalLoading, submitProposalSuccess, submitProposalError } = useSelector((state) => state.proposal);
   
   // Debug: Check authentication
   useEffect(() => {
@@ -38,16 +40,20 @@ const LawyerFindCases = () => {
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [showProposalModal, setShowProposalModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
+  const [activeTab, setActiveTab] = useState("public");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     dispatch(fetchPublicCases());
+    dispatch(fetchProposals());
   }, [dispatch]);
 
   // Handle successful proposal submission
   useEffect(() => {
     if (submitProposalSuccess) {
-      setShowProposalModal(false);
       dispatch(fetchPublicCases());
+      dispatch(fetchProposals());
       dispatch(clearSubmitProposalStatus());
     }
   }, [submitProposalSuccess, dispatch]);
@@ -77,6 +83,31 @@ const LawyerFindCases = () => {
     setSelectedCase(item);
     setShowProposalModal(true);
   };
+
+  const submittedCaseIds = useMemo(() => {
+    if (!proposals || proposals.length === 0) return new Set();
+    return new Set(proposals.map((p) => p.case));
+  }, [proposals]);
+
+  const availableCases = useMemo(() => {
+    return filteredCases.filter((item) => !submittedCaseIds.has(item.id));
+  }, [filteredCases, submittedCaseIds]);
+
+  const proposedCases = useMemo(() => {
+    return filteredCases.filter((item) => submittedCaseIds.has(item.id));
+  }, [filteredCases, submittedCaseIds]);
+
+  const totalPublicPages = Math.ceil(availableCases.length / itemsPerPage) || 1;
+  const pagedPublicCases = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return availableCases.slice(start, end);
+  }, [availableCases, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, priorityFilter, activeTab]);
 
   const getPriorityClasses = (priority) => {
     const upperPriority = (priority || "").toUpperCase();
@@ -128,9 +159,11 @@ const LawyerFindCases = () => {
                     onChange={(e) => setCategoryFilter(e.target.value)}
                   >
                     <option>All Categories</option>
-                    <option>Property Law</option>
-                    <option>Insurance Law</option>
-                    <option>Labor Law</option>
+                    {LAW_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
@@ -142,9 +175,11 @@ const LawyerFindCases = () => {
                     onChange={(e) => setPriorityFilter(e.target.value)}
                   >
                     <option value="All">All Priorities</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
+                    {URGENCY_LEVELS.map((level) => (
+                      <option key={level} value={level}>
+                        {level}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
@@ -152,8 +187,38 @@ const LawyerFindCases = () => {
             </div>
             
             <p className="text-sm font-medium text-gray-500">
-              Showing <span className="text-[#0F1A3D] font-bold">{filteredCases.length}</span> public cases
+              Showing <span className="text-[#0F1A3D] font-bold">{filteredCases.length}</span> cases
+              <span className="mx-2 text-gray-300">•</span>
+              <span className="text-[#0F1A3D] font-bold">{availableCases.length}</span> public
+              <span className="mx-2 text-gray-300">•</span>
+              <span className="text-[#0F1A3D] font-bold">{proposedCases.length}</span> proposed
             </p>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex items-center justify-center">
+            <div className="bg-gray-100 rounded-full p-1 inline-flex gap-1">
+              <button
+                onClick={() => setActiveTab("public")}
+                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                  activeTab === "public"
+                    ? "bg-white text-[#0F1A3D] shadow"
+                    : "text-gray-500 hover:text-[#0F1A3D]"
+                }`}
+              >
+                Public
+              </button>
+              <button
+                onClick={() => setActiveTab("proposed")}
+                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                  activeTab === "proposed"
+                    ? "bg-white text-[#0F1A3D] shadow"
+                    : "text-gray-500 hover:text-[#0F1A3D]"
+                }`}
+              >
+                Proposed
+              </button>
+            </div>
           </div>
 
           {/* Case List */}
@@ -177,52 +242,110 @@ const LawyerFindCases = () => {
                 </div>
               </div>
             ) : filteredCases.length > 0 ? (
-              filteredCases.map((item) => (
-                <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
-                  <div className="flex-1 p-6 space-y-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight">{item.case_title}</h2>
-                      <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.urgency_level)}`}>
-                        {item.urgency_level}
-                      </span>
-                      <div className="flex gap-2">
-                        <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{item.case_category}</span>
-                        {item.location && (
-                          <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase">
-                            <MapPin size={14} />
-                            {item.location}
+              activeTab === "public" ? (
+                pagedPublicCases.length > 0 ? (
+                  pagedPublicCases.map((item) => (
+                    <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
+                      <div className="flex-1 p-6 space-y-4">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h2 className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight">{item.case_title}</h2>
+                          <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.urgency_level)}`}>
+                            {item.urgency_level}
                           </span>
-                        )}
+                          <div className="flex gap-2">
+                            <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{item.case_category}</span>
+                            {item.location && (
+                              <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase">
+                                <MapPin size={14} />
+                                {item.location}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 max-w-4xl">
+                          {item.case_description}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-6 pt-2">
+                          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
+                            <Calendar size={16} className="text-gray-400" />
+                            Posted: {formatDate(item.created_at)}
+                          </div>
+                          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
+                            <FileText size={16} className="text-gray-400" />
+                            {item.document_count || 0} documents
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
+                        <button 
+                          onClick={() => handleOpenProposal(item)}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#0F1A3D] text-white rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-sm"
+                        >
+                          <Send size={16} />
+                          Send Proposal
+                        </button>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="bg-white py-10 rounded-2xl border border-dashed border-gray-200 text-center text-sm text-gray-500">
+                    No public cases available with current filters.
+                  </div>
+                )
+              ) : (
+                proposedCases.length > 0 ? (
+                  proposedCases.map((item) => (
+                    <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
+                      <div className="flex-1 p-6 space-y-4">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h2 className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight">{item.case_title}</h2>
+                          <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.urgency_level)}`}>
+                            {item.urgency_level}
+                          </span>
+                          <div className="flex gap-2">
+                            <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{item.case_category}</span>
+                            {item.location && (
+                              <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase">
+                                <MapPin size={14} />
+                                {item.location}
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                    <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 max-w-4xl">
-                      {item.case_description}
-                    </p>
+                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 max-w-4xl">
+                          {item.case_description}
+                        </p>
 
-                    <div className="flex flex-wrap items-center gap-6 pt-2">
-                      <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
-                        <Calendar size={16} className="text-gray-400" />
-                        Posted: {formatDate(item.created_at)}
+                        <div className="flex flex-wrap items-center gap-6 pt-2">
+                          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
+                            <Calendar size={16} className="text-gray-400" />
+                            Posted: {formatDate(item.created_at)}
+                          </div>
+                          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
+                            <FileText size={16} className="text-gray-400" />
+                            {item.document_count || 0} documents
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
-                        <FileText size={16} className="text-gray-400" />
-                        {item.document_count || 0} documents
+
+                      <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
+                        <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200">
+                          <CheckCircle2 size={16} />
+                          Proposal Sent
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="bg-white py-10 rounded-2xl border border-dashed border-gray-200 text-center text-sm text-gray-500">
+                    No proposed cases yet.
                   </div>
-
-                  <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
-                    <button 
-                      onClick={() => handleOpenProposal(item)}
-                      className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#0F1A3D] text-white rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-sm"
-                    >
-                      <Send size={16} />
-                      Send Proposal
-                    </button>
-                  </div>
-                </div>
-              ))
+                )
+              )
             ) : (
               <div className="bg-white py-24 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-500 gap-4">
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
@@ -233,6 +356,15 @@ const LawyerFindCases = () => {
                     <p className="text-sm">Try adjusting your filters or search terms</p>
                 </div>
               </div>
+            )}
+            {activeTab === "public" && availableCases.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPublicPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={availableCases.length}
+              />
             )}
           </div>
         </main>
@@ -245,6 +377,7 @@ const LawyerFindCases = () => {
         caseData={selectedCase}
         onSubmit={(data) => {
           dispatch(submitProposal(data));
+          setShowProposalModal(false);
         }}
         isSubmitting={submitProposalLoading}
         error={submitProposalError}

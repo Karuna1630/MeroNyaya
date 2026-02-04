@@ -40,8 +40,8 @@ class CaseViewSet(viewsets.ModelViewSet):
         elif user.role == 'Lawyer':
             queryset = Case.objects.filter(
                 models.Q(lawyer=user) | 
-                models.Q(status='public', lawyer_selection='public') |
-                models.Q(status='sent_to_lawyers', preferred_lawyers=user)
+                models.Q(status__in=['public', 'proposals_received'], lawyer_selection='public') |
+                models.Q(status__in=['sent_to_lawyers', 'proposals_received'], preferred_lawyers=user)
             ).select_related('client', 'lawyer').distinct()
         
         # Admin sees all cases
@@ -144,10 +144,11 @@ class CaseViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         
+        # Show cases that are public or have proposals being reviewed
         cases = Case.objects.filter(
-            status='public',
-            lawyer_selection='public'
-        ).select_related('client').order_by('-created_at')
+            models.Q(status__in=['public', 'proposals_received'], lawyer_selection='public') |
+            models.Q(status__in=['public', 'proposals_received'], preferred_lawyers=request.user)
+        ).select_related('client').distinct().order_by('-created_at')
         
         serializer = self.get_serializer(cases, many=True)
         return Response(serializer.data)

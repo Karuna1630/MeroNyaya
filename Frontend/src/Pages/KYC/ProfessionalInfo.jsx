@@ -1,19 +1,9 @@
 import React from "react";
 import { Briefcase } from "lucide-react";
 import { Field, ErrorMessage, useFormikContext } from "formik";
+import { LAW_CATEGORIES } from "../../utils/lawCategories";
 
-const specializations = [
-  "Criminal Law",
-  "Civil Law",
-  "Family Law",
-  "Property Law",
-  "Corporate Law",
-  "Labor Law",
-  "Constitutional Law",
-  "Environmental Law",
-  "Tax Law",
-  "Immigration Law",
-];
+const specializations = LAW_CATEGORIES;
 
 const daysOfWeek = [
   "Sunday",
