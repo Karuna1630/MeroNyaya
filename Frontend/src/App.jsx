@@ -10,6 +10,7 @@ import Footer from './components/Footer.jsx';
 import ProtectedRoute from './Pages/utils/ProtectedRoute.jsx';
 import FindLawyers from './Pages/Public/FindLawyers.jsx';
 import IndividualLawyer from './Pages/Public/IndividualLawyer.jsx';
+import About from './Pages/Public/About.jsx';
 
 import ClientDashboard from './Pages/Client/ClientDashboard.jsx';
 import ClientCase from './Pages/Client/ClientCase.jsx';
@@ -59,9 +60,10 @@ function App() {
         <Route path='/header' element={<Header />} />
         <Route path='/footer' element={<Footer />} />
 
-        {/* Protected Public Routes */}
-        <Route path='/findlawyers' element={<ProtectedRoute allowedRoles={["client", "lawyer"]}><FindLawyers /></ProtectedRoute>} />
-        <Route path='/lawyer/:id' element={<ProtectedRoute allowedRoles={["client", "lawyer"]}><IndividualLawyer /></ProtectedRoute>} />
+        {/* Public Pages - Accessible to all */}
+        <Route path='/findlawyers' element={<FindLawyers />} />
+        <Route path='/about' element={<About />} />
+        <Route path='/lawyer/:id' element={<IndividualLawyer />} />
 
         {/* Client Routes - Protected */}
         <Route path='/clientdashboard' element={<ProtectedRoute requiredRole="client"><ClientDashboard /></ProtectedRoute>} />

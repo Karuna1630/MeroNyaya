@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
+import AuthGate from "../utils/AuthGate.jsx";
 import { fetchLawyerDetails } from "../slices/lawyerSlice.js";
 import { submitReview, getLawyerReviews, clearSubmitStatus } from "../slices/reviewSlice.js";
 
@@ -499,12 +500,14 @@ const IndividualLawyer = () => {
                   </div>
 
                   {/* Book Now Button */}
-                  <button
-                    onClick={() => setShowBookingModal(true)}
-                    className="w-full px-4 py-3 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition mb-2"
-                  >
-                    Book Consultation
-                  </button>
+                  <AuthGate>
+                    <button
+                      onClick={() => setShowBookingModal(true)}
+                      className="w-full px-4 py-3 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition mb-2"
+                    >
+                      Book Consultation
+                    </button>
+                  </AuthGate>
 
                   {/* Cancellation Policy */}
                   <p className="text-xs text-slate-600 text-center">
@@ -520,9 +523,11 @@ const IndividualLawyer = () => {
                   <p className="text-sm text-slate-600 mb-4">
                     Send a message to get more information about the lawyer's services.
                   </p>
-                  <button className="w-full px-4 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition">
-                    Send Message
-                  </button>
+                  <AuthGate>
+                    <button className="w-full px-4 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition">
+                      Send Message
+                    </button>
+                  </AuthGate>
                 </div>
 
                 {/* Verification Banner */}

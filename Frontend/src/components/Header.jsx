@@ -36,6 +36,14 @@ const Header = () => {
   };
 
   const handleNavigation = (path) => {
+    // Allow public pages without authentication
+    const publicPages = ["/about", "/findlawyers"];
+    if (publicPages.includes(path)) {
+      navigate(path);
+      return;
+    }
+
+    // For other pages, require authentication
     if (!isAuthenticated) {
       navigate("/login");
       return;
@@ -71,7 +79,8 @@ const Header = () => {
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-200">
             <Link to="/findlawyers" className="hover:text-yellow-400 transition">Find Lawyers</Link>
-            <button onClick={() => handleNavigation("/")} className="hover:text-yellow-400 transition">About Us</button>
+            <button onClick={() => handleNavigation("/about")} className="hover:text-yellow-400 transition">About Us</button>
+
           </nav>
 
           {/* Right Side */}
