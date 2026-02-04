@@ -44,6 +44,7 @@ urlpatterns = [
     path("api/kyc/", include("kyc.urls")),
     path("api/reviews/", include("review.urls")),
     path("api/cases/", include("case.urls")),
+    path("api/proposals/", include("proposal.urls")),
     
 ]
 

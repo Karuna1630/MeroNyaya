@@ -202,22 +202,13 @@ const LawyerFindCases = () => {
                   </div>
 
                   <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
-                    <div className="flex flex-col gap-3 w-full">
-                      <button 
-                        onClick={() => handleOpenProposal(item)}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-xs"
-                      >
-                        <Eye size={18} />
-                        View Details
-                      </button>
-                      <button 
-                        onClick={() => handleOpenProposal(item)}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#0F1A3D] text-white rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-sm"
-                      >
-                        <Send size={16} />
-                        Send Proposal
-                      </button>
-                    </div>
+                    <button 
+                      onClick={() => handleOpenProposal(item)}
+                      className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#0F1A3D] text-white rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-sm"
+                    >
+                      <Send size={16} />
+                      Send Proposal
+                    </button>
                   </div>
                 </div>
               ))

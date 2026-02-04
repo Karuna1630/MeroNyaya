@@ -99,8 +99,6 @@ const LawyerProposalForm = ({ isOpen, onClose, caseData, onSubmit }) => {
                 {urgencyBadge.label}
               </span>
             </div>
-            
-            <p className="text-xs text-gray-500">ID: {caseData.case_number || `PUB-${caseData.id}`}</p>
           </div>
 
           {/* Key Metrics Grid */}
@@ -121,12 +119,6 @@ const LawyerProposalForm = ({ isOpen, onClose, caseData, onSubmit }) => {
               <p className="text-xs text-gray-500 uppercase mb-1">Documents</p>
               <p className="text-sm text-gray-900">
                 {caseData.document_count || caseData.documents?.length || 0} files
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase mb-1">Proposals</p>
-              <p className="text-sm text-gray-900">
-                {caseData.proposal_count || 0} proposals
               </p>
             </div>
           </div>
