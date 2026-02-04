@@ -1,79 +1,77 @@
 import React, { useState } from "react";
-import { Calendar, MapPin, Video, Clock, Check, X, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import Sidebar from "./Sidebar";
 import LawyerDashHeader from "./LawyerDashHeader";
+import { 
+  Calendar, 
+  MapPin, 
+  Video, 
+  Clock, 
+  Eye, 
+  ChevronLeft, 
+  ChevronRight,
+  Filter,
+  MoreVertical,
+  Calendar as CalIcon
+} from "lucide-react";
 
 const LawyerAppointment = () => {
   const [activeTab, setActiveTab] = useState("Upcoming");
   const [selectedDate, setSelectedDate] = useState(4);
-  const [currentMonth, setCurrentMonth] = useState({ month: 0, year: 2026 }); // January 2026
+  const [currentMonth, setCurrentMonth] = useState({ month: 1, year: 2026 }); // February 2026
 
   const stats = [
-    { value: "4", label: "Upcoming" },
-    { value: "1", label: "Pending" },
-    { value: "2", label: "Today" },
-    { value: "1", label: "Completed" },
+    { value: "2", label: "Upcoming", color: "text-blue-500" },
+    { value: "1", label: "Pending", color: "text-amber-500" },
+    { value: "1", label: "Completed", color: "text-emerald-500" },
+    { value: "1", label: "Cancelled", color: "text-red-500" },
   ];
-
-  const tabs = ["Upcoming", "Pending", "Past"];
 
   const appointments = [
     {
       id: 1,
-      clientName: "Sita Sharma",
-      status: "confirmed",
+      client: {
+        name: "Bishnu Thapa",
+        subtitle: "Land Registration",
+        image: "https://randomuser.me/api/portraits/men/32.jpg"
+      },
       type: "Case Discussion",
       date: "Dec 15, 2024",
       time: "10:00 AM",
-      duration: "45 min",
-      location: "Office - Babar Mahal",
-      locationType: "office",
-      caseRef: "Property Dispute (CASE-2024-001)",
-      avatar: "",
-      tab: "Upcoming",
+      mode: "In-Person",
+      status: "Upcoming",
+      tab: "Upcoming"
     },
     {
       id: 2,
-      clientName: "New Client",
-      status: "pending",
+      client: {
+        name: "Suman Rai",
+        subtitle: "Insurance Claim",
+        image: "https://randomuser.me/api/portraits/men/44.jpg"
+      },
       type: "Initial Consultation",
-      date: "Dec 15, 2024",
+      date: "Dec 17, 2024",
       time: "2:00 PM",
-      duration: "30 min",
-      location: "Video Call",
-      locationType: "video",
-      caseRef: null,
-      avatar: "NC",
-      tab: "Upcoming",
+      mode: "Video Call",
+      status: "Upcoming",
+      tab: "Upcoming"
     },
     {
       id: 3,
-      clientName: "Hari Prasad",
-      status: "confirmed",
-      type: "Document Review",
-      date: "Dec 16, 2024",
-      time: "11:00 AM",
-      duration: "1 hour",
-      location: "Office - Babar Mahal",
-      locationType: "office",
-      caseRef: "Contract Breach (CASE-2024-002)",
-      avatar: "",
-      tab: "Upcoming",
-    },
+      client: {
+        name: "Bishnu Thapa",
+        subtitle: "Land Registration",
+        image: "https://randomuser.me/api/portraits/men/32.jpg"
+      },
+      type: "Case Discussion",
+      date: "Dec 8, 2024",
+      time: "10:00 AM",
+      mode: "In-Person",
+      status: "Cancelled",
+      tab: "Cancelled"
+    }
   ];
 
   const filteredAppointments = appointments.filter(apt => apt.tab === activeTab);
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-green-100 text-green-700";
-      case "pending":
-        return "bg-yellow-100 text-yellow-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
 
   // Calendar logic
   const daysInMonth = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
@@ -102,170 +100,196 @@ const LawyerAppointment = () => {
     }));
   };
 
+  const getModeIcon = (mode) => {
+    switch (mode) {
+      case "Video Call":
+        return <Video size={16} className="text-blue-500" />;
+      case "In-Person":
+        return <MapPin size={16} className="text-slate-400" />;
+      default:
+        return <Clock size={16} className="text-gray-500" />;
+    }
+  };
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-slate-50/50">
       <Sidebar />
 
-      <div className="flex-1 ml-64">
+      <main className="flex-1 ml-64 flex flex-col overflow-hidden">
         <LawyerDashHeader
-          title="Appointments"
+          title="My Consultations"
           subtitle="Welcome back, Adv. Ram Kumar"
           notificationCount={3}
         />
 
-        <div className="p-8">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-xl font-bold text-[#0F1A3D]">Appointments</h3>
-              <p className="text-sm text-gray-500">Manage your client consultations</p>
-            </div>
-           
+        <div className="flex-1 p-8 overflow-y-auto">
+          {/* Section Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-[#0F1A3D]">My Consultations</h1>
+            <p className="text-sm text-slate-500 mt-1">Manage your client consultations</p>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
-              <div key={index} className="bg-white rounded-xl p-5 shadow-md text-center">
-                <h4 className="text-4xl font-bold text-[#0F1A3D] mb-1">{stat.value}</h4>
-                <p className="text-sm text-gray-500">{stat.label}</p>
+              <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                <span className={`text-3xl font-bold ${stat.color} mb-1`}>{stat.value}</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{stat.label}</span>
               </div>
             ))}
           </div>
 
-          {/* Main Content */}
-          <div className="grid grid-cols-3 gap-6">
-            {/* Calendar Section */}
-            <div className="col-span-1 bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-[#0F1A3D] mb-4">Calendar</h3>
-              
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-4">
-                <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded">
-                  <ChevronLeft size={20} />
-                </button>
-                <h4 className="font-semibold">{monthNames[currentMonth.month]} {currentMonth.year}</h4>
-                <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded">
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-2 mb-2">
-                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-                  <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              
-              <div className="grid grid-cols-7 gap-2">
-                {calendarDays.map((day, index) => (
-                  <button
-                    key={index}
-                    onClick={() => day && setSelectedDate(day)}
-                    disabled={!day}
-                    className={`aspect-square flex items-center justify-center text-sm rounded-lg transition ${
-                      day === selectedDate
-                        ? "bg-[#0F1A3D] text-white font-semibold"
-                        : day
-                        ? "hover:bg-gray-100 text-gray-700"
-                        : "text-gray-300"
-                    }`}
-                  >
-                    {day || ""}
+          {/* Main Body Grid */}
+          <div className="grid grid-cols-12 gap-8">
+            {/* Calendar Sidebar */}
+            <div className="col-span-4 space-y-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <h3 className="text-lg font-bold text-[#0F1A3D] mb-6 tracking-tight">Calendar</h3>
+                
+                <div className="flex items-center justify-between mb-6">
+                  <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 border border-slate-100 transition">
+                    <ChevronLeft size={18} />
                   </button>
-                ))}
-              </div>
+                  <h4 className="font-bold text-[#0F1A3D]">{monthNames[currentMonth.month]} {currentMonth.year}</h4>
+                  <button onClick={handleNextMonth} className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 border border-slate-100 transition">
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
 
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                  {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <div key={d}>{d}</div>)}
+                </div>
 
-            </div>
-
-            {/* Right Section - Status and Appointments */}
-            <div className="col-span-2 space-y-6">
-              {/* Status Section */}
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="flex border-b border-gray-200">
-                  {tabs.map((tab) => (
+                <div className="grid grid-cols-7 gap-1">
+                  {calendarDays.map((day, idx) => (
                     <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`flex-1 py-4 text-center font-medium text-sm transition ${
-                        activeTab === tab
-                          ? "border-b-2 border-[#0F1A3D] text-[#0F1A3D] -mb-0.5"
-                          : "text-gray-600 hover:text-gray-900 bg-gray-50"
+                      key={idx}
+                      onClick={() => day && setSelectedDate(day)}
+                      disabled={!day}
+                      className={`aspect-square flex items-center justify-center text-sm rounded-lg font-semibold transition ${
+                        day === selectedDate
+                          ? "bg-[#0F1A3D] text-white shadow-lg shadow-blue-900/20"
+                          : day
+                          ? "hover:bg-slate-50 text-slate-600"
+                          : "text-transparent"
                       }`}
                     >
-                      {tab}
+                      {day}
                     </button>
                   ))}
                 </div>
               </div>
+            </div>
 
-              {/* Appointments Details Section */}
-              <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-                {filteredAppointments.map((appointment) => (
-                  <div key={appointment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                    <div className="flex gap-4">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center font-bold flex-shrink-0">
-                        {appointment.avatar || appointment.clientName.charAt(0)}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-[#0F1A3D]">{appointment.clientName}</h4>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                              {appointment.status}
-                            </span>
-                          </div>
-                          {appointment.status === "pending" && (
-                            <div className="flex gap-2">
-                              <button className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition">
-                                <Check size={16} />
-                              </button>
-                              <button className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition">
-                                <X size={16} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        <p className="font-medium text-gray-900 mb-2">{appointment.type}</p>
-
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
-                          <div className="flex items-center gap-1">
-                            <Calendar size={14} />
-                            <span>{appointment.date}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock size={14} />
-                            <span>{appointment.time} ({appointment.duration})</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {appointment.locationType === "video" ? (
-                              <Video size={14} />
-                            ) : (
-                              <MapPin size={14} />
-                            )}
-                            <span>{appointment.location}</span>
-                          </div>
-                        </div>
-
-                        {appointment.caseRef && (
-                          <p className="text-xs text-gray-500">Case: {appointment.caseRef}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            {/* Consultations Table Section */}
+            <div className="col-span-8 flex flex-col gap-6">
+              {/* Tabs */}
+              <div className="bg-slate-100/80 p-1.5 rounded-2xl w-full flex">
+                {["Upcoming", "Completed", "Cancelled"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
+                      activeTab === tab
+                        ? "bg-white text-[#0F1A3D] shadow-sm"
+                        : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+                    }`}
+                  >
+                    {tab}
+                  </button>
                 ))}
+              </div>
+
+              {/* Table Table */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Client</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Type</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Date & Time</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Mode</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {filteredAppointments.length > 0 ? (
+                        filteredAppointments.map((apt) => (
+                          <tr key={apt.id} className="hover:bg-slate-50/50 transition-colors group">
+                            <td className="px-6 py-5">
+                              <div className="flex items-center gap-4">
+                                <img 
+                                  src={apt.client.image} 
+                                  alt={apt.client.name} 
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-slate-50 shadow-sm"
+                                />
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-[#0F1A3D] text-sm tracking-tight">{apt.client.name}</span>
+                                  <span className="text-[11px] font-semibold text-slate-400">{apt.client.subtitle}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="text-sm font-semibold text-slate-700">{apt.type}</span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2 text-slate-700">
+                                  <CalIcon size={12} className="text-slate-400" />
+                                  <span className="text-xs font-bold">{apt.date}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-slate-400 mt-1">
+                                  <Clock size={12} />
+                                  <span className="text-[11px] font-medium">{apt.time}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex items-center gap-2">
+                                {getModeIcon(apt.mode)}
+                                <span className="text-xs font-semibold text-slate-600">{apt.mode}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span 
+                                className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                  apt.status === "Upcoming" 
+                                    ? "bg-blue-50 text-blue-600 border border-blue-100" 
+                                    : apt.status === "Cancelled"
+                                    ? "bg-red-50 text-red-600 border border-red-100"
+                                    : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                }`}
+                              >
+                                {apt.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <button className="p-2.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-[#0F1A3D] transition-all duration-200">
+                                <Eye size={20} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="px-6 py-16 text-center">
+                            <div className="flex flex-col items-center gap-2 opacity-40">
+                              <Clock size={40} className="text-slate-400 mb-2" />
+                              <p className="text-sm font-bold text-slate-500 tracking-tight">No {activeTab.toLowerCase()} consultations</p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

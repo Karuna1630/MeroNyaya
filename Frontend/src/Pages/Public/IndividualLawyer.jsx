@@ -11,8 +11,6 @@ import {
   X,
   AlertCircle,
   Video,
-  Phone,
-  MessageCircle,
   Send,
   ChevronLeft,
 } from "lucide-react";
@@ -20,6 +18,7 @@ import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
 import AuthGate from "../utils/AuthGate.jsx";
 import { fetchLawyerDetails } from "../slices/lawyerSlice.js";
+import { createConsultation } from "../slices/consultationSlice.js";
 import { submitReview, getLawyerReviews, clearSubmitStatus } from "../slices/reviewSlice.js";
 
 const IndividualLawyer = () => {
@@ -32,6 +31,8 @@ const IndividualLawyer = () => {
   const loading = useSelector((state) => state.lawyer.lawyerDetailsLoading);
   const error = useSelector((state) => state.lawyer.lawyerDetailsError);
   const submitLoading = useSelector((state) => state.review.submitLoading);
+  const { user } = useSelector((state) => state.auth);
+  const { createLoading } = useSelector((state) => state.consultation || {});
   const submitSuccess = useSelector((state) => state.review.submitSuccess);
   const submitError = useSelector((state) => state.review.submitError);
   const reviews = useSelector((state) => state.review.reviews);
@@ -93,8 +94,29 @@ const IndividualLawyer = () => {
   }, [lawyer?.id, dispatch]);
 
   const handleBooking = () => {
-    alert("Payment integration coming soon!");
-    setShowBookingModal(false);
+    if (!lawyer?.id) return;
+
+    const modeMap = {
+      Video: "video",
+      "In-Person": "in_person",
+    };
+
+    const payload = {
+      lawyer_id: lawyer.id,
+      mode: modeMap[selectedConsultationType] || "video",
+      requested_day: selectedDay,
+      requested_time: selectedTime,
+    };
+
+    dispatch(createConsultation(payload)).then((res) => {
+      if (!res?.error) {
+        setShowBookingModal(false);
+        const role = (user?.user_type || user?.role || "").toLowerCase();
+        if (role === "client") {
+          navigate("/client/consultation");
+        }
+      }
+    });
   };
 
   const handleSubmitReview = async () => {
@@ -133,8 +155,7 @@ const IndividualLawyer = () => {
 
   const consultationTypes = [
     { icon: Video, label: "Video", value: "Video" },
-    { icon: Phone, label: "Phone", value: "Phone" },
-    { icon: MessageCircle, label: "Chat", value: "Chat" },
+    { icon: MapPin, label: "In-Person", value: "In-Person" },
   ];
 
   const availableDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -599,9 +620,10 @@ const IndividualLawyer = () => {
 
             <button
               onClick={handleBooking}
-              className="w-full px-4 py-3 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition mb-2"
+              disabled={createLoading}
+              className="w-full px-4 py-3 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition mb-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Proceed to Payment
+              {createLoading ? "Submitting..." : "Proceed to Payment"}
             </button>
             <button
               onClick={() => setShowBookingModal(false)}

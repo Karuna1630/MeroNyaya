@@ -8,6 +8,7 @@ import {
   CreditCard,
   LogOut,
   Search,
+  Clock,
 } from "lucide-react";
 import { GoLaw } from "react-icons/go";
 
@@ -23,6 +24,7 @@ const Sidebar = () => {
     { icon: Home, label: "Dashboard", path: "/clientdashboard" },
     { icon: Search, label: "Find Lawyers", path: "/client/findlawyers" },
     { icon: Briefcase, label: "My Cases", path: "/clientcase" },
+    { icon: Clock, label: "Consultations", path: "/client/consultation" },
     { icon: Calendar, label: "Appointments", path: "/clientappointment" },
     { icon: MessageSquare, label: "Messages", path: "/clientmessage" },
     { icon: CreditCard, label: "Payments", path: "/clientpayment" },

@@ -7,6 +7,7 @@ import lawyerReducer from '../slices/lawyerSlice';
 import reviewReducer from '../slices/reviewSlice';
 import caseReducer from '../slices/caseSlice';
 import proposalReducer from '../slices/proposalSlice';
+import consultationReducer from '../slices/consultationSlice';
 
 // Configure the Redux store with the auth reducer
 export const store = configureStore({
@@ -19,6 +20,7 @@ export const store = configureStore({
     review: reviewReducer,
     case: caseReducer,
     proposal: proposalReducer,
+    consultation: consultationReducer,
   },
   devTools: import.meta.env.DEV,
 });
