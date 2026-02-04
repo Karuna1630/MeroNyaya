@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'review',
     'case',
     'proposal',
+    'consultation',
+    'appointment',
     
 ]
 
