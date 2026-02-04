@@ -13,14 +13,14 @@ const AdminDashHeader = ({ title, subtitle }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { userProfile } = useSelector((state) => state.profile);
 
-  const profile = userProfile || user;
-  const avatarSrc = userProfile?.profile_image;
+  const profile = user || userProfile;
+  const avatarSrc = profile?.profile_image;
 
   useEffect(() => {
-    if (isAuthenticated && !userProfile) {
+    if (isAuthenticated && user) {
       dispatch(fetchUserProfile());
     }
-  }, [dispatch, isAuthenticated, userProfile]);
+  }, [dispatch, isAuthenticated, user?.id]);
 
   const isDashboardActive = location.pathname === "/admindashboard";
 

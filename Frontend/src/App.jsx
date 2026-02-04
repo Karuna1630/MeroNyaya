@@ -70,6 +70,7 @@ function App() {
         <Route path='/client/case/:id' element={<ProtectedRoute requiredRole="client"><ClientCaseDetail /></ProtectedRoute>} />
         <Route path='/client/case/:id/proposals' element={<ProtectedRoute requiredRole="client"><LawyerProposal /></ProtectedRoute>} />
         <Route path='/client/create-case' element={<ProtectedRoute requiredRole="client"><ClientCreateCase /></ProtectedRoute>} />
+        <Route path='/client/edit-case/:id' element={<ProtectedRoute requiredRole="client"><ClientCreateCase /></ProtectedRoute>} />
         <Route path='/clientappointment' element={<ProtectedRoute requiredRole="client"><ClientAppointment /></ProtectedRoute>} />
         <Route path='/clientmessage' element={<ProtectedRoute requiredRole="client"><ClientMessage /></ProtectedRoute>} />
         <Route path='/clientpayment' element={<ProtectedRoute requiredRole="client"><Payment /></ProtectedRoute>} />

@@ -32,6 +32,22 @@ const LawyerProposal = () => {
     }
   }, [dispatch, id]);
 
+  // Refresh proposals after accepting to show rejected status for others
+  useEffect(() => {
+    if (acceptProposalLoading === false && acceptProposalError === null) {
+      dispatch(fetchProposals({ case_id: id }));
+      dispatch(fetchCases());
+    }
+  }, [acceptProposalLoading, acceptProposalError, dispatch, id]);
+
+  // Refresh proposals after rejecting
+  useEffect(() => {
+    if (rejectProposalLoading === false && rejectProposalError === null) {
+      dispatch(fetchProposals({ case_id: id }));
+      dispatch(fetchCases());
+    }
+  }, [rejectProposalLoading, rejectProposalError, dispatch, id]);
+
   const caseData = useMemo(() => {
     const current = (casesData || []).find((item) => String(item.id) === String(id));
     if (!current) return null;
@@ -229,4 +245,3 @@ const LawyerProposal = () => {
 };
 
 export default LawyerProposal;
-

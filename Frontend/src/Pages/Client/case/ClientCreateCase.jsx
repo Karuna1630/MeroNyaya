@@ -1,13 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '../sidebar';
 import ClientDashHeader from '../ClientDashHeader';
-import { FileText, Users, Calendar, Upload, AlertCircle, Info } from 'lucide-react';
+import { FileText, Users, Calendar, Upload, AlertCircle, Info, Lock, Globe } from 'lucide-react';
 import { CreateCaseInitialValues, CreateCaseValidationSchema } from '../../utils/CreateCaseValidation';
-import { createCase } from '../../slices/caseSlice';
+import { createCase, updateCase, fetchCaseById } from '../../slices/caseSlice';
 import { fetchVerifiedLawyers } from '../../slices/lawyerSlice';
 
 const caseCategories = [
@@ -25,7 +26,13 @@ const caseCategories = [
 
 const ClientCreateCase = () => {
   const dispatch = useDispatch();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEditMode = !!id;
+  
   const createCaseLoading = useSelector((state) => state.case?.createCaseLoading);
+  const caseDetails = useSelector((state) => state.case?.caseDetails);
+  const caseDetailsLoading = useSelector((state) => state.case?.caseDetailsLoading);
   const {
     verifiedLawyers,
     verifiedLawyersLoading,
@@ -35,6 +42,22 @@ const ClientCreateCase = () => {
   const [dragActive, setDragActive] = useState(false);
   const [lawyerSelectionMode, setLawyerSelectionMode] = useState('public');
   const [lawyerSearchTerm, setLawyerSearchTerm] = useState('');
+  const [casePrivacy, setCasePrivacy] = useState('public');
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const formikRef = useRef();
+
+  useEffect(() => {
+    if (isEditMode) {
+      dispatch(fetchCaseById(id));
+    }
+  }, [dispatch, id, isEditMode]);
+
+  useEffect(() => {
+    if (caseDetails && isEditMode) {
+      setCasePrivacy(caseDetails.status === 'draft' ? 'private' : 'public');
+      setLawyerSelectionMode(caseDetails.lawyer_selection || 'public');
+    }
+  }, [caseDetails, isEditMode]);
 
   useEffect(() => {
     if (lawyerSelectionMode === 'specific') {
@@ -101,11 +124,18 @@ const ClientCreateCase = () => {
         lawyer_selection: values.lawyerSelection,
         preferred_lawyers: values.lawyerSelection === 'specific' ? values.selectedLawyerIds : [],
         request_consultation: values.requestConsultation,
+        status: casePrivacy === 'private' ? 'draft' : 'public',
         documents: uploadedFiles,
       };
 
-      await dispatch(createCase(payload)).unwrap();
-      toast.success('Case submitted successfully!');
+      if (isEditMode) {
+        await dispatch(updateCase({ caseId: id, data: payload })).unwrap();
+        toast.success('Case updated successfully!');
+        navigate('/clientcase');
+      } else {
+        await dispatch(createCase(payload)).unwrap();
+        toast.success('Case submitted successfully!');
+      }
       
       // Reset form and files after successful submission
       resetForm();
@@ -133,20 +163,46 @@ const ClientCreateCase = () => {
 
           {/* Page Content */}
           <div className="p-8">
+            {isEditMode && caseDetailsLoading ? (
+              <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0F1A3D] mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading case details...</p>
+                </div>
+              </div>
+            ) : (
+            <>
             {/* Page Header */}
             <div className="mb-8">
-              <h1 className="text-2xl font-bold text-[#0F1A3D] mb-2">Create New Case</h1>
-              <p className="text-sm text-gray-600">Provide details about your legal issue to connect with suitable lawyers.</p>
+              <h1 className="text-2xl font-bold text-[#0F1A3D] mb-2">
+                {isEditMode ? 'Edit Case' : 'Create New Case'}
+              </h1>
+              <p className="text-sm text-gray-600">
+                {isEditMode 
+                  ? 'Update your case details or change its privacy settings.'
+                  : 'Provide details about your legal issue to connect with suitable lawyers.'}
+              </p>
             </div>
 
             {/* Main Form Card */}
             <div className="max-w-4xl mx-auto">
               <Formik
-                initialValues={CreateCaseInitialValues}
+                initialValues={isEditMode && caseDetails ? {
+                  caseTitle: caseDetails.case_title || '',
+                  caseCategory: caseDetails.case_category || '',
+                  caseDescription: caseDetails.case_description || '',
+                  opposingParty: caseDetails.opposing_party || '',
+                  urgencyLevel: caseDetails.urgency_level || 'medium',
+                  lawyerSelection: caseDetails.lawyer_selection || 'public',
+                  selectedLawyerIds: caseDetails.preferred_lawyers || [],
+                  requestConsultation: caseDetails.request_consultation || false,
+                } : CreateCaseInitialValues}
                 validationSchema={CreateCaseValidationSchema}
                 onSubmit={handleSubmit}
                 validateOnChange={true}
                 validateOnBlur={true}
+                enableReinitialize={isEditMode}
+                innerRef={formikRef}
               >
                 {({ values, isSubmitting, resetForm, setFieldValue, setFieldError, setFieldTouched }) => {
                   const selectedIds = Array.isArray(values.selectedLawyerIds)
@@ -550,12 +606,7 @@ const ClientCreateCase = () => {
               <div className="flex items-center justify-end gap-4 pt-6">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to cancel? All data will be lost.')) {
-                      resetForm();
-                      setUploadedFiles([]);
-                    }
-                  }}
+                  onClick={() => setCancelConfirm(true)}
                   className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
                   disabled={isSubmitting || createCaseLoading}
                 >
@@ -566,7 +617,7 @@ const ClientCreateCase = () => {
                   disabled={isSubmitting || createCaseLoading}
                   className="px-6 py-2.5 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-[#1a2b5a] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting || createCaseLoading ? 'Submitting...' : 'Submit Case'}
+                  {isSubmitting || createCaseLoading ? (isEditMode ? 'Updating...' : 'Submitting...') : (isEditMode ? 'Update Case' : 'Submit Case')}
                 </button>
               </div>
             </Form>
@@ -574,8 +625,46 @@ const ClientCreateCase = () => {
                 }}
               </Formik>
             </div>
+            </>
+            )}
           </div>
         </div>
+        {/* Cancel Confirmation Modal */}
+        {cancelConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Discard Changes</h2>
+                <p className="text-sm text-slate-600 mt-2">
+                  Are you sure you want to cancel? All unsaved data will be lost.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    if (!isEditMode) {
+                      formikRef.current?.resetForm();
+                      setUploadedFiles([]);
+                    }
+                    setCancelConfirm(false);
+                    navigate('/clientcase');
+                  }}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm"
+                >
+                  {isEditMode ? 'Go Back' : 'Discard'}
+                </button>
+
+                <button
+                  onClick={() => setCancelConfirm(false)}
+                  className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors font-medium text-sm"
+                >
+                  Keep Editing
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

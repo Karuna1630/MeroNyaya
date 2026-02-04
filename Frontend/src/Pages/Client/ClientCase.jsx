@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import Sidebar from "./sidebar";
 import DashHeader from "./ClientDashHeader";
-import { fetchCases } from "../slices/caseSlice";
+import { fetchCases, deleteCase, updateCase } from "../slices/caseSlice";
 
 const ClientCase = () => {
   const dispatch = useDispatch();
@@ -33,6 +33,10 @@ const ClientCase = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("All Cases");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [withdrawModal, setWithdrawModal] = useState({ isOpen: false, caseId: null, caseTitle: null });
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, caseId: null, caseTitle: null });
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const casesData = useSelector((state) => state.case?.cases || []);
   const casesLoading = useSelector((state) => state.case?.casesLoading);
@@ -165,13 +169,13 @@ const ClientCase = () => {
         color: "text-blue-600",
       });
       actions.push({
-        icon: Lock,
-        label: "Make Private",
-        color: "text-slate-600",
+        icon: Edit,
+        label: "Edit",
+        color: "text-green-600",
       });
       actions.push({
-        icon: XCircle,
-        label: "Close Case",
+        icon: Trash2,
+        label: "Delete",
         color: "text-red-600",
       });
     } else if (activeTab === "Proposals") {
@@ -494,6 +498,12 @@ const ClientCase = () => {
                                         navigate(`/client/case/${caseItem.id}`);
                                       } else if (action.label.includes("Proposal")) {
                                         navigate(`/client/case/${caseItem.id}/proposals`);
+                                      } else if (action.label === "Withdraw") {
+                                        setWithdrawModal({ isOpen: true, caseId: caseItem.id, caseTitle: caseItem.title });
+                                      } else if (action.label === "Edit") {
+                                        navigate(`/client/edit-case/${caseItem.id}`);
+                                      } else if (action.label === "Delete") {
+                                        setDeleteConfirm({ isOpen: true, caseId: caseItem.id, caseTitle: caseItem.title });
                                       }
                                     }}
                                     className={`p-2 rounded-lg hover:bg-slate-100 transition-colors ${action.color}`}
@@ -522,9 +532,120 @@ const ClientCase = () => {
             </div>
           </div>
         </div>
+
+        {/* Withdraw Modal */}
+        {withdrawModal.isOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Withdraw Case</h2>
+                <p className="text-sm text-slate-600 mt-2">
+                  <strong>{withdrawModal.caseTitle}</strong>
+                </p>
+              </div>
+
+              <p className="text-sm text-slate-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                You can either delete this case or make it public for all lawyers to see. Which would you prefer?
+              </p>
+
+              <div className="space-y-3">
+                <button
+                  disabled={withdrawLoading}
+                  onClick={() => handleWithdrawAction('public')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Lock size={16} />
+                  {withdrawLoading ? 'Processing...' : 'Make Public'}
+                </button>
+
+                <button
+                  disabled={withdrawLoading}
+                  onClick={() => handleWithdrawAction('delete')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Trash2 size={16} />
+                  {withdrawLoading ? 'Processing...' : 'Delete Case'}
+                </button>
+              </div>
+
+              <button
+                disabled={withdrawLoading}
+                onClick={() => setWithdrawModal({ isOpen: false, caseId: null, caseTitle: null })}
+                className="w-full px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm.isOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Delete Case</h2>
+                <p className="text-sm text-slate-600 mt-2">
+                  Are you sure you want to delete <strong>{deleteConfirm.caseTitle}</strong>? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  disabled={deleteLoading}
+                  onClick={() => handleDeleteCase()}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Trash2 size={16} />
+                  {deleteLoading ? 'Deleting...' : 'Delete'}
+                </button>
+
+                <button
+                  disabled={deleteLoading}
+                  onClick={() => setDeleteConfirm({ isOpen: false, caseId: null, caseTitle: null })}
+                  className="flex-1 px-4 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
+
+  async function handleWithdrawAction(action) {
+    setWithdrawLoading(true);
+    try {
+      if (action === 'delete') {
+        await dispatch(deleteCase(withdrawModal.caseId));
+      } else if (action === 'public') {
+        await dispatch(updateCase({
+          caseId: withdrawModal.caseId,
+          data: { status: 'public' }
+        }));
+      }
+      setWithdrawModal({ isOpen: false, caseId: null, caseTitle: null });
+      dispatch(fetchCases());
+    } catch (error) {
+      alert('Error: ' + (error.message || 'Something went wrong'));
+    } finally {
+      setWithdrawLoading(false);
+    }
+  }
+
+  async function handleDeleteCase() {
+    setDeleteLoading(true);
+    try {
+      await dispatch(deleteCase(deleteConfirm.caseId));
+      setDeleteConfirm({ isOpen: false, caseId: null, caseTitle: null });
+      dispatch(fetchCases());
+    } catch (error) {
+      alert('Error: ' + (error.message || 'Something went wrong'));
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
 };
 
 export default ClientCase;
