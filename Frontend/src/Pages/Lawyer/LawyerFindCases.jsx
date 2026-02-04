@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchPublicCases } from "../slices/caseSlice";
+import { submitProposal, clearSubmitProposalStatus } from "../slices/proposalSlice";
 import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
 import LawyerProposalForm from "./LawyerProposalForm";
@@ -21,6 +22,7 @@ import {
 const LawyerFindCases = () => {
   const dispatch = useDispatch();
   const { publicCases, publicCasesLoading, publicCasesError } = useSelector((state) => state.case);
+  const { submitProposalLoading, submitProposalSuccess, submitProposalError } = useSelector((state) => state.proposal);
   
   // Debug: Check authentication
   useEffect(() => {
@@ -40,6 +42,15 @@ const LawyerFindCases = () => {
   useEffect(() => {
     dispatch(fetchPublicCases());
   }, [dispatch]);
+
+  // Handle successful proposal submission
+  useEffect(() => {
+    if (submitProposalSuccess) {
+      setShowProposalModal(false);
+      dispatch(fetchPublicCases());
+      dispatch(clearSubmitProposalStatus());
+    }
+  }, [submitProposalSuccess, dispatch]);
 
   // Debug: Log the state
   useEffect(() => {
@@ -232,18 +243,11 @@ const LawyerFindCases = () => {
         isOpen={showProposalModal}
         onClose={() => setShowProposalModal(false)}
         caseData={selectedCase}
-        onSubmit={async (data) => {
-          try {
-            // TODO: Call API to submit proposal
-            console.log("Submitting proposal:", data);
-            // await dispatch(submitProposal(data));
-            setShowProposalModal(false);
-            dispatch(fetchPublicCases());
-          } catch (error) {
-            console.error("Error submitting proposal:", error);
-            throw error;
-          }
+        onSubmit={(data) => {
+          dispatch(submitProposal(data));
         }}
+        isSubmitting={submitProposalLoading}
+        error={submitProposalError}
       />
     </div>
   );

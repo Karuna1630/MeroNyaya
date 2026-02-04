@@ -1,9 +1,15 @@
-import React, { useState } from "react";
-import { X, Send, User } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Send, User, AlertCircle } from "lucide-react";
 
-const LawyerProposalForm = ({ isOpen, onClose, caseData, onSubmit }) => {
+const LawyerProposalForm = ({ isOpen, onClose, caseData, onSubmit, isSubmitting = false, error = null }) => {
   const [proposal, setProposal] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setProposal("");
+    }
+  }, [isOpen]);
 
   if (!isOpen || !caseData) return null;
 
@@ -26,23 +32,14 @@ const LawyerProposalForm = ({ isOpen, onClose, caseData, onSubmit }) => {
     return badges[urgency] || badges.Medium;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!proposal.trim()) return;
 
-    try {
-      setIsSubmitting(true);
-      await onSubmit({
-        caseId: caseData.id,
-        proposalText: proposal,
-      });
-      setProposal("");
-      onClose();
-    } catch (error) {
-      console.error("Error submitting proposal:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    onSubmit({
+      caseId: caseData.id,
+      proposalText: proposal,
+    });
   };
 
   const urgencyBadge = getUrgencyBadge(caseData.urgency_level);
@@ -143,19 +140,27 @@ const LawyerProposalForm = ({ isOpen, onClose, caseData, onSubmit }) => {
             />
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!proposal.trim() || isSubmitting}
-              className="px-6 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={16} />
               {isSubmitting ? "Submitting..." : "Submit Proposal"}
