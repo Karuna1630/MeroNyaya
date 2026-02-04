@@ -492,6 +492,8 @@ const ClientCase = () => {
                                     onClick={() => {
                                       if (action.label === "View Case") {
                                         navigate(`/client/case/${caseItem.id}`);
+                                      } else if (action.label.includes("Proposal")) {
+                                        navigate(`/client/case/${caseItem.id}/proposals`);
                                       }
                                     }}
                                     className={`p-2 rounded-lg hover:bg-slate-100 transition-colors ${action.color}`}

@@ -19,6 +19,7 @@ import Payment from './Pages/Client/Payment.jsx';
 import ClientFindLawyers from './Pages/Client/ClientFindLawyers.jsx';
 import ClientCreateCase from './Pages/Client/case/ClientCreateCase.jsx';
 import ClientCaseDetail from './Pages/Client/case/ClientCaseDetail.jsx';
+import LawyerProposal from './Pages/Client/case/LawyerProposal.jsx';
 
 import LawyerDashboard from './Pages/Lawyer/LawyerDashboard.jsx';
 import LawyerMessage from './Pages/Lawyer/LawyerMessage.jsx';
@@ -67,6 +68,7 @@ function App() {
         <Route path='/client/findlawyers' element={<ProtectedRoute requiredRole="client"><ClientFindLawyers /></ProtectedRoute>} />
         <Route path='/clientcase' element={<ProtectedRoute requiredRole="client"><ClientCase /></ProtectedRoute>} />
         <Route path='/client/case/:id' element={<ProtectedRoute requiredRole="client"><ClientCaseDetail /></ProtectedRoute>} />
+        <Route path='/client/case/:id/proposals' element={<ProtectedRoute requiredRole="client"><LawyerProposal /></ProtectedRoute>} />
         <Route path='/client/create-case' element={<ProtectedRoute requiredRole="client"><ClientCreateCase /></ProtectedRoute>} />
         <Route path='/clientappointment' element={<ProtectedRoute requiredRole="client"><ClientAppointment /></ProtectedRoute>} />
         <Route path='/clientmessage' element={<ProtectedRoute requiredRole="client"><ClientMessage /></ProtectedRoute>} />
