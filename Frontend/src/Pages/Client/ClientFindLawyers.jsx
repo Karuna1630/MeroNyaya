@@ -5,19 +5,11 @@ import Sidebar from "./sidebar";
 import ClientDashHeader from "./ClientDashHeader";
 import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCircle2, MessageSquare, Video, Filter } from "lucide-react";
 import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
+import { LAW_CATEGORIES } from "../../utils/lawCategories";
 
 const specializations = [
   "All Specializations",
-  "Family Law",
-  "Property Law",
-  "Criminal Law",
-  "Corporate Law",
-  "Civil Litigation",
-  "Banking & Finance",
-  "Labor Law",
-  "Immigration Law",
-  "Insurance Law",
-  "Tort Law",
+  ...LAW_CATEGORIES,
 ];
 
 const FindLawyers = () => {

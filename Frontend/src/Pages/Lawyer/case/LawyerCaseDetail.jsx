@@ -38,7 +38,11 @@ const LawyerCaseDetail = () => {
   });
 
   const { cases, casesLoading } = useSelector((state) => state.case);
+  const { user } = useSelector((state) => state.auth);
   const caseData = cases?.find((c) => c.id === parseInt(id));
+  
+  // Check if the current lawyer is assigned to this case
+  const isAssignedLawyer = caseData?.lawyer === user?.id || caseData?.lawyer_id === user?.id;
 
   useEffect(() => {
     dispatch(fetchCases());
@@ -156,7 +160,7 @@ const LawyerCaseDetail = () => {
           <AlertCircle size={48} className="text-gray-400" />
           <p className="text-gray-600">Case not found</p>
           <button
-            onClick={() => navigate("/lawyercase")}
+            onClick={() => navigate(-1)}
             className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition"
           >
             Back to Cases
@@ -179,7 +183,7 @@ const LawyerCaseDetail = () => {
         <div className="flex-1 overflow-y-auto p-6">
           {/* Back Button */}
           <button
-            onClick={() => navigate("/lawyercase")}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 text-sm font-medium"
           >
             <ChevronLeft size={18} />
@@ -202,16 +206,24 @@ const LawyerCaseDetail = () => {
                   <MessageSquare size={16} />
                   Message Client
                 </button>
-                <button
-                  onClick={() => {
-                    setActiveTab("Details");
-                    setIsEditing(true);
-                  }}
-                  className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2"
-                >
-                  <Edit2 size={16} />
-                  Edit Details
-                </button>
+                {isAssignedLawyer && (
+                  <button
+                    onClick={() => {
+                      setActiveTab("Details");
+                      setIsEditing(true);
+                    }}
+                    className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <Edit2 size={16} />
+                    Edit Details
+                  </button>
+                )}
+                {!isAssignedLawyer && (
+                  <div className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold flex items-center gap-2">
+                    <AlertCircle size={16} />
+                    View Only - Not Assigned
+                  </div>
+                )}
               </div>
             </div>
 
@@ -278,6 +290,7 @@ const LawyerCaseDetail = () => {
                       caseId={parseInt(id)}
                       timeline={caseData?.timeline || []}
                       onTimelineUpdate={() => dispatch(fetchCases())}
+                      isAssignedLawyer={isAssignedLawyer}
                     />
                   )}
 
@@ -286,6 +299,7 @@ const LawyerCaseDetail = () => {
                     <LawyerCaseDocumentCard 
                       caseId={parseInt(id)} 
                       documents={caseData?.documents || []} 
+                      isAssignedLawyer={isAssignedLawyer}
                     />
                   )}
 
@@ -296,7 +310,7 @@ const LawyerCaseDetail = () => {
                       statusBadge={statusBadge}
                       formatDate={formatDate}
                       formatTime={formatTime}
-                      isEditing={isEditing}
+                      isEditing={isEditing && isAssignedLawyer}
                       editFormData={editFormData}
                       onEditChange={handleEditChange}
                       onSave={handleSaveChanges}

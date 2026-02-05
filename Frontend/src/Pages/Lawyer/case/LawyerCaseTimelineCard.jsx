@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Plus, CheckCircle2 } from "lucide-react";
 import { addTimelineEvent } from "../../slices/caseSlice";
 
-const LawyerCaseTimelineCard = ({ caseId, timeline = [], onTimelineUpdate }) => {
+const LawyerCaseTimelineCard = ({ caseId, timeline = [], onTimelineUpdate, isAssignedLawyer = true }) => {
   const dispatch = useDispatch();
   const [topic, setTopic] = useState("");
   const [description, setDescription] = useState("");
@@ -49,7 +49,8 @@ const LawyerCaseTimelineCard = ({ caseId, timeline = [], onTimelineUpdate }) => 
     <div>
       <h3 className="text-lg font-semibold text-gray-900 mb-6">Case Timeline</h3>
 
-      {/* Add Note Section */}
+      {/* Add Note Section - Only for assigned lawyers */}
+      {isAssignedLawyer && (
       <div className="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-100">
         <h4 className="font-semibold text-gray-900 mb-4">Add Timeline Event</h4>
         <div className="space-y-4">
@@ -85,6 +86,7 @@ const LawyerCaseTimelineCard = ({ caseId, timeline = [], onTimelineUpdate }) => 
           </button>
         </div>
       </div>
+      )}
 
       {/* Timeline List */}
       <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm">

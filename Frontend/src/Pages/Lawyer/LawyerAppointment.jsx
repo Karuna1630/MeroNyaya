@@ -300,18 +300,12 @@ const LawyerAppointment = () => {
 
       <main className="flex-1 ml-64 flex flex-col overflow-hidden">
         <LawyerDashHeader
-          title="My Consultations"
-          subtitle="Welcome back, Adv. Ram Kumar"
+          title="Consultations & Appointments"
+          subtitle="Manage your client consultations and appointments"
           notificationCount={3}
         />
 
         <div className="flex-1 p-8 overflow-y-auto">
-          {/* Section Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-[#0F1A3D]">My Consultations</h1>
-            <p className="text-sm text-slate-500 mt-1">Manage your client consultations</p>
-          </div>
-
           {/* Stats Cards */}
           <div className="grid grid-cols-3 gap-6 mb-8">
             {stats.map((stat, index) => (

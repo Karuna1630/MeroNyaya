@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
 import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
-import { LAW_CATEGORIES, URGENCY_LEVELS } from "../../utils/lawCategories";
+import { LAW_CATEGORIES } from "../../utils/lawCategories";
 
 const specializations = [
 	"All Specializations",
@@ -29,23 +29,46 @@ const FindLawyers = () => {
 	const [feeCap, setFeeCap] = useState(5000);
 	const [sortBy, setSortBy] = useState("Top Rated");
 
+	const getSpecializationText = (lawyer) => {
+		if (!lawyer) return "General Practice";
+		const raw = lawyer.specializations ?? lawyer.specialization;
+		if (Array.isArray(raw)) return raw.join(", ") || "General Practice";
+		if (typeof raw === "string" && raw.trim()) return raw;
+		return "General Practice";
+	};
+
 	useEffect(() => {
 		dispatch(fetchVerifiedLawyers());
 	}, [dispatch]);
 
+	const normalizedLawyers = useMemo(() => {
+		return verifiedLawyers.map((lawyer) => {
+			const specializationText = getSpecializationText(lawyer);
+			return {
+				...lawyer,
+				specializationText,
+			};
+		});
+	}, [verifiedLawyers]);
+
 	const filteredLawyers = useMemo(() => {
-		return verifiedLawyers.filter((lawyer) => {
+		const loweredSearch = searchTerm.toLowerCase();
+		const loweredSpec = selectedSpec.toLowerCase();
+
+		return normalizedLawyers.filter((lawyer) => {
+			const specializationText = lawyer.specializationText || "";
 			const matchesSpec =
 				selectedSpec === "All Specializations" ||
-				lawyer.specialization === selectedSpec;
+				specializationText.toLowerCase().includes(loweredSpec);
 			const matchesFee = (lawyer.consultation_fee || 0) <= feeCap;
 			const matchesSearch =
-				(lawyer.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-				(lawyer.specialization || "").toLowerCase().includes(searchTerm.toLowerCase());
+				(lawyer.name || "").toLowerCase().includes(loweredSearch) ||
+				specializationText.toLowerCase().includes(loweredSearch) ||
+				(lawyer.city || lawyer.district || "").toLowerCase().includes(loweredSearch);
 
 			return matchesSpec && matchesFee && matchesSearch;
 		});
-	}, [searchTerm, selectedSpec, feeCap, verifiedLawyers]);
+	}, [searchTerm, selectedSpec, feeCap, normalizedLawyers]);
 
 	const sortedLawyers = useMemo(() => {
 		const clone = [...filteredLawyers];
@@ -184,7 +207,7 @@ const FindLawyers = () => {
 												</div>
 												
 												<span className="inline-block px-3 py-1 bg-[#1A2B5A] text-white text-[11px] font-medium rounded-full mb-3 uppercase tracking-wider">
-													{lawyer.specializations || lawyer.specialization}
+													{lawyer.specializationText}
 												</span>
 												
 												<div className="flex items-center gap-4 text-xs text-gray-500">

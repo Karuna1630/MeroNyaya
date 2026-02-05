@@ -155,8 +155,7 @@ class CaseViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(cases, many=True)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated], parser_classes=[MultiPartParser, FormParser, JSONParser])
+    @action(detail=True, methods=['post', 'patch'], permission_classes=[IsAuthenticated], parser_classes=[MultiPartParser, FormParser, JSONParser])
     def upload_documents(self, request, pk=None):
         """
         Upload additional documents to a case (by client or assigned lawyer)
@@ -373,6 +372,20 @@ class CaseViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        # Validate that the case has been accepted by a lawyer
+        if case.status != 'accepted':
+            return Response(
+                {'error': f'Case must be accepted by a lawyer before scheduling appointments. Current status: {case.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate that a lawyer has been assigned
+        if not case.lawyer:
+            return Response(
+                {'error': 'No lawyer has been assigned to this case yet'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = CaseAppointmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         appointment = serializer.save(
@@ -384,9 +397,9 @@ class CaseViewSet(viewsets.ModelViewSet):
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
 
 
-class CaseAppointmentViewSet(viewsets.ReadOnlyModelViewSet):
+class CaseAppointmentViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for listing case appointments
+    ViewSet for managing case appointments
     """
     permission_classes = [IsAuthenticated]
     serializer_class = CaseAppointmentSerializer

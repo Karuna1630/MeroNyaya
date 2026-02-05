@@ -195,7 +195,7 @@ const ClientCaseDetail = () => {
                   },
                   { 
                     label: "Court", 
-                    value: caseData?.court_name || 'District Court, Kathmandu',
+                    value: caseData?.court_name || 'Not assigned',
                     icon: MapPin, 
                     color: "text-emerald-500", 
                     bg: "bg-emerald-50" 

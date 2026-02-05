@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { fetchPublicCases } from "../slices/caseSlice";
 import { fetchProposals, submitProposal, clearSubmitProposalStatus } from "../slices/proposalSlice";
 import Sidebar from "./Sidebar";
@@ -23,6 +24,7 @@ import {
 
 const LawyerFindCases = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { publicCases, publicCasesLoading, publicCasesError } = useSelector((state) => state.case);
   const { proposals, submitProposalLoading, submitProposalSuccess, submitProposalError } = useSelector((state) => state.proposal);
   
@@ -264,7 +266,12 @@ const LawyerFindCases = () => {
                     <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
                       <div className="flex-1 p-6 space-y-4">
                         <div className="flex flex-wrap items-center gap-3">
-                          <h2 className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight">{item.case_title}</h2>
+                          <h2 
+                            onClick={() => navigate(`/lawyercase/${item.id}`)}
+                            className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight hover:text-blue-600 cursor-pointer transition-colors"
+                          >
+                            {item.case_title}
+                          </h2>
                           <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.urgency_level)}`}>
                             {item.urgency_level}
                           </span>
@@ -297,6 +304,13 @@ const LawyerFindCases = () => {
 
                       <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
                         <button 
+                          onClick={() => navigate(`/lawyercase/${item.id}`)}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 bg-white text-[#0F1A3D] border-2 border-[#0F1A3D] rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm"
+                        >
+                          <Eye size={16} />
+                          View Details
+                        </button>
+                        <button 
                           onClick={() => handleOpenProposal(item)}
                           className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#0F1A3D] text-white rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-sm"
                         >
@@ -317,7 +331,12 @@ const LawyerFindCases = () => {
                     <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
                       <div className="flex-1 p-6 space-y-4">
                         <div className="flex flex-wrap items-center gap-3">
-                          <h2 className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight">{item.case_title}</h2>
+                          <h2 
+                            onClick={() => navigate(`/lawyercase/${item.id}`)}
+                            className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight hover:text-blue-600 cursor-pointer transition-colors"
+                          >
+                            {item.case_title}
+                          </h2>
                           <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.urgency_level)}`}>
                             {item.urgency_level}
                           </span>
@@ -349,6 +368,13 @@ const LawyerFindCases = () => {
                       </div>
 
                       <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
+                        <button 
+                          onClick={() => navigate(`/lawyercase/${item.id}`)}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 bg-white text-[#0F1A3D] border-2 border-[#0F1A3D] rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm"
+                        >
+                          <Eye size={16} />
+                          View Details
+                        </button>
                         <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200">
                           <CheckCircle2 size={16} />
                           Proposal Sent

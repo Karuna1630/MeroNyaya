@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils.dateparse import parse_date, parse_time
+from case.models import Case
 
 from .models import Consultation
 from .serializers import ConsultationSerializer
@@ -24,6 +25,40 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 			return queryset.filter(lawyer=user)
 
 		return queryset.filter(client=user)
+
+	def create(self, request, *args, **kwargs):
+		"""
+		Create a consultation with validation for case status
+		"""
+		case_id = request.data.get('case_id')
+		lawyer_id = request.data.get('lawyer_id')
+
+		# If a case is specified, validate that it's been accepted
+		if case_id:
+			try:
+				case = Case.objects.get(id=case_id)
+				
+				# Case must be accepted by a lawyer
+				if case.status != 'accepted':
+					return Response(
+						{"detail": f"Can only create consultation for accepted cases. Current status: {case.status}"},
+						status=status.HTTP_400_BAD_REQUEST
+					)
+				
+				# The lawyer specified must be the one assigned to the case
+				if case.lawyer_id != int(lawyer_id):
+					return Response(
+						{"detail": "The specified lawyer must be the one assigned to this case"},
+						status=status.HTTP_403_FORBIDDEN
+					)
+			except Case.DoesNotExist:
+				return Response(
+					{"detail": "Case not found"},
+					status=status.HTTP_404_NOT_FOUND
+				)
+		
+		# Proceed with normal creation
+		return super().create(request, *args, **kwargs)
 
 	def perform_create(self, serializer):
 		serializer.save(client=self.request.user)

@@ -12,6 +12,7 @@ const LawyerCase = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { cases, casesLoading, casesError } = useSelector((state) => state.case);
+  const { user } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState("Active");
   const [searchQuery, setSearchQuery] = useState("");
   const [caseTypeFilter, setCaseTypeFilter] = useState("All Categories");
@@ -128,7 +129,7 @@ const LawyerCase = () => {
       <div className="flex-1 ml-64">
         <LawyerDashHeader 
           title="Assigned Cases" 
-          subtitle="Welcome back, Adv. Ram Kumar" 
+          subtitle="View and manage your assigned cases"
           notificationCount={3}
         />
 

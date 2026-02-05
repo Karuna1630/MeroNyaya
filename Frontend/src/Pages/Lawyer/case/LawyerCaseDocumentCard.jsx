@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { uploadCaseDocuments, fetchCases } from "../../slices/caseSlice";
 import Pagination from "../../../components/Pagination";
 
-const LawyerCaseDocumentCard = ({ caseId, documents = [] }) => {
+const LawyerCaseDocumentCard = ({ caseId, documents = [], isAssignedLawyer = true }) => {
   const dispatch = useDispatch();
   const fileInputRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,22 +66,26 @@ const LawyerCaseDocumentCard = ({ caseId, documents = [] }) => {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Case Documents</h3>
-        <button 
-          onClick={handleUploadClick}
-          disabled={uploadDocumentsLoading}
-          className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Upload size={16} />
-          {uploadDocumentsLoading ? 'Uploading...' : 'Upload'}
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-          onChange={handleFileChange}
-          className="hidden"
-        />
+        {isAssignedLawyer && (
+          <>
+            <button 
+              onClick={handleUploadClick}
+              disabled={uploadDocumentsLoading}
+              className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Upload size={16} />
+              {uploadDocumentsLoading ? 'Uploading...' : 'Upload'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </>
+        )}
       </div>
 
       {documents.length === 0 ? (
