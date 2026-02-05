@@ -14,11 +14,14 @@ import {
   Calendar as CalIcon,
   X,
   Check,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyConsultations } from "../slices/consultationSlice";
 import axiosInstance from "../../axios/axiosinstance";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import { acceptConsultationSchema } from "../utils/consultationValidation";
 
 const LawyerAppointment = () => {
   const dispatch = useDispatch();
@@ -28,12 +31,9 @@ const LawyerAppointment = () => {
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [consultationToReject, setConsultationToReject] = useState(null);
-  const [acceptFormData, setAcceptFormData] = useState({
-    scheduled_date: "",
-    scheduled_time: "",
-    meeting_link: ""
-  });
+  const [consultationToComplete, setConsultationToComplete] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const initialFetchDoneRef = useRef(false);
 
@@ -122,11 +122,6 @@ const LawyerAppointment = () => {
 
   const handleAcceptClick = (consultation) => {
     setSelectedConsultation(consultation);
-    setAcceptFormData({
-      scheduled_date: "",
-      scheduled_time: "",
-      meeting_link: ""
-    });
     setShowAcceptModal(true);
   };
 
@@ -151,28 +146,58 @@ const LawyerAppointment = () => {
     }
   };
 
-  const handleSubmitAccept = async () => {
-    if (!selectedConsultation) return;
+  const handleCompleteClick = (consultation) => {
+    setConsultationToComplete(consultation);
+    setShowCompleteModal(true);
+  };
 
-    // For video consultations, require all fields
-    if (selectedConsultation.mode === "video") {
-      if (!acceptFormData.scheduled_date || !acceptFormData.scheduled_time || !acceptFormData.meeting_link) {
-        alert("Please fill in all fields for video consultations");
-        return;
-      }
+  const handleConfirmComplete = async () => {
+    if (!consultationToComplete) return;
+    
+    setProcessingId(consultationToComplete.id);
+    try {
+      await axiosInstance.post(`/consultations/${consultationToComplete.id}/complete/`);
+      dispatch(fetchMyConsultations());
+      setShowCompleteModal(false);
+      setConsultationToComplete(null);
+    } catch (error) {
+      console.error("Error completing consultation:", error);
+      alert("Error completing consultation: " + (error.response?.data?.detail || error.message));
+    } finally {
+      setProcessingId(null);
     }
+  };
+
+  const handleSubmitAccept = async (values) => {
+    if (!selectedConsultation) return;
 
     setProcessingId(selectedConsultation.id);
     try {
-      // For video consultations, update the scheduled details
-      if (selectedConsultation.mode === "video") {
-        const data = {
-          scheduled_date: acceptFormData.scheduled_date,
-          scheduled_time: acceptFormData.scheduled_time,
-          meeting_link: acceptFormData.meeting_link
-        };
-        await axiosInstance.patch(`/consultations/${selectedConsultation.id}/`, data);
+      // Update the scheduled details - include all required fields from existing consultation
+      const data = {
+        title: selectedConsultation.title,
+        lawyer_id: selectedConsultation.lawyer?.id,
+        mode: selectedConsultation.mode,
+        meeting_location: selectedConsultation.meeting_location || "",
+        phone_number: selectedConsultation.phone_number || "",
+        requested_day: selectedConsultation.requested_day,
+        requested_time: selectedConsultation.requested_time,
+        scheduled_date: values.scheduled_date,
+        scheduled_time: values.scheduled_time,
+      };
+
+      // Add case_id if exists
+      if (selectedConsultation.case?.id) {
+        data.case_id = selectedConsultation.case.id;
       }
+
+      // Add meeting link only for video consultations
+      if (selectedConsultation.mode === "video") {
+        data.meeting_link = values.meeting_link;
+      }
+
+      console.log("Data being sent to backend:", data);
+      await axiosInstance.patch(`/consultations/${selectedConsultation.id}/`, data);
       
       // Then accept the consultation
       await axiosInstance.post(`/consultations/${selectedConsultation.id}/accept/`);
@@ -181,7 +206,8 @@ const LawyerAppointment = () => {
       setSelectedConsultation(null);
     } catch (error) {
       console.error("Error accepting consultation:", error.response?.data || error.message);
-      alert("Error accepting consultation: " + (error.response?.data?.detail || error.message));
+      console.error("Full error details:", error.response?.data?.ErrorMessage || error.response?.data);
+      alert("Error: " + JSON.stringify(error.response?.data?.ErrorMessage || error.response?.data || error.message));
     } finally {
       setProcessingId(null);
     }
@@ -348,20 +374,33 @@ const LawyerAppointment = () => {
                                     <button 
                                       onClick={() => handleAcceptClick(consultation)}
                                       className="p-2.5 hover:bg-green-50 rounded-full text-green-400 hover:text-green-600 transition-all duration-200"
+                                      title="Accept"
                                     >
                                       <Check size={18} />
                                     </button>
                                     <button 
                                       onClick={() => handleRejectClick(consultation)}
                                       className="p-2.5 hover:bg-red-50 rounded-full text-red-400 hover:text-red-600 transition-all duration-200"
+                                      title="Reject"
                                     >
                                       <X size={18} />
                                     </button>
                                   </>
                                 )}
+                                {consultation.status === "accepted" && (
+                                  <button 
+                                    onClick={() => handleCompleteClick(consultation)}
+                                    disabled={processingId === consultation.id}
+                                    className="p-2.5 hover:bg-blue-50 rounded-full text-blue-400 hover:text-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Mark as Complete"
+                                  >
+                                    <CheckCircle size={18} />
+                                  </button>
+                                )}
                                 <button 
                                   onClick={() => setSelectedConsultation(consultation)}
                                   className="p-2.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-[#0F1A3D] transition-all duration-200"
+                                  title="View Details"
                                 >
                                   <Eye size={18} />
                                 </button>
@@ -390,119 +429,163 @@ const LawyerAppointment = () => {
 
       {/* Accept Modal */}
       {showAcceptModal && selectedConsultation && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 animate-in scale-in-95 duration-300">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">Accept Consultation</h2>
-              <button
-                onClick={() => {
-                  setShowAcceptModal(false);
-                  setSelectedConsultation(null);
-                }}
-                className="p-1 hover:bg-slate-200 rounded-full text-slate-600 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-4">
-              {/* Client Info */}
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Client</label>
-                <p className="text-sm font-semibold text-slate-800">{selectedConsultation.client?.name || "Client"}</p>
-              </div>
-
-              {/* Consultation Topic */}
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Topic</label>
-                <p className="text-sm font-semibold text-slate-800">{selectedConsultation.title}</p>
-              </div>
-
-              {/* Mode */}
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Mode</label>
-                <div className="flex items-center gap-2 text-slate-700">
-                  {getModeIcon(selectedConsultation.mode)}
-                  <span className="text-sm font-semibold">{getModeLabel(selectedConsultation.mode)}</span>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Formik
+            initialValues={{
+              scheduled_date: "",
+              scheduled_time: "",
+              meeting_link: ""
+            }}
+            validationSchema={acceptConsultationSchema}
+            context={{ mode: selectedConsultation.mode }}
+            onSubmit={handleSubmitAccept}
+          >
+            {({ errors, touched, isSubmitting }) => (
+              <Form className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-100 max-h-[85vh] overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-white">Accept Consultation</h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAcceptModal(false);
+                      setSelectedConsultation(null);
+                    }}
+                    className="p-1 hover:bg-white/10 rounded-full text-white transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-              </div>
 
-              {/* Conditional Fields - Only for Video Calls */}
-              {selectedConsultation.mode === "video" && (
-                <>
-                  <div className="border-t border-slate-200 pt-4 mt-4">
-                    <p className="text-xs font-semibold text-slate-600 mb-4">Fill in the details for this video consultation:</p>
-                    
+                {/* Content - Scrollable */}
+                <div className="p-6 overflow-y-auto flex-1">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Client Info - Full Width */}
+                    <div className="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">Client</label>
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={getProfileImageUrl(selectedConsultation.client?.profile_image, selectedConsultation.client?.name)}
+                          alt={selectedConsultation.client?.name || "Client"}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                        />
+                        <div>
+                          <p className="font-bold text-slate-900">{selectedConsultation.client?.name || "Client"}</p>
+                          <p className="text-xs text-slate-500 font-medium">{selectedConsultation.title}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mode */}
+                    <div className="col-span-2 bg-white rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Mode</label>
+                      <div className="flex items-center gap-2">
+                        {getModeIcon(selectedConsultation.mode)}
+                        <span className="font-semibold text-sm text-slate-700">{getModeLabel(selectedConsultation.mode)}</span>
+                      </div>
+                    </div>
+
                     {/* Scheduled Date */}
-                    <div className="mb-3">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Date</label>
-                      <input
+                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
+                        Date <span className="text-red-500">*</span>
+                      </label>
+                      <Field
                         type="date"
-                        value={acceptFormData.scheduled_date}
-                        onChange={(e) => setAcceptFormData({...acceptFormData, scheduled_date: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        name="scheduled_date"
+                        className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                          errors.scheduled_date && touched.scheduled_date
+                            ? "border-red-500"
+                            : "border-slate-200"
+                        }`}
+                      />
+                      <ErrorMessage
+                        name="scheduled_date"
+                        component="div"
+                        className="text-red-500 text-xs mt-1 font-medium"
                       />
                     </div>
 
                     {/* Scheduled Time */}
-                    <div className="mb-3">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Time</label>
-                      <input
+                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
+                        Time <span className="text-red-500">*</span>
+                      </label>
+                      <Field
                         type="time"
-                        value={acceptFormData.scheduled_time}
-                        onChange={(e) => setAcceptFormData({...acceptFormData, scheduled_time: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        name="scheduled_time"
+                        className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                          errors.scheduled_time && touched.scheduled_time
+                            ? "border-red-500"
+                            : "border-slate-200"
+                        }`}
+                      />
+                      <ErrorMessage
+                        name="scheduled_time"
+                        component="div"
+                        className="text-red-500 text-xs mt-1 font-medium"
                       />
                     </div>
 
-                    {/* Meeting Link */}
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Meeting Link</label>
-                      <input
-                        type="url"
-                        placeholder="https://meet.google.com/..."
-                        value={acceptFormData.meeting_link}
-                        onChange={(e) => setAcceptFormData({...acceptFormData, meeting_link: e.target.value})}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
+                    {/* Meeting Link - Only for Video */}
+                    {selectedConsultation.mode === "video" && (
+                      <div className="col-span-2 bg-green-50 rounded-xl p-4 border border-green-200">
+                        <label className="text-xs font-bold text-green-700 uppercase tracking-wide block mb-2">
+                          Meeting Link <span className="text-red-500">*</span>
+                        </label>
+                        <Field
+                          type="url"
+                          name="meeting_link"
+                          placeholder="https://meet.google.com/..."
+                          className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                            errors.meeting_link && touched.meeting_link
+                              ? "border-red-500"
+                              : "border-green-300"
+                          }`}
+                        />
+                        <ErrorMessage
+                          name="meeting_link"
+                          component="div"
+                          className="text-red-500 text-xs mt-1 font-medium"
+                        />
+                      </div>
+                    )}
+
+                    {/* Info message based on mode */}
+                    {selectedConsultation.mode === "in_person" && (
+                      <div className="col-span-2 bg-blue-50 rounded-xl p-3 border border-blue-200">
+                        <p className="text-xs text-blue-700 font-semibold">Client will visit you in person at the scheduled time.</p>
+                      </div>
+                    )}
                   </div>
-                </>
-              )}
-
-              {/* Info for In-Person */}
-              {selectedConsultation.mode === "in_person" && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
-                  <p className="text-xs text-blue-700 font-semibold">This is an in-person consultation. Client will be notified of acceptance.</p>
                 </div>
-              )}
-            </div>
 
-            {/* Footer */}
-            <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex gap-2 justify-end">
-              <button
-                onClick={() => {
-                  setShowAcceptModal(false);
-                  setSelectedConsultation(null);
-                }}
-                className="px-4 py-2 bg-slate-100 text-slate-900 rounded-lg font-semibold text-sm hover:bg-slate-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmitAccept}
-                disabled={processingId === selectedConsultation.id}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {processingId === selectedConsultation.id && (
-                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                )}
-                {processingId === selectedConsultation.id ? "Accepting..." : "Accept"}
-              </button>
-            </div>
-          </div>
+                {/* Footer */}
+                <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAcceptModal(false);
+                      setSelectedConsultation(null);
+                    }}
+                    className="px-6 py-2 bg-slate-100 text-slate-900 rounded-lg font-semibold text-sm hover:bg-slate-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={processingId === selectedConsultation.id || isSubmitting}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
+                  >
+                    {(processingId === selectedConsultation.id || isSubmitting) && (
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {(processingId === selectedConsultation.id || isSubmitting) ? "Accepting..." : "Accept"}
+                  </button>
+                </div>
+              </Form>
+            )}
+          </Formik>
         </div>
       )}
 
@@ -655,6 +738,62 @@ const LawyerAppointment = () => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Confirmation Modal */}
+      {showCompleteModal && consultationToComplete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between rounded-t-2xl">
+              <h2 className="text-lg font-bold text-slate-900">Complete Consultation</h2>
+              <button
+                onClick={() => {
+                  setShowCompleteModal(false);
+                  setConsultationToComplete(null);
+                }}
+                className="p-1 hover:bg-green-100 rounded-full text-slate-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full">
+                <CheckCircle className="text-green-600" size={32} />
+              </div>
+              
+              <h3 className="text-xl font-bold text-center text-[#0F1A3D] mb-3">Mark as Complete?</h3>
+              <p className="text-center text-slate-600 text-sm leading-relaxed mb-6">
+                You are about to mark the consultation with <span className="font-bold text-slate-900">{consultationToComplete?.client?.name}</span> as completed. This action will update the appointment status.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCompleteModal(false);
+                    setConsultationToComplete(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-900 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmComplete}
+                  disabled={processingId === consultationToComplete?.id}
+                  className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+                >
+                  {processingId === consultationToComplete?.id && (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {processingId === consultationToComplete?.id ? "Processing..." : "Complete"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

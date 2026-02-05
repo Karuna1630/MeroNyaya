@@ -23,11 +23,13 @@ import axiosInstance from "../../axios/axiosinstance";
 
 const ClientConsultation = () => {
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState("Pending Requests");
+  const [activeTab, setActiveTab] = useState("Requests");
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [consultationToDelete, setConsultationToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
 
   const { consultations = [] } = useSelector(
     (state) => state.consultation || {}
@@ -37,20 +39,52 @@ const ClientConsultation = () => {
     dispatch(fetchMyConsultations());
   }, [dispatch]);
 
+  useEffect(() => {
+    const loadAppointments = async () => {
+      setAppointmentsLoading(true);
+      try {
+        const response = await axiosInstance.get("/appointments/");
+        setAppointments(Array.isArray(response.data) ? response.data : response.data.results || []);
+      } catch (error) {
+        console.error("Error fetching appointments:", error);
+        setAppointments([]);
+      } finally {
+        setAppointmentsLoading(false);
+      }
+    };
+
+    loadAppointments();
+  }, []);
+
   const pendingCount = useMemo(() => {
-    return consultations.filter((item) => item.status === "requested" || item.status === "accepted").length;
+    return consultations.filter((item) => item.status === "requested").length;
   }, [consultations]);
+
+  const appointmentCount = useMemo(() => {
+    return appointments.length;
+  }, [appointments]);
 
   const cancelledCount = useMemo(() => {
     return consultations.filter((item) => item.status === "rejected").length;
   }, [consultations]);
 
   const displayConsultations = useMemo(() => {
-    if (activeTab === "Pending Requests") {
-      return consultations.filter((item) => item.status === "requested" || item.status === "accepted");
+    if (activeTab === "Requests") {
+      return consultations.filter((item) => item.status === "requested");
+    }
+    if (activeTab === "Appointments") {
+      return [];
     }
     return consultations.filter((item) => item.status === "rejected");
   }, [activeTab, consultations]);
+
+  const displayAppointments = useMemo(() => {
+    return appointments;
+  }, [appointments]);
+
+  const tableRows = useMemo(() => {
+    return activeTab === "Appointments" ? displayAppointments : displayConsultations;
+  }, [activeTab, displayAppointments, displayConsultations]);
 
   const getModeIcon = (mode) => {
     switch (mode) {
@@ -119,10 +153,14 @@ const ClientConsultation = () => {
 
         <div className="flex-1 p-8 overflow-y-auto">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
               <span className="text-4xl font-bold text-amber-500 mb-1">{pendingCount}</span>
-              <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Pending Requests</span>
+              <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Requests</span>
+            </div>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+              <span className="text-4xl font-bold text-emerald-500 mb-1">{appointmentCount}</span>
+              <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Appointments</span>
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
               <span className="text-4xl font-bold text-red-500 mb-1">{cancelledCount}</span>
@@ -133,7 +171,7 @@ const ClientConsultation = () => {
           {/* Filters and Tabs */}
           <div className="mb-6">
             <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
-              {["Pending Requests", "Cancelled"].map((tab) => (
+              {["Requests", "Appointments", "Cancelled"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -164,26 +202,32 @@ const ClientConsultation = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {displayConsultations.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                  {tableRows.map((item) => {
+                    const consultation = item.consultation_details || item;
+                    const isAppointment = Boolean(item.consultation_details);
+                    const dateValue = isAppointment ? (item.scheduled_date || consultation.requested_day) : consultation.requested_day;
+                    const timeValue = isAppointment ? (item.scheduled_time || consultation.requested_time) : consultation.requested_time;
+                    const statusValue = isAppointment ? item.status : consultation.status;
+                    return (
+                      <tr key={isAppointment ? `appt-${item.id}` : item.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <img 
-                            src={getProfileImageUrl(item.lawyer?.profile_image, item.lawyer?.name)} 
-                            alt={item.lawyer?.name || "Lawyer"} 
+                              src={getProfileImageUrl(consultation.lawyer?.profile_image, consultation.lawyer?.name)} 
+                              alt={consultation.lawyer?.name || "Lawyer"} 
                             className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm"
                             onError={(e) => {
-                              e.target.src = `https://ui-avatars.com/api/?name=${item.lawyer?.name || 'Lawyer'}&background=0F1A3D&color=fff`;
+                                e.target.src = `https://ui-avatars.com/api/?name=${consultation.lawyer?.name || 'Lawyer'}&background=0F1A3D&color=fff`;
                             }}
                           />
-                          <span className="font-semibold text-slate-900 text-sm tracking-tight">{item.lawyer?.name || "Lawyer"}</span>
+                            <span className="font-semibold text-slate-900 text-sm tracking-tight">{consultation.lawyer?.name || "Lawyer"}</span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
-                          <span className="text-sm font-bold text-[#0F1A3D] line-clamp-2">{item.title || "Untitled"}</span>
-                          {item.case_reference?.title && (
-                            <span className="text-xs text-slate-500 font-medium mt-1">Case: {item.case_reference.title}</span>
+                            <span className="text-sm font-bold text-[#0F1A3D] line-clamp-2">{consultation.title || "Untitled"}</span>
+                            {consultation.case_reference?.title && (
+                              <span className="text-xs text-slate-500 font-medium mt-1">Case: {consultation.case_reference.title}</span>
                           )}
                         </div>
                       </td>
@@ -191,42 +235,42 @@ const ClientConsultation = () => {
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2 text-slate-700">
                             <Calendar size={14} className="text-slate-400" />
-                            <span className="text-sm font-medium">{item.requested_day || "N/A"}</span>
+                              <span className="text-sm font-medium">{dateValue || "N/A"}</span>
                           </div>
                           <div className="flex items-center gap-2 text-slate-500 mt-1">
                             <Clock size={14} className="text-slate-400" />
-                            <span className="text-xs">{item.requested_time || "N/A"}</span>
+                              <span className="text-xs">{timeValue || "N/A"}</span>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full w-fit border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
-                          {getModeIcon(item.mode)}
-                          <span className="text-xs font-semibold text-slate-700">{getModeLabel(item.mode)}</span>
+                            {getModeIcon(consultation.mode)}
+                            <span className="text-xs font-semibold text-slate-700">{getModeLabel(consultation.mode)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <span 
                           className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-xs ${
-                            item.status === "requested" || item.status === "accepted"
-                              ? "bg-amber-50 text-amber-600 border border-amber-100" 
-                              : "bg-red-50 text-red-600 border border-red-100"
+                              statusValue === "requested" || statusValue === "accepted" || statusValue === "pending" || statusValue === "confirmed"
+                                ? "bg-amber-50 text-amber-600 border border-amber-100" 
+                                : "bg-red-50 text-red-600 border border-red-100"
                           }`}
                         >
-                          {item.status === "requested" ? "Pending" : item.status === "accepted" ? "Accepted" : "Cancelled"}
+                            {statusValue === "requested" ? "Pending" : statusValue === "accepted" ? "Accepted" : statusValue === "pending" ? "Appointment" : statusValue === "confirmed" ? "Confirmed" : "Cancelled"}
                         </span>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <button 
-                            onClick={() => setSelectedConsultation(item)}
+                              onClick={() => setSelectedConsultation(consultation)}
                             className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition-all duration-200 border border-transparent hover:border-slate-200"
                           >
                             <Eye size={18} />
                           </button>
-                          {item.status !== "rejected" && (
+                            {!isAppointment && consultation.status !== "rejected" && (
                             <button 
-                              onClick={() => handleDeleteClick(item)}
+                                onClick={() => handleDeleteClick(consultation)}
                               className="p-2 hover:bg-red-50 rounded-full text-red-300 hover:text-red-500 transition-all duration-200 border border-transparent hover:border-red-100"
                             >
                               <X size={18} />
@@ -234,12 +278,15 @@ const ClientConsultation = () => {
                           )}
                         </div>
                       </td>
-                    </tr>
-                  ))}
-                  {displayConsultations.length === 0 && (
+                      </tr>
+                    );
+                  })}
+                  {tableRows.length === 0 && (
                     <tr>
                       <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
-                        No {activeTab.toLowerCase()} found.
+                        {activeTab === "Appointments" && appointmentsLoading
+                          ? "Loading appointments..."
+                          : `No ${activeTab.toLowerCase()} found.`}
                       </td>
                     </tr>
                   )}
