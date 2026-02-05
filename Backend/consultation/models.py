@@ -48,9 +48,13 @@ class Consultation(models.Model):
 		ordering = ["-created_at"]
 
 	def clean(self):
-		if not self.meeting_location or not self.meeting_location.strip():
-			from django.core.exceptions import ValidationError
-			raise ValidationError("Meeting location is required for all consultations.")
+		if self.mode == self.MODE_IN_PERSON:
+			if not self.meeting_location or not self.meeting_location.strip():
+				from django.core.exceptions import ValidationError
+				raise ValidationError("Meeting location is required for in-person consultations.")
+			if not self.phone_number or not self.phone_number.strip():
+				from django.core.exceptions import ValidationError
+				raise ValidationError("Phone number is required for in-person consultations.")
 		if not self.title or not self.title.strip():
 			from django.core.exceptions import ValidationError
 			raise ValidationError("Consultation title is required.")

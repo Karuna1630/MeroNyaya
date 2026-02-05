@@ -5,6 +5,8 @@ from .models import Consultation
 
 
 class ConsultationSerializer(serializers.ModelSerializer):
+	meeting_location = serializers.CharField(required=False, allow_blank=True)
+	phone_number = serializers.CharField(required=False, allow_blank=True)
 	lawyer = serializers.SerializerMethodField()
 	client = serializers.SerializerMethodField()
 	case_reference = serializers.SerializerMethodField()
@@ -59,10 +61,17 @@ class ConsultationSerializer(serializers.ModelSerializer):
 			else:
 				profile_image_url = obj.lawyer.profile_image.url
 		
+		consultation_fee = None
+		try:
+			consultation_fee = obj.lawyer.lawyer_kyc.consultation_fee
+		except Exception:
+			consultation_fee = None
+
 		return {
 			"id": obj.lawyer.id,
 			"name": obj.lawyer.name,
 			"profile_image": profile_image_url,
+			"consultation_fee": consultation_fee,
 		}
 
 	def get_client(self, obj):
@@ -96,14 +105,16 @@ class ConsultationSerializer(serializers.ModelSerializer):
 			raise serializers.ValidationError(
 				{"title": "Consultation title is required."}
 			)
-		if not data.get("meeting_location") or not data.get("meeting_location").strip():
-			raise serializers.ValidationError(
-				{"meeting_location": "Meeting location is required for all consultations."}
-			)
-		if not data.get("phone_number") or not data.get("phone_number").strip():
-			raise serializers.ValidationError(
-				{"phone_number": "Phone number is required for contact purposes."}
-			)
+		mode = data.get("mode")
+		if mode == Consultation.MODE_IN_PERSON:
+			if not data.get("meeting_location") or not data.get("meeting_location").strip():
+				raise serializers.ValidationError(
+					{"meeting_location": "Meeting location is required for in-person consultations."}
+				)
+			if not data.get("phone_number") or not data.get("phone_number").strip():
+				raise serializers.ValidationError(
+					{"phone_number": "Phone number is required for in-person consultations."}
+				)
 		return data
 
 	def create(self, validated_data):

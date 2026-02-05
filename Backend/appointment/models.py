@@ -17,10 +17,21 @@ class Appointment(models.Model):
 		(STATUS_CANCELLED, "Cancelled"),
 	]
 
+	PAYMENT_PENDING = "pending"
+	PAYMENT_PAID = "paid"
+	PAYMENT_IN_HAND = "in_hand"
+
+	PAYMENT_CHOICES = [
+		(PAYMENT_PENDING, "Pending"),
+		(PAYMENT_PAID, "Paid"),
+		(PAYMENT_IN_HAND, "In Hand"),
+	]
+
 	consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE, related_name="appointments")
 	scheduled_date = models.DateField(null=True, blank=True)
 	scheduled_time = models.TimeField(null=True, blank=True)
 	status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+	payment_status = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default=PAYMENT_PENDING)
 	notes = models.TextField(blank=True, null=True)
 
 	created_at = models.DateTimeField(auto_now_add=True)
