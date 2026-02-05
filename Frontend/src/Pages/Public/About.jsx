@@ -9,7 +9,7 @@ const About = () => {
       <Header />
 
       {/* Hero Section */}
-      <section className="bg-linear-to-b from-[#0F1A3D] to-[#1a2b5a] text-white py-20 px-6">
+      <section className="bg-linear-to-b from-[#1a2b5a] via-[#2a3b6f] to-[#3b4c84] text-white py-20 px-6">
         <div className="max-w-4xl mx-auto text-center space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold">About MeroNaya</h1>
           <p className="text-lg text-blue-100 max-w-2xl mx-auto">
@@ -19,7 +19,7 @@ const About = () => {
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 px-6 bg-gray-50">
+      <section className="py-16 px-6 bg-gray-100">
         <div className="max-w-4xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -99,7 +99,7 @@ const About = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 px-6 bg-gray-50">
+      <section className="py-16 px-6 bg-gray-100">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-[#0F1A3D] mb-12">How It Works</h2>
           <div className="grid md:grid-cols-3 gap-8">

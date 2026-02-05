@@ -121,7 +121,7 @@ const Home = () => {
         </section>
 
         {/* ================= HOW IT WORKS ================= */}
-        <section className="bg-gray-100 py-16">
+        <section className="bg-gray-200 py-16">
           <div className="w-full px-12">
             <h2 className="text-2xl font-bold text-center mb-12">
               How MeroNaya Works
@@ -148,7 +148,7 @@ const Home = () => {
               </div>
 
               <div className="bg-white p-6 rounded-lg shadow">
-                <ShieldCheck className="mx-auto mb-4 text-blue-900" size={32} />
+                <ShieldCheck className="mx-auto mb-4 text-[#0F1A3D]" size={32} />
                 <h4 className="font-semibold mb-2">Secure Consultation</h4>
                 <p className="text-sm text-gray-600">
                   Communicate securely with legal experts.
@@ -156,7 +156,7 @@ const Home = () => {
               </div>
 
               <div className="bg-white p-6 rounded-lg shadow">
-                <FileText className="mx-auto mb-4 text-blue-900" size={32} />
+                <FileText className="mx-auto mb-4 text-[#0F1A3D]" size={32} />
                 <h4 className="font-semibold mb-2">Track Your Case</h4>
                 <p className="text-sm text-gray-600">
                   Monitor progress and manage documents.
@@ -212,7 +212,7 @@ const Home = () => {
                       ⭐ {lawyer.rating}({lawyer.cases})
                     </span>
                   </div>
-                  <button className="bg-blue-900 text-white px-4 py-2 rounded text-xs font-semibold hover:bg-blue-800 transition">
+                  <button className="bg-[#0F1A3D] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#0D172F] transition">
                     Book Now
                   </button>
                 </div>
@@ -222,7 +222,7 @@ const Home = () => {
         </section>
 
         {/* ================= WHY CHOOSE MERONAYA ================= */}
-        <section className="bg-blue-900 text-white py-16">
+        <section className="bg-[#0F1A3D] text-white py-16">
           <div className="w-full px-12">
             <h2 className="text-3xl font-bold text-center mb-4">
               Why Choose MeroNaya?
@@ -234,7 +234,7 @@ const Home = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="flex gap-4">
                 <div className="shrink-0 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <CheckCircle className="text-blue-900" size={24} />
+                  <CheckCircle className="text-[#0F1A3D]" size={24} />
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Verified Lawyers Only</h3>
@@ -247,7 +247,7 @@ const Home = () => {
 
               <div className="flex gap-4">
                 <div className="shrink-0 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <Globe className="text-blue-900" size={24} />
+                  <Globe className="text-[#0F1A3D]" size={24} />
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Transparent Pricing</h3>
@@ -259,7 +259,7 @@ const Home = () => {
 
               <div className="flex gap-4">
                 <div className="shrink-0 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <ShieldCheck className="text-blue-900" size={24} />
+                  <ShieldCheck className="text-[#0F1A3D]" size={24} />
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Secure & Private</h3>
@@ -271,7 +271,7 @@ const Home = () => {
 
               <div className="flex gap-4">
                 <div className="shrink-0 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <FileText className="text-blue-900" size={24} />
+                  <FileText className="text-[#0F1A3D]" size={24} />
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">
@@ -285,7 +285,7 @@ const Home = () => {
 
               <div className="flex gap-4">
                 <div className="shrink-0 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <Clock className="text-blue-900" size={24} />
+                  <Clock className="text-[#0F1A3D]" size={24} />
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">24/7 Support</h3>
@@ -297,7 +297,7 @@ const Home = () => {
 
               <div className="flex gap-4">
                 <div className="shrink-0 w-12 h-12 bg-yellow-400 rounded-full flex items-center justify-center">
-                  <Globe className="text-blue-900" size={24} />
+                  <Globe className="text-[#0F1A3D]" size={24} />
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Multilingual</h3>
@@ -312,7 +312,7 @@ const Home = () => {
 
         {/* ================= CTA ================= */}
         <section className="w-full px-12 py-20">
-          <div className="bg-blue-900 rounded-xl p-12 text-white flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div className="bg-[#0F1A3D] rounded-xl p-12 text-white flex flex-col lg:flex-row items-center justify-between gap-8">
             <div className="flex-1">
               <h2 className="text-3xl font-bold mb-2">
                 Ready to Connect with Your Legal Expert?
@@ -324,7 +324,7 @@ const Home = () => {
             <div className="flex gap-4">
               <Link
                 to="/register"
-                className="bg-yellow-400 text-blue-900 px-6 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition"
+                className="bg-yellow-400 text-[#0F1A3D] px-6 py-3 rounded-lg font-semibold hover:bg-yellow-300 transition"
               >
                 Get Started
               </Link>
