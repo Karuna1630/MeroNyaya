@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Case, CaseDocument, CaseTimeline
+from .models import Case, CaseDocument, CaseTimeline, CaseAppointment
 
 
 @admin.register(Case)
@@ -59,3 +59,12 @@ class CaseTimelineAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(CaseAppointment)
+class CaseAppointmentAdmin(admin.ModelAdmin):
+    list_display = ['title', 'case', 'client', 'lawyer', 'mode', 'preferred_day', 'preferred_time', 'scheduled_date', 'scheduled_time', 'status', 'created_at']
+    list_filter = ['status', 'mode', 'preferred_day', 'created_at']
+    search_fields = ['title', 'case__case_title', 'client__name', 'lawyer__name']
+    readonly_fields = ['created_at', 'updated_at']
+    date_hierarchy = 'created_at'

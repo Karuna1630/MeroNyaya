@@ -188,6 +188,76 @@ class Case(models.Model):
         return self.status in ['accepted', 'in_progress']
 
 
+class CaseAppointment(models.Model):
+    """
+    Model for storing case-specific appointments (no payment required)
+    """
+
+    MODE_VIDEO = "video"
+    MODE_IN_PERSON = "in_person"
+
+    MODE_CHOICES = [
+        (MODE_VIDEO, "Video"),
+        (MODE_IN_PERSON, "In Person"),
+    ]
+
+    STATUS_PENDING = "pending"
+    STATUS_CONFIRMED = "confirmed"
+    STATUS_RESCHEDULED = "rescheduled"
+    STATUS_COMPLETED = "completed"
+    STATUS_CANCELLED = "cancelled"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_CONFIRMED, "Confirmed"),
+        (STATUS_RESCHEDULED, "Rescheduled"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    case = models.ForeignKey(
+        Case,
+        on_delete=models.CASCADE,
+        related_name="appointments",
+        help_text="Case this appointment belongs to",
+    )
+    client = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="case_appointments",
+        limit_choices_to={'role': 'Client'},
+        help_text="Client who scheduled the appointment",
+    )
+    lawyer = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="case_appointments_assigned",
+        limit_choices_to={'role': 'Lawyer'},
+        null=True,
+        blank=True,
+        help_text="Lawyer assigned to the case",
+    )
+    title = models.CharField(max_length=200, help_text="Appointment title")
+    mode = models.CharField(max_length=20, choices=MODE_CHOICES, default=MODE_VIDEO)
+    preferred_day = models.CharField(max_length=10)
+    preferred_time = models.CharField(max_length=20)
+    meeting_location = models.CharField(max_length=255, blank=True, null=True)
+    phone_number = models.CharField(max_length=30, blank=True, null=True)
+    scheduled_date = models.DateField(null=True, blank=True)
+    scheduled_time = models.TimeField(null=True, blank=True)
+    meeting_link = models.URLField(max_length=500, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Case Appointment #{self.id} for Case #{self.case_id}"
+
+
 class CaseDocument(models.Model):
     """
     Model for storing documents uploaded for a case

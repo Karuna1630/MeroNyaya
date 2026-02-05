@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyAppointments, payAppointment } from "../slices/appointmentSlice";
+import { fetchCaseAppointments } from "../slices/caseSlice";
 
 const ClientAppointment = () => {
   const [activeTab, setActiveTab] = useState("Upcoming");
@@ -28,18 +29,57 @@ const ClientAppointment = () => {
   const { appointments = [], appointmentsLoading, appointmentsError } = useSelector(
     (state) => state.appointment || {} 
   );
+  const { caseAppointments = [], caseAppointmentsLoading } = useSelector(
+    (state) => state.case || {}
+  );
 
   useEffect(() => {
     dispatch(fetchMyAppointments());
+    dispatch(fetchCaseAppointments());
   }, [dispatch]);
 
+  // Merge consultation appointments and case appointments
+  const allAppointments = useMemo(() => {
+    const consultationAppts = appointments.map(appt => ({
+      ...appt,
+      appointmentType: 'consultation'
+    }));
+    const caseAppts = caseAppointments.map(appt => ({
+      ...appt,
+      appointmentType: 'case',
+      // Transform case appointment structure to match consultation structure
+      consultation_details: {
+        lawyer: {
+          name: appt.lawyer_name,
+          profile_image: appt.lawyer_profile_image
+        },
+        case_reference: {
+          id: appt.case,
+          title: appt.case_title,
+          category: appt.case_category
+        },
+        title: appt.title,
+        mode: appt.mode,
+        meeting_location: appt.meeting_location,
+        phone_number: appt.phone_number,
+        meeting_link: appt.meeting_link,
+        requested_day: appt.preferred_day,
+        requested_time: appt.preferred_time
+      },
+      scheduled_date: appt.scheduled_date,
+      scheduled_time: appt.scheduled_time,
+      payment_status: 'paid' // Case appointments don't require payment
+    }));
+    return [...consultationAppts, ...caseAppts];
+  }, [appointments, caseAppointments]);
+
   const upcomingAppointments = useMemo(() => {
-    return appointments.filter((item) => ["pending", "confirmed", "rescheduled"].includes(item.status));
-  }, [appointments]);
+    return allAppointments.filter((item) => ["pending", "confirmed", "rescheduled"].includes(item.status));
+  }, [allAppointments]);
 
   const completedAppointments = useMemo(() => {
-    return appointments.filter((item) => item.status === "completed");
-  }, [appointments]);
+    return allAppointments.filter((item) => item.status === "completed");
+  }, [allAppointments]);
 
   const displayAppointments = activeTab === "Upcoming" ? upcomingAppointments : completedAppointments;
 
@@ -160,8 +200,9 @@ const ClientAppointment = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Lawyer</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Case Reference</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Case/Title</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date & Time</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Mode</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
@@ -170,21 +211,21 @@ const ClientAppointment = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {appointmentsLoading && (
+                  {(appointmentsLoading || caseAppointmentsLoading) && (
                     <tr>
-                      <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                      <td colSpan="8" className="px-6 py-12 text-center text-slate-500">
                         Loading appointments...
                       </td>
                     </tr>
                   )}
-                  {!appointmentsLoading && appointmentsError && (
+                  {!appointmentsLoading && !caseAppointmentsLoading && appointmentsError && (
                     <tr>
-                      <td colSpan="7" className="px-6 py-12 text-center text-red-500">
+                      <td colSpan="8" className="px-6 py-12 text-center text-red-500">
                         {appointmentsError}
                       </td>
                     </tr>
                   )}
-                  {!appointmentsLoading && !appointmentsError && displayAppointments.map((item) => {
+                  {!appointmentsLoading && !caseAppointmentsLoading && !appointmentsError && displayAppointments.map((item) => {
                     const consultation = item.consultation_details || {};
                     const lawyer = consultation.lawyer || {};
                     const caseRef = consultation.case_reference || {};
@@ -192,8 +233,19 @@ const ClientAppointment = () => {
                     const timeValue = item.scheduled_time || consultation.requested_time;
                     const modeValue = consultation.mode;
                     const meetingLink = consultation.meeting_link;
+                    const isConfirmed = item.status === 'confirmed';
+                    const isCaseAppointment = item.appointmentType === 'case';
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={`${item.appointmentType}-${item.id}`} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-6 py-5">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${
+                          isCaseAppointment
+                            ? "bg-purple-50 text-purple-600 border-purple-100"
+                            : "bg-blue-50 text-blue-600 border-blue-100"
+                        }`}>
+                          {isCaseAppointment ? "Case" : "Consult"}
+                        </span>
+                      </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <img 
@@ -206,8 +258,8 @@ const ClientAppointment = () => {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
-                            <span className="text-sm font-bold text-[#0F1A3D]">{caseRef.id || consultation.title || "Appointment"}</span>
-                            <span className="text-xs text-slate-500 font-medium">{caseRef.title || consultation.title || ""}</span>
+                            <span className="text-sm font-bold text-[#0F1A3D]">{isCaseAppointment ? (caseRef.category || consultation.title) : (consultation.title || "Appointment")}</span>
+                            <span className="text-xs text-slate-500 font-medium">{isCaseAppointment ? caseRef.title : consultation.title}</span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
@@ -263,7 +315,7 @@ const ClientAppointment = () => {
                           >
                             <Eye size={18} />
                           </button>
-                            {modeValue === "video" && meetingLink && activeTab === "Upcoming" && item.payment_status === "paid" && (
+                            {modeValue === "video" && meetingLink && activeTab === "Upcoming" && isConfirmed && (
                               <a
                                 href={meetingLink}
                                 target="_blank"
@@ -274,7 +326,7 @@ const ClientAppointment = () => {
                                 <Play size={16} fill="white" />
                               </a>
                             )}
-                            {modeValue === "video" && activeTab === "Upcoming" && item.payment_status !== "paid" && (
+                            {modeValue === "video" && activeTab === "Upcoming" && !isCaseAppointment && item.payment_status !== "paid" && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenPayment(item)}
@@ -289,9 +341,9 @@ const ClientAppointment = () => {
                     </tr>
                   );
                   })}
-                  {!appointmentsLoading && !appointmentsError && displayAppointments.length === 0 && (
+                  {!appointmentsLoading && !caseAppointmentsLoading && !appointmentsError && displayAppointments.length === 0 && (
                     <tr>
-                      <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                      <td colSpan="8" className="px-6 py-12 text-center text-slate-500">
                         No {activeTab.toLowerCase()} appointments found.
                       </td>
                     </tr>
@@ -321,6 +373,17 @@ const ClientAppointment = () => {
             {/* Content - Scrollable */}
             <div className="p-6 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-4">
+                {/* Appointment Type Badge */}
+                <div className="col-span-2">
+                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                    selectedAppointment.appointmentType === 'case'
+                      ? "bg-purple-50 text-purple-600 border border-purple-200"
+                      : "bg-blue-50 text-blue-600 border border-blue-200"
+                  }`}>
+                    {selectedAppointment.appointmentType === 'case' ? 'Case Appointment' : 'Consultation Appointment'}
+                  </span>
+                </div>
+
                 {/* Lawyer Info - Full Width */}
                 <div className="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">Lawyer</label>
@@ -371,7 +434,11 @@ const ClientAppointment = () => {
                 {/* Payment Status */}
                 <div className="bg-white rounded-xl p-4 border border-slate-200">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Payment</label>
-                  {selectedAppointment.consultation_details?.mode === "in_person" ? (
+                  {selectedAppointment.appointmentType === 'case' ? (
+                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-600 border border-purple-200">
+                      No Payment
+                    </span>
+                  ) : selectedAppointment.consultation_details?.mode === "in_person" ? (
                     <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200">
                       In Hand
                     </span>
@@ -405,12 +472,40 @@ const ClientAppointment = () => {
                   </div>
                 )}
 
-                {/* Meeting Link hidden for clients */}
+                {/* Meeting Link for confirmed appointments */}
+                {selectedAppointment.status === 'confirmed' && 
+                 selectedAppointment.consultation_details?.mode === 'video' && 
+                 selectedAppointment.consultation_details?.meeting_link && (
+                  <div className="col-span-2 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+                    <label className="text-xs font-bold text-emerald-700 uppercase tracking-wide block mb-2">Meeting Link</label>
+                    <a
+                      href={selectedAppointment.consultation_details.meeting_link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm font-semibold text-emerald-700 hover:text-emerald-900 underline break-all"
+                    >
+                      {selectedAppointment.consultation_details.meeting_link}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Footer */}
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+              {selectedAppointment.status === 'confirmed' && 
+               selectedAppointment.consultation_details?.mode === 'video' && 
+               selectedAppointment.consultation_details?.meeting_link && (
+                <a
+                  href={selectedAppointment.consultation_details.meeting_link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-6 py-2 bg-[#0F1A3D] text-white rounded-lg font-semibold text-sm hover:bg-blue-950 transition-colors shadow-md flex items-center gap-2"
+                >
+                  <Play size={16} fill="white" />
+                  Join Meeting
+                </a>
+              )}
               <button
                 onClick={() => setSelectedAppointment(null)}
                 className="px-6 py-2 bg-slate-900 text-white rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors shadow-md"

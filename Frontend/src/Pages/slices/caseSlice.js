@@ -98,6 +98,18 @@ export const fetchPublicCases = createAsyncThunk(
 	}
 );
 
+export const fetchCaseAppointments = createAsyncThunk(
+	'cases/fetchCaseAppointments',
+	async (_, { rejectWithValue }) => {
+		try {
+			const response = await axiosInstance.get('/cases/appointments/');
+			return response.data;
+		} catch (error) {
+			return rejectWithValue(error.response?.data?.message || 'Failed to load case appointments');
+		}
+	}
+);
+
 export const uploadCaseDocuments = createAsyncThunk(
 	'cases/uploadCaseDocuments',
 	async ({ caseId, files }, { rejectWithValue }) => {
@@ -162,6 +174,17 @@ export const addTimelineEvent = createAsyncThunk(
 		}
 	}
 );
+export const scheduleCaseAppointment = createAsyncThunk(
+	'cases/scheduleCaseAppointment',
+	async ({ caseId, data }, { rejectWithValue }) => {
+		try {
+			const response = await axiosInstance.post(`/cases/${caseId}/schedule_meeting/`, data);
+			return { caseId, appointment: response.data };
+		} catch (error) {
+			return rejectWithValue(error.response?.data?.message || 'Failed to schedule case appointment');
+		}
+	}
+);
 
 const initialState = {
 	cases: [],
@@ -175,6 +198,10 @@ const initialState = {
 	publicCases: [],
 	publicCasesLoading: false,
 	publicCasesError: null,
+
+	caseAppointments: [],
+	caseAppointmentsLoading: false,
+	caseAppointmentsError: null,
 
 	createCaseLoading: false,
 	createCaseSuccess: false,
@@ -191,6 +218,9 @@ const initialState = {
 
 	addTimelineEventLoading: false,
 	addTimelineEventError: null,
+
+	scheduleCaseAppointmentLoading: false,
+	scheduleCaseAppointmentError: null,
 
 	acceptCaseLoading: false,
 	acceptCaseError: null,
@@ -226,6 +256,9 @@ const caseSlice = createSlice({
 			state.uploadDocumentsError = null;
 			state.acceptCaseError = null;
 			state.updateStatusError = null;
+			state.addTimelineEventError = null;
+			state.scheduleCaseAppointmentError = null;
+			state.caseAppointmentsError = null;
 		},
 	},
 	extraReducers: (builder) => {
@@ -314,6 +347,20 @@ const caseSlice = createSlice({
 			.addCase(fetchPublicCases.rejected, (state, action) => {
 				state.publicCasesLoading = false;
 				state.publicCasesError = action.payload;
+			})
+			.addCase(fetchCaseAppointments.pending, (state) => {
+				state.caseAppointmentsLoading = true;
+				state.caseAppointmentsError = null;
+			})
+			.addCase(fetchCaseAppointments.fulfilled, (state, action) => {
+				state.caseAppointmentsLoading = false;
+				state.caseAppointments = Array.isArray(action.payload)
+					? action.payload
+					: action.payload.results || [];
+			})
+			.addCase(fetchCaseAppointments.rejected, (state, action) => {
+				state.caseAppointmentsLoading = false;
+				state.caseAppointmentsError = action.payload;
 			})
 			.addCase(uploadCaseDocuments.pending, (state) => {
 				state.uploadDocumentsLoading = true;
@@ -423,6 +470,17 @@ const caseSlice = createSlice({
 			.addCase(addTimelineEvent.rejected, (state, action) => {
 				state.addTimelineEventLoading = false;
 				state.addTimelineEventError = action.payload;
+			})
+			.addCase(scheduleCaseAppointment.pending, (state) => {
+				state.scheduleCaseAppointmentLoading = true;
+				state.scheduleCaseAppointmentError = null;
+			})
+			.addCase(scheduleCaseAppointment.fulfilled, (state) => {
+				state.scheduleCaseAppointmentLoading = false;
+			})
+			.addCase(scheduleCaseAppointment.rejected, (state, action) => {
+				state.scheduleCaseAppointmentLoading = false;
+				state.scheduleCaseAppointmentError = action.payload;
 			});
 	},
 });

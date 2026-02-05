@@ -6,14 +6,16 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_time
 from authentication.models import User
 
-from .models import Case, CaseDocument, CaseTimeline
+from .models import Case, CaseDocument, CaseTimeline, CaseAppointment
 from .serializers import (
-    CaseSerializer, 
-    CaseListSerializer, 
+    CaseSerializer,
+    CaseListSerializer,
     PublicCaseSerializer,
-    CaseDocumentSerializer
+    CaseDocumentSerializer,
+    CaseAppointmentSerializer,
 )
 
 
@@ -352,3 +354,122 @@ class CaseViewSet(viewsets.ModelViewSet):
         from .serializers import CaseTimelineSerializer
         serializer = CaseTimelineSerializer(timeline_event)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def schedule_meeting(self, request, pk=None):
+        """
+        Schedule a case appointment (client only)
+        """
+        if request.user.role != 'Client':
+            return Response(
+                {'error': 'Only clients can schedule case appointments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        case = self.get_object()
+        if case.client != request.user:
+            return Response(
+                {'error': 'You can only schedule appointments for your own cases'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = CaseAppointmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        appointment = serializer.save(
+            case=case,
+            client=request.user,
+            lawyer=case.lawyer
+        )
+
+        return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
+
+
+class CaseAppointmentViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for listing case appointments
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = CaseAppointmentSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = CaseAppointment.objects.none()
+
+        if user.role == 'Client':
+            queryset = CaseAppointment.objects.filter(client=user).select_related('case', 'client', 'lawyer')
+        elif user.role == 'Lawyer':
+            queryset = CaseAppointment.objects.filter(case__lawyer=user).select_related('case', 'client', 'lawyer')
+        elif user.is_superuser:
+            queryset = CaseAppointment.objects.all().select_related('case', 'client', 'lawyer')
+
+        return queryset
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def confirm(self, request, pk=None):
+        """
+        Confirm a case appointment (lawyer only)
+        """
+        appointment = self.get_object()
+
+        if request.user.role != 'Lawyer':
+            return Response(
+                {'error': 'Only lawyers can confirm case appointments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if appointment.case.lawyer != request.user:
+            return Response(
+                {'error': 'You can only confirm appointments for your assigned cases'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        scheduled_date_raw = request.data.get('scheduled_date')
+        scheduled_time_raw = request.data.get('scheduled_time')
+        meeting_link = request.data.get('meeting_link')
+
+        if not scheduled_date_raw:
+            return Response({'error': 'scheduled_date is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not scheduled_time_raw:
+            return Response({'error': 'scheduled_time is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if appointment.mode == CaseAppointment.MODE_VIDEO and not meeting_link:
+            return Response({'error': 'meeting_link is required for video appointments'}, status=status.HTTP_400_BAD_REQUEST)
+
+        scheduled_date = parse_date(scheduled_date_raw)
+        scheduled_time = parse_time(scheduled_time_raw)
+
+        if not scheduled_date:
+            return Response({'error': 'scheduled_date must be a valid date'}, status=status.HTTP_400_BAD_REQUEST)
+        if not scheduled_time:
+            return Response({'error': 'scheduled_time must be a valid time'}, status=status.HTTP_400_BAD_REQUEST)
+
+        appointment.scheduled_date = scheduled_date
+        appointment.scheduled_time = scheduled_time
+        appointment.meeting_link = meeting_link if appointment.mode == CaseAppointment.MODE_VIDEO else None
+        appointment.status = CaseAppointment.STATUS_CONFIRMED
+        appointment.save()
+
+        return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def reject(self, request, pk=None):
+        """
+        Reject a case appointment (lawyer only)
+        """
+        appointment = self.get_object()
+
+        if request.user.role != 'Lawyer':
+            return Response(
+                {'error': 'Only lawyers can reject case appointments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if appointment.case.lawyer != request.user:
+            return Response(
+                {'error': 'You can only reject appointments for your assigned cases'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        appointment.status = CaseAppointment.STATUS_CANCELLED
+        appointment.save()
+
+        return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyConsultations } from "../slices/consultationSlice";
+import { fetchCaseAppointments, fetchCases } from "../slices/caseSlice";
 import axiosInstance from "../../axios/axiosinstance";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { acceptConsultationSchema } from "../utils/consultationValidation";
@@ -35,10 +36,18 @@ const LawyerAppointment = () => {
   const [consultationToReject, setConsultationToReject] = useState(null);
   const [consultationToComplete, setConsultationToComplete] = useState(null);
   const [processingId, setProcessingId] = useState(null);
+  const [selectedCaseAppointment, setSelectedCaseAppointment] = useState(null);
+  const [showCaseAcceptModal, setShowCaseAcceptModal] = useState(false);
+  const [showCaseRejectModal, setShowCaseRejectModal] = useState(false);
+  const [caseAppointmentToReject, setCaseAppointmentToReject] = useState(null);
+  const [caseAppointmentProcessingId, setCaseAppointmentProcessingId] = useState(null);
   const initialFetchDoneRef = useRef(false);
 
   const { consultations = [] } = useSelector(
     (state) => state.consultation || {}
+  );
+  const { caseAppointments = [], caseAppointmentsLoading, cases = [] } = useSelector(
+    (state) => state.case || {}
   );
 
   // Fetch consultations on component mount
@@ -46,17 +55,33 @@ const LawyerAppointment = () => {
     if (!initialFetchDoneRef.current) {
       initialFetchDoneRef.current = true;
       dispatch(fetchMyConsultations());
+      dispatch(fetchCaseAppointments());
+      dispatch(fetchCases());
     }
   }, [dispatch]);
+
+  const caseAppointmentsFromCases = useMemo(() => {
+    return (cases || []).flatMap((item) => item.appointments || []);
+  }, [cases]);
+
+  const mergedCaseAppointments = useMemo(() => {
+    const map = new Map();
+    [...caseAppointmentsFromCases, ...caseAppointments].forEach((appointment) => {
+      if (appointment?.id !== undefined && appointment?.id !== null) {
+        map.set(appointment.id, appointment);
+      }
+    });
+    return Array.from(map.values());
+  }, [caseAppointmentsFromCases, caseAppointments]);
 
   const stats = useMemo(() => {
     const pending = consultations.filter(c => c.status === "requested").length;
     const accepted = consultations.filter(c => c.status === "accepted").length;
-    const rejected = consultations.filter(c => c.status === "rejected").length;
+    const completed = consultations.filter(c => c.status === "completed").length;
     return [
       { value: pending, label: "Pending", color: "text-amber-500" },
       { value: accepted, label: "Accepted", color: "text-green-500" },
-      { value: rejected, label: "Rejected", color: "text-red-500" },
+      { value: completed, label: "Completed", color: "text-blue-500" },
     ];
   }, [consultations]);
 
@@ -65,6 +90,8 @@ const LawyerAppointment = () => {
       return consultations.filter(c => c.status === "requested");
     } else if (activeTab === "Accepted") {
       return consultations.filter(c => c.status === "accepted");
+    } else if (activeTab === "Completed") {
+      return consultations.filter(c => c.status === "completed");
     }
     return consultations.filter(c => c.status === "rejected");
   }, [activeTab, consultations]);
@@ -151,6 +178,16 @@ const LawyerAppointment = () => {
     setShowCompleteModal(true);
   };
 
+  const handleCaseAcceptClick = (appointment) => {
+    setSelectedCaseAppointment(appointment);
+    setShowCaseAcceptModal(true);
+  };
+
+  const handleCaseRejectClick = (appointment) => {
+    setCaseAppointmentToReject(appointment);
+    setShowCaseRejectModal(true);
+  };
+
   const handleConfirmComplete = async () => {
     if (!consultationToComplete) return;
     
@@ -165,6 +202,50 @@ const LawyerAppointment = () => {
       alert("Error completing consultation: " + (error.response?.data?.detail || error.message));
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const handleConfirmCaseReject = async () => {
+    if (!caseAppointmentToReject) return;
+
+    setCaseAppointmentProcessingId(caseAppointmentToReject.id);
+    try {
+      await axiosInstance.post(`/cases/appointments/${caseAppointmentToReject.id}/reject/`);
+      dispatch(fetchCaseAppointments());
+      dispatch(fetchCases());
+      setShowCaseRejectModal(false);
+      setCaseAppointmentToReject(null);
+    } catch (error) {
+      console.error("Error rejecting case appointment:", error);
+    } finally {
+      setCaseAppointmentProcessingId(null);
+    }
+  };
+
+  const handleSubmitCaseAccept = async (values) => {
+    if (!selectedCaseAppointment) return;
+
+    setCaseAppointmentProcessingId(selectedCaseAppointment.id);
+    try {
+      const data = {
+        scheduled_date: values.scheduled_date,
+        scheduled_time: values.scheduled_time,
+      };
+
+      if (selectedCaseAppointment.mode === "video") {
+        data.meeting_link = values.meeting_link;
+      }
+
+      await axiosInstance.post(`/cases/appointments/${selectedCaseAppointment.id}/confirm/`, data);
+      dispatch(fetchCaseAppointments());
+      dispatch(fetchCases());
+      setShowCaseAcceptModal(false);
+      setSelectedCaseAppointment(null);
+    } catch (error) {
+      console.error("Error confirming case appointment:", error.response?.data || error.message);
+      alert("Error: " + (error.response?.data?.error || error.message));
+    } finally {
+      setCaseAppointmentProcessingId(null);
     }
   };
 
@@ -287,7 +368,7 @@ const LawyerAppointment = () => {
             <div className="col-span-8 flex flex-col gap-6">
               {/* Tabs */}
               <div className="bg-slate-100/80 p-1.5 rounded-2xl w-full flex">
-                {["Pending", "Accepted", "Rejected"].map((tab) => (
+                {["Pending", "Accepted", "Rejected", "Completed"].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -361,10 +442,12 @@ const LawyerAppointment = () => {
                                     ? "bg-amber-50 text-amber-600 border border-amber-100" 
                                     : consultation.status === "accepted"
                                     ? "bg-green-50 text-green-600 border border-green-100"
+                                    : consultation.status === "completed"
+                                    ? "bg-blue-50 text-blue-600 border border-blue-100"
                                     : "bg-red-50 text-red-600 border border-red-100"
                                 }`}
                               >
-                                {consultation.status === "requested" ? "Pending" : consultation.status === "accepted" ? "Accepted" : "Rejected"}
+                                {consultation.status === "requested" ? "Pending" : consultation.status === "accepted" ? "Accepted" : consultation.status === "completed" ? "Completed" : "Rejected"}
                               </span>
                             </td>
                             <td className="px-6 py-5 text-right">
@@ -414,6 +497,125 @@ const LawyerAppointment = () => {
                             <div className="flex flex-col items-center gap-2 opacity-40">
                               <Clock size={40} className="text-slate-400 mb-2" />
                               <p className="text-sm font-bold text-slate-500 tracking-tight">No {activeTab.toLowerCase()} consultations</p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Case Appointments */}
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-[#0F1A3D]">Case Appointments</h3>
+                    <p className="text-xs text-slate-500">Appointments scheduled from cases (no payment)</p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Client</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Case</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Preferred</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Mode</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {mergedCaseAppointments.length > 0 ? (
+                        mergedCaseAppointments.map((appointment) => (
+                          <tr key={appointment.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={getProfileImageUrl(appointment.client_profile_image, appointment.client_name)}
+                                  alt={appointment.client_name}
+                                  className="w-9 h-9 rounded-full object-cover border-2 border-slate-50 shadow-sm"
+                                  onError={(e) => {
+                                    e.target.src = `https://ui-avatars.com/api/?name=${appointment.client_name || 'Client'}&background=0F1A3D&color=fff`;
+                                  }}
+                                />
+                                <span className="font-semibold text-slate-900 text-sm">{appointment.client_name || "Client"}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-slate-700">{appointment.case_title || "Case"}</span>
+                                <span className="text-xs text-slate-500">{appointment.case_category || ""}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2 text-slate-700">
+                                  <CalIcon size={12} className="text-slate-400" />
+                                  <span className="text-xs font-bold">{appointment.preferred_day || "N/A"}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-slate-400 mt-1">
+                                  <Clock size={12} />
+                                  <span className="text-[11px] font-medium">{appointment.preferred_time || "N/A"}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                {getModeIcon(appointment.mode)}
+                                <span className="text-xs font-semibold text-slate-600">{getModeLabel(appointment.mode)}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                  appointment.status === "pending"
+                                    ? "bg-amber-50 text-amber-600 border-amber-100"
+                                    : appointment.status === "confirmed"
+                                    ? "bg-green-50 text-green-600 border-green-100"
+                                    : appointment.status === "completed"
+                                    ? "bg-blue-50 text-blue-600 border-blue-100"
+                                    : appointment.status === "rescheduled"
+                                    ? "bg-purple-50 text-purple-600 border-purple-100"
+                                    : "bg-red-50 text-red-600 border-red-100"
+                                }`}
+                              >
+                                {(appointment.status || "pending").replace(/_/g, " ")}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              {appointment.status === "pending" ? (
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleCaseAcceptClick(appointment)}
+                                    className="p-2.5 hover:bg-green-50 rounded-full text-green-400 hover:text-green-600 transition-all duration-200"
+                                    title="Confirm"
+                                  >
+                                    <Check size={18} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleCaseRejectClick(appointment)}
+                                    className="p-2.5 hover:bg-red-50 rounded-full text-red-400 hover:text-red-600 transition-all duration-200"
+                                    title="Reject"
+                                  >
+                                    <X size={18} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400">No actions</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="px-6 py-12 text-center">
+                            <div className="flex flex-col items-center gap-2 opacity-40">
+                              <Clock size={36} className="text-slate-400 mb-2" />
+                              <p className="text-sm font-bold text-slate-500 tracking-tight">
+                                {caseAppointmentsLoading ? "Loading case appointments..." : "No case appointments yet"}
+                              </p>
                             </div>
                           </td>
                         </tr>
@@ -722,10 +924,11 @@ const LawyerAppointment = () => {
                   className={`inline-flex px-3 py-1.5 rounded-full text-xs font-bold tracking-wide border ${
                     selectedConsultation.status === "requested" ? "bg-amber-50 text-amber-600 border-amber-200"
                     : selectedConsultation.status === "accepted" ? "bg-green-50 text-green-600 border-green-200"
+                    : selectedConsultation.status === "completed" ? "bg-blue-50 text-blue-600 border-blue-200"
                     : "bg-red-50 text-red-600 border-red-200"
                   }`}
                 >
-                  {selectedConsultation.status === "requested" ? "Pending" : selectedConsultation.status === "accepted" ? "Accepted" : "Rejected"}
+                  {selectedConsultation.status === "requested" ? "Pending" : selectedConsultation.status === "accepted" ? "Accepted" : selectedConsultation.status === "completed" ? "Completed" : "Rejected"}
                 </span>
               </div>
             </div>
@@ -792,6 +995,199 @@ const LawyerAppointment = () => {
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   )}
                   {processingId === consultationToComplete?.id ? "Processing..." : "Complete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Case Appointment Confirm Modal */}
+      {showCaseAcceptModal && selectedCaseAppointment && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Formik
+            initialValues={{
+              scheduled_date: "",
+              scheduled_time: "",
+              meeting_link: "",
+            }}
+            validationSchema={acceptConsultationSchema}
+            context={{ mode: selectedCaseAppointment.mode }}
+            onSubmit={handleSubmitCaseAccept}
+          >
+            {({ errors, touched, isSubmitting }) => (
+              <Form className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-100 max-h-[85vh] overflow-hidden flex flex-col">
+                <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-white">Confirm Case Appointment</h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCaseAcceptModal(false);
+                      setSelectedCaseAppointment(null);
+                    }}
+                    className="p-1 hover:bg-white/10 rounded-full text-white transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto flex-1">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">Client</label>
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={getProfileImageUrl(selectedCaseAppointment.client_profile_image, selectedCaseAppointment.client_name)}
+                          alt={selectedCaseAppointment.client_name || "Client"}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                        />
+                        <div>
+                          <p className="font-bold text-slate-900">{selectedCaseAppointment.client_name || "Client"}</p>
+                          <p className="text-xs text-slate-500 font-medium">{selectedCaseAppointment.title}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 bg-white rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Mode</label>
+                      <div className="flex items-center gap-2">
+                        {getModeIcon(selectedCaseAppointment.mode)}
+                        <span className="font-semibold text-sm text-slate-700">{getModeLabel(selectedCaseAppointment.mode)}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
+                        Date <span className="text-red-500">*</span>
+                      </label>
+                      <Field
+                        type="date"
+                        name="scheduled_date"
+                        className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                          errors.scheduled_date && touched.scheduled_date
+                            ? "border-red-500"
+                            : "border-slate-200"
+                        }`}
+                      />
+                      <ErrorMessage
+                        name="scheduled_date"
+                        component="div"
+                        className="text-red-500 text-xs mt-1 font-medium"
+                      />
+                    </div>
+
+                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
+                        Time <span className="text-red-500">*</span>
+                      </label>
+                      <Field
+                        type="time"
+                        name="scheduled_time"
+                        className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                          errors.scheduled_time && touched.scheduled_time
+                            ? "border-red-500"
+                            : "border-slate-200"
+                        }`}
+                      />
+                      <ErrorMessage
+                        name="scheduled_time"
+                        component="div"
+                        className="text-red-500 text-xs mt-1 font-medium"
+                      />
+                    </div>
+
+                    {selectedCaseAppointment.mode === "video" && (
+                      <div className="col-span-2 bg-green-50 rounded-xl p-4 border border-green-200">
+                        <label className="text-xs font-bold text-green-700 uppercase tracking-wide block mb-2">
+                          Meeting Link <span className="text-red-500">*</span>
+                        </label>
+                        <Field
+                          type="url"
+                          name="meeting_link"
+                          placeholder="https://meet.google.com/..."
+                          className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                            errors.meeting_link && touched.meeting_link
+                              ? "border-red-500"
+                              : "border-green-300"
+                          }`}
+                        />
+                        <ErrorMessage
+                          name="meeting_link"
+                          component="div"
+                          className="text-red-500 text-xs mt-1 font-medium"
+                        />
+                      </div>
+                    )}
+
+                    {selectedCaseAppointment.mode === "in_person" && (
+                      <div className="col-span-2 bg-blue-50 rounded-xl p-3 border border-blue-200">
+                        <p className="text-xs text-blue-700 font-semibold">Client will visit you in person at the scheduled time.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCaseAcceptModal(false);
+                      setSelectedCaseAppointment(null);
+                    }}
+                    className="px-6 py-2 bg-slate-100 text-slate-900 rounded-lg font-semibold text-sm hover:bg-slate-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={caseAppointmentProcessingId === selectedCaseAppointment.id || isSubmitting}
+                    className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
+                  >
+                    {(caseAppointmentProcessingId === selectedCaseAppointment.id || isSubmitting) && (
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    )}
+                    {(caseAppointmentProcessingId === selectedCaseAppointment.id || isSubmitting) ? "Confirming..." : "Confirm"}
+                  </button>
+                </div>
+              </Form>
+            )}
+          </Formik>
+        </div>
+      )}
+
+      {/* Case Appointment Reject Modal */}
+      {showCaseRejectModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-slate-200 animate-in scale-in-95 duration-300">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 bg-red-100 rounded-full">
+                <AlertCircle className="text-red-600" size={20} />
+              </div>
+
+              <h3 className="text-lg font-bold text-center text-slate-900 mb-2">Reject Case Appointment?</h3>
+              <p className="text-center text-slate-600 text-sm mb-6">
+                Are you sure you want to reject this case appointment request from <strong>{caseAppointmentToReject?.client_name}</strong>?
+              </p>
+
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    setShowCaseRejectModal(false);
+                    setCaseAppointmentToReject(null);
+                  }}
+                  className="w-full px-4 py-2 bg-slate-100 text-slate-900 rounded-lg font-semibold text-sm hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmCaseReject}
+                  disabled={caseAppointmentProcessingId === caseAppointmentToReject?.id}
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {caseAppointmentProcessingId === caseAppointmentToReject?.id && (
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {caseAppointmentProcessingId === caseAppointmentToReject?.id ? "Rejecting..." : "Reject"}
                 </button>
               </div>
             </div>

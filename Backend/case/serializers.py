@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Case, CaseDocument, CaseTimeline
+from .models import Case, CaseDocument, CaseTimeline, CaseAppointment
 from authentication.models import User
 
 
@@ -45,10 +45,57 @@ class CaseTimelineSerializer(serializers.ModelSerializer):
         return 'System'
 
 
+class CaseAppointmentSerializer(serializers.ModelSerializer):
+    """Serializer for case appointments"""
+    client_name = serializers.CharField(source='client.name', read_only=True)
+    client_profile_image = serializers.SerializerMethodField()
+    lawyer_name = serializers.CharField(source='lawyer.name', read_only=True, allow_null=True)
+    lawyer_profile_image = serializers.SerializerMethodField()
+    case_title = serializers.CharField(source='case.case_title', read_only=True)
+    case_category = serializers.CharField(source='case.case_category', read_only=True)
+
+    class Meta:
+        model = CaseAppointment
+        fields = [
+            'id', 'case', 'case_title', 'case_category', 'client', 'client_name', 'client_profile_image', 
+            'lawyer', 'lawyer_name', 'lawyer_profile_image',
+            'title', 'mode', 'preferred_day', 'preferred_time',
+            'meeting_location', 'phone_number', 'scheduled_date', 'scheduled_time', 'meeting_link', 'status',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'case', 'client', 'lawyer', 'status', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        mode = attrs.get('mode', CaseAppointment.MODE_VIDEO)
+        if mode == CaseAppointment.MODE_IN_PERSON:
+            if not attrs.get('meeting_location'):
+                raise serializers.ValidationError({'meeting_location': 'Meeting location is required for in-person appointments.'})
+            if not attrs.get('phone_number'):
+                raise serializers.ValidationError({'phone_number': 'Phone number is required for in-person appointments.'})
+        return attrs
+
+    def get_client_profile_image(self, obj):
+        if obj.client and obj.client.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.client.profile_image.url)
+            return obj.client.profile_image.url
+        return None
+
+    def get_lawyer_profile_image(self, obj):
+        if obj.lawyer and obj.lawyer.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.lawyer.profile_image.url)
+            return obj.lawyer.profile_image.url
+        return None
+
+
 class CaseSerializer(serializers.ModelSerializer):
     """Serializer for creating and updating cases"""
     documents = CaseDocumentSerializer(many=True, read_only=True)
     timeline = CaseTimelineSerializer(many=True, read_only=True)
+    appointments = CaseAppointmentSerializer(many=True, read_only=True)
     client_name = serializers.CharField(source='client.name', read_only=True)
     client_email = serializers.CharField(source='client.email', read_only=True)
     lawyer_name = serializers.CharField(source='lawyer.name', read_only=True, allow_null=True)
@@ -68,7 +115,7 @@ class CaseSerializer(serializers.ModelSerializer):
             'status', 'proposal_count', 'rejection_reason', 'notes',
             'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
             'created_at', 'updated_at', 'accepted_at', 'completed_at',
-            'documents', 'timeline'
+            'documents', 'timeline', 'appointments'
         ]
         read_only_fields = ['id', 'client', 'proposal_count', 'created_at', 'updated_at', 'accepted_at', 'completed_at']
     
@@ -102,6 +149,7 @@ class CaseListSerializer(serializers.ModelSerializer):
     document_count = serializers.SerializerMethodField()
     documents = CaseDocumentSerializer(many=True, read_only=True)
     timeline = CaseTimelineSerializer(many=True, read_only=True)
+    appointments = CaseAppointmentSerializer(many=True, read_only=True)
     
     class Meta:
         model = Case
@@ -112,7 +160,7 @@ class CaseListSerializer(serializers.ModelSerializer):
             'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone', 'lawyer_profile_image',
             'proposal_count', 'document_count', 'documents', 'timeline',
             'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
-            'created_at', 'updated_at', 'accepted_at'
+            'created_at', 'updated_at', 'accepted_at', 'appointments'
         ]
     
     def get_document_count(self, obj):

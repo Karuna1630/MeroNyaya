@@ -3,16 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../sidebar";
 import DashHeader from "../ClientDashHeader";
-import { 
-  FileText, 
-  MessageSquare, 
-  Calendar, 
-  ChevronLeft, 
+import {
+  FileText,
+  MessageSquare,
+  Calendar,
+  ChevronLeft,
   MapPin,
   User,
-  Clock
+  Clock,
+  Video,
+  X,
+  AlertCircle,
 } from "lucide-react";
-import { fetchCases } from "../../slices/caseSlice";
+import { fetchCases, scheduleCaseAppointment } from "../../slices/caseSlice";
 import ClientCaseTimelineCard from "./ClientCaseTimelineCard";
 import ClientCaseDocumentCard from "./ClientCaseDocumentCard";
 import ClientCaseDetailCard from "./ClientCaseDetailCard";
@@ -22,13 +25,93 @@ const ClientCaseDetail = () => {
   const dispatch = useDispatch();
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("Timeline");
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedMeetingType, setSelectedMeetingType] = useState("Video");
+  const [selectedDay, setSelectedDay] = useState("Mon");
+  const [selectedTime, setSelectedTime] = useState("10:00 AM");
+  const [scheduleError, setScheduleError] = useState("");
+  const [meetingForm, setMeetingForm] = useState({
+    title: "",
+    meetingLocation: "",
+    phoneNumber: "",
+  });
 
-  const { cases } = useSelector((state) => state.case);
+  const { cases, scheduleCaseAppointmentLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
 
   useEffect(() => {
     dispatch(fetchCases());
   }, [dispatch]);
+
+  const availableDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+  const timeSlots = ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
+
+  const resetScheduleForm = () => {
+    setSelectedMeetingType("Video");
+    setSelectedDay("Mon");
+    setSelectedTime("10:00 AM");
+    setMeetingForm({ title: "", meetingLocation: "", phoneNumber: "" });
+    setScheduleError("");
+  };
+
+  const handleScheduleChange = (e) => {
+    const { name, value } = e.target;
+    setMeetingForm((prev) => ({ ...prev, [name]: value }));
+    if (scheduleError) {
+      setScheduleError("");
+    }
+  };
+
+  const validateScheduleForm = () => {
+    if (!meetingForm.title.trim()) {
+      return "Meeting title is required.";
+    }
+    if (selectedMeetingType === "In-Person") {
+      if (!meetingForm.meetingLocation.trim()) {
+        return "Meeting location is required for in-person meetings.";
+      }
+      if (!meetingForm.phoneNumber.trim()) {
+        return "Phone number is required for in-person meetings.";
+      }
+    }
+    return "";
+  };
+
+  const handleScheduleMeeting = async (e) => {
+    e.preventDefault();
+    if (!caseData?.id) {
+      setScheduleError("Case details are not available yet.");
+      return;
+    }
+    const error = validateScheduleForm();
+    if (error) {
+      setScheduleError(error);
+      return;
+    }
+
+    try {
+      await dispatch(
+        scheduleCaseAppointment({
+          caseId: caseData.id,
+          data: {
+            title: meetingForm.title.trim(),
+            mode: selectedMeetingType === "In-Person" ? "in_person" : "video",
+            preferred_day: selectedDay,
+            preferred_time: selectedTime,
+            meeting_location: meetingForm.meetingLocation,
+            phone_number: meetingForm.phoneNumber,
+          },
+        })
+      ).unwrap();
+
+      setShowScheduleModal(false);
+      resetScheduleForm();
+      setActiveTab("Timeline");
+      dispatch(fetchCases());
+    } catch (err) {
+      setScheduleError("Failed to schedule the meeting. Please try again.");
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -206,7 +289,14 @@ const ClientCaseDetail = () => {
                     <MessageSquare size={16} />
                     Send Message
                   </button>
-                  <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all text-sm font-semibold text-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowScheduleModal(true);
+                      setScheduleError("");
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all text-sm font-semibold text-slate-700"
+                  >
                     <Calendar size={16} />
                     Schedule Meeting
                   </button>
@@ -217,6 +307,187 @@ const ClientCaseDetail = () => {
           </div>
         </div>
       </main>
+
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleScheduleMeeting}
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+          >
+            <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Schedule Case Meeting</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  resetScheduleForm();
+                }}
+                className="p-1 hover:bg-white/10 rounded-full text-white transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              {scheduleError && (
+                <div className="mb-4 flex items-start gap-3 rounded-lg bg-red-50 p-4 border border-red-200">
+                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+                  <p className="text-sm text-red-700">{scheduleError}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Case</p>
+                  <p className="text-base font-semibold text-slate-900 mt-1">
+                    {caseData?.case_title || `CASE-${id}`}
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Meeting Type</p>
+                  <p className="text-base font-semibold text-slate-900 mt-1">{selectedMeetingType}</p>
+                </div>
+
+                <div className="col-span-2 bg-white rounded-xl p-4 border border-slate-200">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide" htmlFor="title">
+                    Meeting Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="title"
+                    name="title"
+                    type="text"
+                    value={meetingForm.title}
+                    onChange={handleScheduleChange}
+                    placeholder="e.g., Case strategy discussion"
+                    className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Meeting Mode</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { icon: Video, label: "Video", value: "Video" },
+                      { icon: MapPin, label: "In-Person", value: "In-Person" },
+                    ].map((type) => {
+                      const Icon = type.icon;
+                      const isSelected = selectedMeetingType === type.value;
+                      return (
+                        <button
+                          key={type.value}
+                          type="button"
+                          onClick={() => setSelectedMeetingType(type.value)}
+                          className={`flex items-center justify-center gap-2 px-3 py-3 rounded-lg transition border text-sm font-semibold ${
+                            isSelected
+                              ? "bg-slate-900 text-white border-slate-900"
+                              : "border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
+                          }`}
+                        >
+                          <Icon size={16} />
+                          {type.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {selectedMeetingType === "In-Person" && (
+                  <>
+                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide" htmlFor="meetingLocation">
+                        Meeting Location <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="meetingLocation"
+                        name="meetingLocation"
+                        type="text"
+                        value={meetingForm.meetingLocation}
+                        onChange={handleScheduleChange}
+                        placeholder="Enter address or location"
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                      />
+                    </div>
+                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide" htmlFor="phoneNumber">
+                        Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        type="tel"
+                        value={meetingForm.phoneNumber}
+                        onChange={handleScheduleChange}
+                        placeholder="Enter your phone number"
+                        className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="col-span-2">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Select Day</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {availableDays.map((day) => (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => setSelectedDay(day)}
+                        className={`px-2 py-2 rounded-lg text-xs font-semibold transition ${
+                          selectedDay === day
+                            ? "bg-slate-900 text-white"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="col-span-2">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Preferred Time</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {timeSlots.map((time) => (
+                      <button
+                        key={time}
+                        type="button"
+                        onClick={() => setSelectedTime(time)}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold transition border ${
+                          selectedTime === time
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  resetScheduleForm();
+                }}
+                className="px-6 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={scheduleCaseAppointmentLoading}
+                className="px-6 py-2 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {scheduleCaseAppointmentLoading ? "Scheduling..." : "Schedule Meeting"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
