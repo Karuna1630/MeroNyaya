@@ -69,6 +69,10 @@ const LawyerCaseDetail = () => {
           data: formData,
         })
       ).unwrap();
+      
+      // Refetch cases to ensure the list view is updated
+      await dispatch(fetchCases()).unwrap();
+      
       setIsEditing(false);
     } catch (error) {
       console.error("Failed to update case:", error);

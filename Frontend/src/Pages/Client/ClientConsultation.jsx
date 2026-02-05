@@ -29,7 +29,7 @@ const ClientConsultation = () => {
   const [consultationToDelete, setConsultationToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
-  const { consultations = [], consultationsLoading } = useSelector(
+  const { consultations = [] } = useSelector(
     (state) => state.consultation || {}
   );
 
@@ -255,7 +255,7 @@ const ClientConsultation = () => {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 animate-in scale-in-95 duration-300">
             {/* Header */}
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="bg-linear-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Consultation Details</h2>
               <button
                 onClick={() => setSelectedConsultation(null)}

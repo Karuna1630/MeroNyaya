@@ -68,9 +68,19 @@ class ConsultationSerializer(serializers.ModelSerializer):
 	def get_client(self, obj):
 		if not obj.client:
 			return None
+		
+		profile_image_url = None
+		if obj.client.profile_image:
+			request = self.context.get('request')
+			if request:
+				profile_image_url = request.build_absolute_uri(obj.client.profile_image.url)
+			else:
+				profile_image_url = obj.client.profile_image.url
+		
 		return {
 			"id": obj.client.id,
 			"name": obj.client.name,
+			"profile_image": profile_image_url,
 		}
 
 	def get_case_reference(self, obj):

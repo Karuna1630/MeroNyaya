@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { User, LogOut, Bell } from "lucide-react";
@@ -12,15 +12,17 @@ const AdminDashHeader = ({ title, subtitle }) => {
   const location = useLocation();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { userProfile } = useSelector((state) => state.profile);
+  const profileFetchedRef = useRef(false);
 
   const profile = user || userProfile;
   const avatarSrc = profile?.profile_image;
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && !profileFetchedRef.current) {
+      profileFetchedRef.current = true;
       dispatch(fetchUserProfile());
     }
-  }, [dispatch, isAuthenticated, user?.id]);
+  }, [dispatch, isAuthenticated]);
 
   const isDashboardActive = location.pathname === "/admindashboard";
 

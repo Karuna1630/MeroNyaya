@@ -1,4 +1,4 @@
-import React, { useEffect} from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { ArrowLeft, User, Mail, Phone, MapPin, CheckCircle } from "lucide-react";
@@ -11,13 +11,17 @@ const ViewProfile = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { userProfile } = useSelector((state) => state.profile);
+  const profileFetchedRef = useRef(false);
 
   // Prefer richer profile slice data; fall back to auth.user
   const profile = userProfile || user;
 
   useEffect(() => {
-    // Always fetch fresh profile to include bio/city/district
-    dispatch(fetchUserProfile());
+    // Fetch profile only once
+    if (!profileFetchedRef.current) {
+      profileFetchedRef.current = true;
+      dispatch(fetchUserProfile());
+    }
   }, [dispatch]);
 
   const handleBackToDashboard = () => {

@@ -100,18 +100,25 @@ const LawyerCase = () => {
   const tabs = ["Active", "Completed"];
 
   const getDisplayStatus = (status) => {
-    if (status === 'completed') {
-      return 'Completed';
-    }
-    // All other statuses (accepted, in_progress, sent_to_lawyers, etc.) show as Active
-    return 'Active';
+    const statusMap = {
+      'completed': 'Completed',
+      'in_progress': 'In Progress',
+      'accepted': 'Accepted',
+      'sent_to_lawyers': 'Sent to Lawyers',
+      'public': 'Public',
+    };
+    return statusMap[status] || status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const getDisplayStatusStyle = (displayStatus) => {
-    if (displayStatus === 'Completed') {
-      return 'bg-green-50 text-green-600 border border-green-100';
-    }
-    return 'bg-blue-50 text-blue-600 border border-blue-100';
+  const getDisplayStatusStyle = (status) => {
+    const styles = {
+      'completed': 'bg-green-50 text-green-600 border border-green-100',
+      'in_progress': 'bg-amber-50 text-amber-600 border border-amber-100',
+      'accepted': 'bg-blue-50 text-blue-600 border border-blue-100',
+      'sent_to_lawyers': 'bg-purple-50 text-purple-600 border border-purple-100',
+      'public': 'bg-gray-50 text-gray-600 border border-gray-100',
+    };
+    return styles[status] || 'bg-blue-50 text-blue-600 border border-blue-100';
   };
 
   return (
@@ -261,7 +268,7 @@ const LawyerCase = () => {
                           <span className="text-sm text-gray-600 font-medium">{caseItem.case_category}</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${getDisplayStatusStyle(getDisplayStatus(caseItem.status))}`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block ${getDisplayStatusStyle(caseItem.status)}`}>
                             {getDisplayStatus(caseItem.status)}
                           </span>
                         </td>

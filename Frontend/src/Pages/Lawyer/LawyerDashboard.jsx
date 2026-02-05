@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
@@ -16,21 +16,25 @@ import { fetchProposals } from '../slices/proposalSlice';
 const LawyerDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, userProfile } = useSelector((state) => state.profile);
+  const { userProfile } = useSelector((state) => state.profile);
   const authUser = useSelector((state) => state.auth.user);
   const { status } = useSelector((state) => state.kyc);
   const { cases = [], casesLoading } = useSelector((state) => state.case || {});
-  const { proposals = [], proposalsLoading } = useSelector((state) => state.proposal || {});
+  const { proposals = [] } = useSelector((state) => state.proposal || {});
   const [showKycModal, setShowKycModal] = useState(false);
+  const initialFetchDoneRef = useRef(false);
 
   const profile = userProfile || authUser;
 
   /* ===== Initial data fetch ===== */
   useEffect(() => {
-    dispatch(fetchUserProfile());
-    dispatch(fetchKycStatus());
-    dispatch(fetchCases());
-    dispatch(fetchProposals());
+    if (!initialFetchDoneRef.current) {
+      initialFetchDoneRef.current = true;
+      dispatch(fetchUserProfile());
+      dispatch(fetchKycStatus());
+      dispatch(fetchCases());
+      dispatch(fetchProposals());
+    }
   }, [dispatch]);
 
   /* ===== Calculate statistics from real data ===== */
@@ -109,11 +113,7 @@ const LawyerDashboard = () => {
 
     toast.success('Your KYC has been approved.');
     localStorage.setItem('kycApprovedToastShown', '1');
-
-    if (!userProfile?.is_kyc_verified) {
-      dispatch(fetchUserProfile());
-    }
-  }, [isKycApproved, dispatch, userProfile]);
+  }, [isKycApproved]);
 
   /* ===== Lock body scroll when modal is open ===== */
   useEffect(() => {
@@ -183,15 +183,6 @@ const LawyerDashboard = () => {
 
   // Remove static data arrays
   const todaySchedule = [];
-  const recentMessages = [];
-
-  // Dynamic bottom stats
-  const bottomStats = [
-    { icon: <Star size={20} />, value: profile?.rating || '0.0', label: 'Client Rating' },
-    { icon: <Gavel size={20} />, value: cases.length.toString(), label: 'Total Cases' },
-    { icon: <Trophy size={20} />, value: acceptedProposals.toString(), label: 'Cases Won' },
-    { icon: <GraduationCap size={20} />, value: profile?.experience || '0', label: 'Years Experience' },
-  ];
 
   return (
     <div className="relative">

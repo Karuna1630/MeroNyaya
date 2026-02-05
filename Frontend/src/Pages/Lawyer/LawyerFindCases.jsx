@@ -44,6 +44,26 @@ const LawyerFindCases = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (value) => {
+    setCategoryFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handlePriorityChange = (value) => {
+    setPriorityFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     dispatch(fetchPublicCases());
     dispatch(fetchProposals());
@@ -104,10 +124,6 @@ const LawyerFindCases = () => {
     return availableCases.slice(start, end);
   }, [availableCases, currentPage]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, categoryFilter, priorityFilter, activeTab]);
 
   const getPriorityClasses = (priority) => {
     const upperPriority = (priority || "").toUpperCase();
@@ -147,7 +163,7 @@ const LawyerFindCases = () => {
                   placeholder="Search cases by title, description, keywords..."
                   className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                 />
               </div>
 
@@ -156,7 +172,7 @@ const LawyerFindCases = () => {
                   <select 
                     className="appearance-none bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                     value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
                   >
                     <option>All Categories</option>
                     {LAW_CATEGORIES.map((category) => (
@@ -172,7 +188,7 @@ const LawyerFindCases = () => {
                   <select 
                     className="appearance-none bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                     value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    onChange={(e) => handlePriorityChange(e.target.value)}
                   >
                     <option value="All">All Priorities</option>
                     {URGENCY_LEVELS.map((level) => (
@@ -199,7 +215,7 @@ const LawyerFindCases = () => {
           <div className="flex items-center justify-center">
             <div className="bg-gray-100 rounded-full p-1 inline-flex gap-1">
               <button
-                onClick={() => setActiveTab("public")}
+                onClick={() => handleTabChange("public")}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
                   activeTab === "public"
                     ? "bg-white text-[#0F1A3D] shadow"
@@ -209,7 +225,7 @@ const LawyerFindCases = () => {
                 Public
               </button>
               <button
-                onClick={() => setActiveTab("proposed")}
+                onClick={() => handleTabChange("proposed")}
                 className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
                   activeTab === "proposed"
                     ? "bg-white text-[#0F1A3D] shadow"

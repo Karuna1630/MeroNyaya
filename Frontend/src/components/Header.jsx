@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { GoLaw } from "react-icons/go";
@@ -10,6 +10,7 @@ const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const profileFetchedRef = useRef(false);
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { userProfile } = useSelector((state) => state.profile);
@@ -18,10 +19,11 @@ const Header = () => {
   const avatarSrc = userProfile?.profile_image;
 
   useEffect(() => {
-    if (isAuthenticated && !userProfile) {
+    if (isAuthenticated && !profileFetchedRef.current) {
+      profileFetchedRef.current = true;
       dispatch(fetchUserProfile());
     }
-  }, [dispatch, isAuthenticated, userProfile]);
+  }, [dispatch, isAuthenticated]);
 
   const handleLogout = () => {
     dispatch(logoutUser());
