@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../sidebar";
 import DashHeader from "../ClientDashHeader";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   FileText,
   MessageSquare,
@@ -38,6 +40,8 @@ const ClientCaseDetail = () => {
 
   const { cases, scheduleCaseAppointmentLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
+  const hasAssignedLawyer = Boolean(caseData?.lawyer_name || caseData?.lawyer_id || caseData?.lawyer);
+  const canScheduleCaseMeeting = caseData?.status === "accepted" && hasAssignedLawyer;
 
   useEffect(() => {
     dispatch(fetchCases());
@@ -81,6 +85,10 @@ const ClientCaseDetail = () => {
     e.preventDefault();
     if (!caseData?.id) {
       setScheduleError("Case details are not available yet.");
+      return;
+    }
+    if (!canScheduleCaseMeeting) {
+      toast.error("Only accepted cases with an assigned lawyer can request appointments.");
       return;
     }
     const error = validateScheduleForm();
@@ -292,10 +300,19 @@ const ClientCaseDetail = () => {
                   <button
                     type="button"
                     onClick={() => {
+                      if (!canScheduleCaseMeeting) {
+                        toast.error("Only accepted cases with an assigned lawyer can request appointments.");
+                        return;
+                      }
                       setShowScheduleModal(true);
                       setScheduleError("");
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all text-sm font-semibold text-slate-700"
+                    className={`w-full flex items-center justify-center gap-2 py-3 px-4 border rounded-xl transition-all text-sm font-semibold ${
+                      canScheduleCaseMeeting
+                        ? "border-slate-200 text-slate-700 hover:bg-slate-50 hover:shadow-md"
+                        : "border-slate-200 text-slate-400 cursor-not-allowed bg-slate-50"
+                    }`}
+                    disabled={!canScheduleCaseMeeting}
                   >
                     <Calendar size={16} />
                     Schedule Meeting
@@ -488,6 +505,7 @@ const ClientCaseDetail = () => {
           </form>
         </div>
       )}
+      <ToastContainer />
     </div>
   );
 };

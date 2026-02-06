@@ -21,12 +21,9 @@ const Sidebar = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Admin Dashboard", path: "/admindashboard" },
-    { icon: Users, label: "User Management", path: "/admin/users" },
+
     { icon: ShieldCheck, label: "Lawyer Verification", path: "/admin/verification" },
-    { icon: Briefcase, label: "Cases Overview", path: "/admin/cases" },
-    { icon: DollarSign, label: "Payments Monitoring", path: "/admin/payments" },
-    { icon: FileText, label: "System Logs", path: "/admin/logs" },
-    { icon: BarChart3, label: "Reports", path: "/admin/reports" },
+    
   ];
 
   const isActive = (path) => location.pathname === path;

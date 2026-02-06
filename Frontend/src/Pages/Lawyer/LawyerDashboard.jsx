@@ -50,6 +50,10 @@ const LawyerDashboard = () => {
     return proposals.filter(p => p.status === 'accepted').length;
   }, [proposals]);
 
+  const rejectedProposals = useMemo(() => {
+    return proposals.filter(p => p.status === 'rejected').length;
+  }, [proposals]);
+
   const recentCases = useMemo(() => {
     return [...cases]
       .filter(c => ['accepted', 'in_progress'].includes(c.status))
@@ -174,10 +178,10 @@ const LawyerDashboard = () => {
       subtitle: 'Coming soon',
     },
     {
-      icon: <MessageSquare size={20} />,
-      title: 'Messages',
-      value: '0',
-      subtitle: 'Coming soon',
+      icon: <AlertCircle size={20} />,
+      title: 'Rejected Proposals',
+      value: rejectedProposals.toString(),
+      subtitle: 'Client declined',
     },
   ];
 

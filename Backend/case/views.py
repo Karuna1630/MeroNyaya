@@ -486,3 +486,27 @@ class CaseAppointmentViewSet(viewsets.ModelViewSet):
         appointment.save()
 
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def complete(self, request, pk=None):
+        """
+        Mark a case appointment as completed (lawyer only)
+        """
+        appointment = self.get_object()
+
+        if request.user.role != 'Lawyer':
+            return Response(
+                {'error': 'Only lawyers can complete case appointments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if appointment.case.lawyer != request.user:
+            return Response(
+                {'error': 'You can only complete appointments for your assigned cases'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        appointment.status = CaseAppointment.STATUS_COMPLETED
+        appointment.save()
+
+        return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)

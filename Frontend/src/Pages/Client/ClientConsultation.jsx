@@ -4,6 +4,7 @@ import DashHeader from "./ClientDashHeader";
 import StatCard from "./statcard";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyConsultations } from "../slices/consultationSlice";
+import { fetchMyAppointments } from "../slices/appointmentSlice";
 import { 
   Calendar, 
   Video, 
@@ -28,11 +29,9 @@ const ClientConsultation = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [consultationToDelete, setConsultationToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-  const [appointments, setAppointments] = useState([]);
-  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
-
-  const { consultations = [] } = useSelector(
-    (state) => state.consultation || {}
+  const { consultations = [] } = useSelector((state) => state.consultation || {});
+  const { appointments = [], appointmentsLoading } = useSelector(
+    (state) => state.appointment || {}
   );
 
   useEffect(() => {
@@ -40,21 +39,14 @@ const ClientConsultation = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    const loadAppointments = async () => {
-      setAppointmentsLoading(true);
-      try {
-        const response = await axiosInstance.get("/appointments/");
-        setAppointments(Array.isArray(response.data) ? response.data : response.data.results || []);
-      } catch (error) {
-        console.error("Error fetching appointments:", error);
-        setAppointments([]);
-      } finally {
-        setAppointmentsLoading(false);
-      }
-    };
+    dispatch(fetchMyAppointments());
+  }, [dispatch]);
 
-    loadAppointments();
-  }, []);
+  useEffect(() => {
+    if (activeTab === "Appointments") {
+      dispatch(fetchMyAppointments());
+    }
+  }, [activeTab, dispatch]);
 
   const pendingCount = useMemo(() => {
     return consultations.filter((item) => item.status === "requested").length;

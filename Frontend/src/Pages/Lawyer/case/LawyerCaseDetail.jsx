@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "./../Sidebar";
 import LawyerDashHeader from "../LawyerDashHeader.jsx";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   FileText,
   ChevronLeft,
@@ -43,6 +45,7 @@ const LawyerCaseDetail = () => {
   
   // Check if the current lawyer is assigned to this case
   const isAssignedLawyer = caseData?.lawyer === user?.id || caseData?.lawyer_id === user?.id;
+  const canScheduleCaseMeeting = Boolean(isAssignedLawyer && caseData?.status === "accepted");
 
   useEffect(() => {
     dispatch(fetchCases());
@@ -101,6 +104,14 @@ const LawyerCaseDetail = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleScheduleClick = () => {
+    if (!canScheduleCaseMeeting) {
+      toast.error("Only accepted cases assigned to you can create appointments.");
+      return;
+    }
+    navigate("/lawyerappointment");
   };
 
   const formatDate = (dateString) => {
@@ -370,7 +381,16 @@ const LawyerCaseDetail = () => {
                     <MessageSquare size={16} />
                     Message
                   </button>
-                  <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleScheduleClick}
+                    className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${
+                      canScheduleCaseMeeting
+                        ? "border-gray-300 hover:bg-gray-50"
+                        : "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
+                    }`}
+                    disabled={!canScheduleCaseMeeting}
+                  >
                     <Calendar size={16} />
                     Schedule
                   </button>
@@ -380,6 +400,7 @@ const LawyerCaseDetail = () => {
           </div>
         </div>
       </main>
+      <ToastContainer />
     </div>
   );
 };

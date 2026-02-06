@@ -40,10 +40,13 @@ const ClientAppointment = () => {
 
   // Merge consultation appointments and case appointments
   const allAppointments = useMemo(() => {
-    const consultationAppts = appointments.map(appt => ({
-      ...appt,
-      appointmentType: 'consultation'
-    }));
+    const consultationAppts = appointments.map(appt => {
+      const hasCaseReference = Boolean(appt?.consultation_details?.case_reference);
+      return {
+        ...appt,
+        appointmentType: hasCaseReference ? 'case' : 'consultation'
+      };
+    });
     const caseAppts = caseAppointments.map(appt => ({
       ...appt,
       appointmentType: 'case',
@@ -315,7 +318,7 @@ const ClientAppointment = () => {
                           >
                             <Eye size={18} />
                           </button>
-                            {modeValue === "video" && meetingLink && activeTab === "Upcoming" && isConfirmed && (
+                            {modeValue === "video" && meetingLink && activeTab === "Upcoming" && isConfirmed && item.payment_status === "paid" && (
                               <a
                                 href={meetingLink}
                                 target="_blank"
@@ -472,8 +475,9 @@ const ClientAppointment = () => {
                   </div>
                 )}
 
-                {/* Meeting Link for confirmed appointments */}
+                {/* Meeting Link for paid video appointments */}
                 {selectedAppointment.status === 'confirmed' && 
+                 selectedAppointment.payment_status === 'paid' &&
                  selectedAppointment.consultation_details?.mode === 'video' && 
                  selectedAppointment.consultation_details?.meeting_link && (
                   <div className="col-span-2 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
@@ -494,6 +498,7 @@ const ClientAppointment = () => {
             {/* Footer */}
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
               {selectedAppointment.status === 'confirmed' && 
+               selectedAppointment.payment_status === 'paid' &&
                selectedAppointment.consultation_details?.mode === 'video' && 
                selectedAppointment.consultation_details?.meeting_link && (
                 <a

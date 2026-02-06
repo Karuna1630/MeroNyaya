@@ -41,7 +41,10 @@ const LawyerFindCases = () => {
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [showProposalModal, setShowProposalModal] = useState(false);
+  const [showProposedViewModal, setShowProposedViewModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
+  const [selectedProposedCase, setSelectedProposedCase] = useState(null);
+  const [selectedProposal, setSelectedProposal] = useState(null);
   const [activeTab, setActiveTab] = useState("public");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -103,7 +106,22 @@ const LawyerFindCases = () => {
 
   const handleOpenProposal = (item) => {
     setSelectedCase(item);
+    setShowProposedViewModal(false);
     setShowProposalModal(true);
+  };
+
+  const handleViewProposed = ({ caseData, proposal }) => {
+    const fallbackCase = caseData || {
+      case_title: proposal.case_title,
+      case_category: proposal.case_category,
+      case_description: "Case details are not available.",
+      urgency_level: "Medium",
+      created_at: proposal.created_at,
+    };
+    setSelectedProposedCase(fallbackCase);
+    setSelectedProposal(proposal || null);
+    setShowProposalModal(false);
+    setShowProposedViewModal(true);
   };
 
   const submittedCaseIds = useMemo(() => {
@@ -115,9 +133,35 @@ const LawyerFindCases = () => {
     return filteredCases.filter((item) => !submittedCaseIds.has(item.id));
   }, [filteredCases, submittedCaseIds]);
 
-  const proposedCases = useMemo(() => {
-    return filteredCases.filter((item) => submittedCaseIds.has(item.id));
-  }, [filteredCases, submittedCaseIds]);
+  const caseById = useMemo(() => {
+    const map = new Map();
+    (publicCases || []).forEach((item) => {
+      if (item?.id !== undefined && item?.id !== null) {
+        map.set(item.id, item);
+      }
+    });
+    return map;
+  }, [publicCases]);
+
+  const proposedItems = useMemo(() => {
+    const list = proposals || [];
+    return list
+      .map((proposal) => {
+        const caseData = caseById.get(proposal.case) || null;
+        return { proposal, caseData };
+      })
+      .filter(({ proposal, caseData }) => {
+        const title = (caseData?.case_title || proposal.case_title || "").toLowerCase();
+        const description = (caseData?.case_description || "").toLowerCase();
+        const matchesSearch = title.includes(searchTerm.toLowerCase()) || description.includes(searchTerm.toLowerCase());
+        const categoryValue = caseData?.case_category || proposal.case_category;
+        const matchesCategory = categoryFilter === "All Categories" || categoryValue === categoryFilter;
+        const urgencyValue = caseData?.urgency_level || null;
+        const matchesPriority = priorityFilter === "All" || (urgencyValue && urgencyValue === priorityFilter);
+
+        return matchesSearch && matchesCategory && matchesPriority;
+      });
+  }, [proposals, caseById, searchTerm, categoryFilter, priorityFilter]);
 
   const totalPublicPages = Math.ceil(availableCases.length / itemsPerPage) || 1;
   const pagedPublicCases = useMemo(() => {
@@ -209,7 +253,7 @@ const LawyerFindCases = () => {
               <span className="mx-2 text-gray-300">•</span>
               <span className="text-[#0F1A3D] font-bold">{availableCases.length}</span> public
               <span className="mx-2 text-gray-300">•</span>
-              <span className="text-[#0F1A3D] font-bold">{proposedCases.length}</span> proposed
+              <span className="text-[#0F1A3D] font-bold">{proposedItems.length}</span> proposed
             </p>
           </div>
 
@@ -326,59 +370,76 @@ const LawyerFindCases = () => {
                   </div>
                 )
               ) : (
-                proposedCases.length > 0 ? (
-                  proposedCases.map((item) => (
-                    <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
+                proposedItems.length > 0 ? (
+                  proposedItems.map(({ caseData, proposal }) => (
+                    <div key={`proposal-${proposal.id}`} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
                       <div className="flex-1 p-6 space-y-4">
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 
-                            onClick={() => navigate(`/lawyercase/${item.id}`)}
+                            onClick={() => handleViewProposed({ caseData, proposal })}
                             className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight hover:text-blue-600 cursor-pointer transition-colors"
                           >
-                            {item.case_title}
+                            {caseData?.case_title || proposal.case_title}
                           </h2>
-                          <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.urgency_level)}`}>
-                            {item.urgency_level}
+                          <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(caseData?.urgency_level || "Medium")}`}>
+                            {caseData?.urgency_level || "Medium"}
                           </span>
                           <div className="flex gap-2">
-                            <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{item.case_category}</span>
-                            {item.location && (
+                            <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{caseData?.case_category || proposal.case_category || "General"}</span>
+                            {caseData?.location && (
                               <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase">
                                 <MapPin size={14} />
-                                {item.location}
+                                {caseData.location}
                               </span>
                             )}
                           </div>
                         </div>
 
                         <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 max-w-4xl">
-                          {item.case_description}
+                          {caseData?.case_description || "Case details are not available."}
                         </p>
 
                         <div className="flex flex-wrap items-center gap-6 pt-2">
                           <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
                             <Calendar size={16} className="text-gray-400" />
-                            Posted: {formatDate(item.created_at)}
+                            Posted: {formatDate(caseData?.created_at || proposal.created_at)}
                           </div>
                           <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
                             <FileText size={16} className="text-gray-400" />
-                            {item.document_count || 0} documents
+                            {caseData?.document_count || 0} documents
                           </div>
                         </div>
                       </div>
 
                       <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
                         <button 
-                          onClick={() => navigate(`/lawyercase/${item.id}`)}
+                          onClick={() => handleViewProposed({ caseData, proposal })}
                           className="flex items-center justify-center gap-2 w-full py-2.5 bg-white text-[#0F1A3D] border-2 border-[#0F1A3D] rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm"
                         >
                           <Eye size={16} />
                           View Details
                         </button>
-                        <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200">
-                          <CheckCircle2 size={16} />
-                          Proposal Sent
-                        </div>
+                        {proposal.status === "rejected" ? (
+                          <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-red-50 text-red-700 rounded-xl text-xs font-bold border border-red-200">
+                            <X size={16} />
+                            Proposal Rejected
+                          </div>
+                        ) : proposal.status === "accepted" ? (
+                          <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-200">
+                            <CheckCircle2 size={16} />
+                            Proposal Accepted
+                          </div>
+                        ) : proposal.status === "withdrawn" ? (
+                          <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold border border-slate-200">
+                            <X size={16} />
+                            Proposal Withdrawn
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200">
+                            <CheckCircle2 size={16} />
+                            Proposal Sent
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -424,6 +485,104 @@ const LawyerFindCases = () => {
         isSubmitting={submitProposalLoading}
         error={submitProposalError}
       />
+
+      {/* Proposed Case View Modal */}
+      {showProposedViewModal && selectedProposedCase && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowProposedViewModal(false)}
+          />
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all">
+            <div className="p-8 pb-4 sticky top-0 bg-white z-10 border-b border-gray-50">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Case Details</h2>
+                  <p className="text-gray-500 text-sm mt-1">Your proposal for this case</p>
+                </div>
+                <button
+                  onClick={() => setShowProposedViewModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8 pt-6 space-y-6">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {selectedProposedCase.case_title}
+                  </h3>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClasses(selectedProposedCase.urgency_level)}`}>
+                    {selectedProposedCase.urgency_level}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-t border-gray-200 pt-6">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Category</p>
+                  <p className="text-sm text-gray-900">
+                    {selectedProposedCase.case_category || "General"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Posted Date</p>
+                  <p className="text-sm text-gray-900">
+                    {formatDate(selectedProposedCase.created_at)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Documents</p>
+                  <p className="text-sm text-gray-900">
+                    {selectedProposedCase.document_count || selectedProposedCase.documents?.length || 0} files
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase mb-1">Proposal Status</p>
+                  <p className="text-sm text-gray-900">
+                    {selectedProposal?.status || "pending"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 uppercase">Description</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {selectedProposedCase.case_description}
+                </p>
+              </div>
+
+              <div className="space-y-2 border-t border-gray-200 pt-6">
+                <label className="text-sm font-medium text-gray-900">Your Proposal</label>
+                <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-800 whitespace-pre-wrap">
+                  {selectedProposal?.proposal_text || "No proposal text available."}
+                </div>
+              </div>
+
+              {selectedProposal?.client_feedback && (
+                <div className="space-y-2 border-t border-gray-200 pt-6">
+                  <label className="text-sm font-medium text-gray-900">Client Feedback</label>
+                  <div className="w-full p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900 whitespace-pre-wrap">
+                    {selectedProposal.client_feedback}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowProposedViewModal(false)}
+                  className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

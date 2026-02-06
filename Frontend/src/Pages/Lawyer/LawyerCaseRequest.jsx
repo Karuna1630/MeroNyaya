@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
 import StatCard from "./Statcard";
@@ -28,6 +29,7 @@ import {
  */
 const LawyerCaseRequest = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { cases, casesLoading, casesError } = useSelector((state) => state.case);
   const [activeTab, setActiveTab] = useState("Pending");
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -92,6 +94,10 @@ const LawyerCaseRequest = () => {
   const handleReject = (id) => {
     setSelectedCase(id);
     setShowRejectModal(true);
+  };
+
+  const handleView = (id) => {
+    navigate(`/lawyercase/${id}`);
   };
 
   const confirmReject = async () => {
@@ -270,7 +276,10 @@ const LawyerCaseRequest = () => {
 
                   {/* Right Actions Column */}
                   <div className="flex flex-row xl:flex-col gap-3 justify-center xl:pl-6 xl:border-l border-gray-100 w-full xl:w-44">
-                    <button className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button
+                      onClick={() => handleView(item.id)}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       <Eye size={18} />
                       View
                     </button>

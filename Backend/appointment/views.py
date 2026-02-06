@@ -78,6 +78,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 			return Response({"detail": "Payment is only required for video consultations."}, status=status.HTTP_400_BAD_REQUEST)
 
 		appointment.payment_status = Appointment.PAYMENT_PAID
-		appointment.save(update_fields=["payment_status", "updated_at"])
+		appointment.status = Appointment.STATUS_CONFIRMED
+		appointment.save(update_fields=["payment_status", "status", "updated_at"])
 		serializer = self.get_serializer(appointment)
 		return Response(serializer.data, status=status.HTTP_200_OK)

@@ -40,6 +40,9 @@ const LawyerAppointment = () => {
   const [showCaseAcceptModal, setShowCaseAcceptModal] = useState(false);
   const [showCaseRejectModal, setShowCaseRejectModal] = useState(false);
   const [caseAppointmentToReject, setCaseAppointmentToReject] = useState(null);
+  const [caseAppointmentToComplete, setCaseAppointmentToComplete] = useState(null);
+  const [showCaseCompleteModal, setShowCaseCompleteModal] = useState(false);
+  const [selectedCaseAppointmentView, setSelectedCaseAppointmentView] = useState(null);
   const [caseAppointmentProcessingId, setCaseAppointmentProcessingId] = useState(null);
   const initialFetchDoneRef = useRef(false);
 
@@ -188,6 +191,11 @@ const LawyerAppointment = () => {
     setShowCaseRejectModal(true);
   };
 
+  const handleCaseCompleteClick = (appointment) => {
+    setCaseAppointmentToComplete(appointment);
+    setShowCaseCompleteModal(true);
+  };
+
   const handleConfirmComplete = async () => {
     if (!consultationToComplete) return;
     
@@ -217,6 +225,24 @@ const LawyerAppointment = () => {
       setCaseAppointmentToReject(null);
     } catch (error) {
       console.error("Error rejecting case appointment:", error);
+    } finally {
+      setCaseAppointmentProcessingId(null);
+    }
+  };
+
+  const handleConfirmCaseComplete = async () => {
+    if (!caseAppointmentToComplete) return;
+
+    setCaseAppointmentProcessingId(caseAppointmentToComplete.id);
+    try {
+      await axiosInstance.post(`/cases/appointments/${caseAppointmentToComplete.id}/complete/`);
+      dispatch(fetchCaseAppointments());
+      dispatch(fetchCases());
+      setShowCaseCompleteModal(false);
+      setCaseAppointmentToComplete(null);
+    } catch (error) {
+      console.error("Error completing case appointment:", error);
+      alert("Error completing appointment: " + (error.response?.data?.error || error.message));
     } finally {
       setCaseAppointmentProcessingId(null);
     }
@@ -579,26 +605,43 @@ const LawyerAppointment = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              {appointment.status === "pending" ? (
-                                <div className="flex items-center justify-end gap-2">
+                              <div className="flex items-center justify-end gap-2">
+                                {appointment.status === "pending" && (
+                                  <>
+                                    <button
+                                      onClick={() => handleCaseAcceptClick(appointment)}
+                                      className="p-2.5 hover:bg-green-50 rounded-full text-green-400 hover:text-green-600 transition-all duration-200"
+                                      title="Confirm"
+                                    >
+                                      <Check size={18} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleCaseRejectClick(appointment)}
+                                      className="p-2.5 hover:bg-red-50 rounded-full text-red-400 hover:text-red-600 transition-all duration-200"
+                                      title="Reject"
+                                    >
+                                      <X size={18} />
+                                    </button>
+                                  </>
+                                )}
+                                {appointment.status === "confirmed" && (
                                   <button
-                                    onClick={() => handleCaseAcceptClick(appointment)}
-                                    className="p-2.5 hover:bg-green-50 rounded-full text-green-400 hover:text-green-600 transition-all duration-200"
-                                    title="Confirm"
+                                    onClick={() => handleCaseCompleteClick(appointment)}
+                                    disabled={caseAppointmentProcessingId === appointment.id}
+                                    className="p-2.5 hover:bg-blue-50 rounded-full text-blue-400 hover:text-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Mark as Complete"
                                   >
-                                    <Check size={18} />
+                                    <CheckCircle size={18} />
                                   </button>
-                                  <button
-                                    onClick={() => handleCaseRejectClick(appointment)}
-                                    className="p-2.5 hover:bg-red-50 rounded-full text-red-400 hover:text-red-600 transition-all duration-200"
-                                    title="Reject"
-                                  >
-                                    <X size={18} />
-                                  </button>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-slate-400">No actions</span>
-                              )}
+                                )}
+                                <button
+                                  onClick={() => setSelectedCaseAppointmentView(appointment)}
+                                  className="p-2.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-[#0F1A3D] transition-all duration-200"
+                                  title="View Details"
+                                >
+                                  <Eye size={18} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -989,6 +1032,150 @@ const LawyerAppointment = () => {
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   )}
                   {processingId === consultationToComplete?.id ? "Processing..." : "Complete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Case Appointment Details Modal */}
+      {selectedCaseAppointmentView && !showCaseAcceptModal && !showCaseRejectModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 animate-in scale-in-95 duration-300">
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">Case Appointment Details</h2>
+              <button
+                onClick={() => setSelectedCaseAppointmentView(null)}
+                className="p-1 hover:bg-slate-200 rounded-full text-slate-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Client</h3>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={getProfileImageUrl(selectedCaseAppointmentView.client_profile_image, selectedCaseAppointmentView.client_name)}
+                    alt={selectedCaseAppointmentView.client_name || "Client"}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-slate-200"
+                    onError={(e) => {
+                      e.target.src = `https://ui-avatars.com/api/?name=${selectedCaseAppointmentView.client_name || 'Client'}&background=0F1A3D&color=fff`;
+                    }}
+                  />
+                  <p className="font-semibold text-slate-900 text-sm">{selectedCaseAppointmentView.client_name || "Client"}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Case</label>
+                <p className="text-sm text-slate-800 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  {selectedCaseAppointmentView.case_title || "Case"}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Topic</label>
+                <p className="text-sm text-slate-800 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  {selectedCaseAppointmentView.title || "Appointment"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Preferred Day</label>
+                  <div className="flex items-center gap-2 text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm">
+                    <CalIcon size={14} className="text-indigo-500" />
+                    <span className="font-semibold">{selectedCaseAppointmentView.preferred_day || "N/A"}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Preferred Time</label>
+                  <div className="flex items-center gap-2 text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 text-sm">
+                    <Clock size={14} className="text-indigo-500" />
+                    <span className="font-semibold">{selectedCaseAppointmentView.preferred_time || "N/A"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Mode</label>
+                <div className="flex items-center gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200 w-fit text-sm">
+                  {getModeIcon(selectedCaseAppointmentView.mode)}
+                  <span className="font-semibold text-slate-700">{getModeLabel(selectedCaseAppointmentView.mode)}</span>
+                </div>
+              </div>
+
+              {selectedCaseAppointmentView.mode === "in_person" && (
+                <>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Location</label>
+                    <p className="text-sm text-slate-800 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                      {selectedCaseAppointmentView.meeting_location || "Not specified"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Phone</label>
+                    <p className="text-sm text-slate-800 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                      {selectedCaseAppointmentView.phone_number || "Not provided"}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {selectedCaseAppointmentView.mode === "video" && selectedCaseAppointmentView.meeting_link && (
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Meeting Link</label>
+                  <a
+                    href={selectedCaseAppointmentView.meeting_link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-indigo-600 underline break-all"
+                  >
+                    {selectedCaseAppointmentView.meeting_link}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Case Complete Confirmation Modal */}
+      {showCaseCompleteModal && caseAppointmentToComplete && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-slate-200 animate-in scale-in-95 duration-300">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-10 h-10 mx-auto mb-3 bg-blue-100 rounded-full">
+                <CheckCircle className="text-blue-600" size={20} />
+              </div>
+
+              <h3 className="text-lg font-bold text-center text-slate-900 mb-2">Complete Appointment?</h3>
+              <p className="text-center text-slate-600 text-sm mb-6">
+                Mark the appointment for <strong>{caseAppointmentToComplete?.client_name}</strong> as completed.
+              </p>
+
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    setShowCaseCompleteModal(false);
+                    setCaseAppointmentToComplete(null);
+                  }}
+                  className="w-full px-4 py-2 bg-slate-100 text-slate-900 rounded-lg font-semibold text-sm hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmCaseComplete}
+                  disabled={caseAppointmentProcessingId === caseAppointmentToComplete?.id}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {caseAppointmentProcessingId === caseAppointmentToComplete?.id && (
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {caseAppointmentProcessingId === caseAppointmentToComplete?.id ? "Processing..." : "Complete"}
                 </button>
               </div>
             </div>

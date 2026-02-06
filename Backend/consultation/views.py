@@ -84,10 +84,21 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 		else:
 			appointment_defaults["payment_status"] = Appointment.PAYMENT_PENDING
 
-		Appointment.objects.get_or_create(
+		appointment, created = Appointment.objects.get_or_create(
 			consultation=consultation,
 			defaults=appointment_defaults,
 		)
+
+		# Keep appointment in sync when it already exists.
+		if not created:
+			for key, value in appointment_defaults.items():
+				setattr(appointment, key, value)
+
+		if consultation.mode == "in_person":
+			appointment.status = Appointment.STATUS_CONFIRMED
+		else:
+			appointment.status = Appointment.STATUS_PENDING
+		appointment.save(update_fields=["scheduled_date", "scheduled_time", "payment_status", "status", "updated_at"])
 		return Response(self.get_serializer(consultation).data)
 
 	@action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
