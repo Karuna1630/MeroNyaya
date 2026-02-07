@@ -41,7 +41,9 @@ const ClientCaseDetail = () => {
   const { cases, scheduleCaseAppointmentLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
   const hasAssignedLawyer = Boolean(caseData?.lawyer_name || caseData?.lawyer_id || caseData?.lawyer);
-  const canScheduleCaseMeeting = caseData?.status === "accepted" && hasAssignedLawyer;
+  const canScheduleCaseMeeting =
+    (caseData?.status === "accepted" || caseData?.status === "in_progress") &&
+    hasAssignedLawyer;
 
   useEffect(() => {
     dispatch(fetchCases());

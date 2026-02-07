@@ -15,7 +15,12 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 	permission_classes = [IsAuthenticated]
 
 	def get_queryset(self):
+		if getattr(self, 'swagger_fake_view', False):
+			return Appointment.objects.none()
+
 		user = self.request.user
+		if not user.is_authenticated:
+			return Appointment.objects.none()
 		queryset = Appointment.objects.all()
 
 		if user.is_superuser or user.is_staff:

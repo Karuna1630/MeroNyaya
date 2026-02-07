@@ -5,7 +5,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 /**
  * AuthGate Component
  * Wraps protected actions within a public page
- * If user is not authenticated, redirects to login with return path
+ * If user is not authenticated, redirects to home
  * If authenticated, renders children
  */
 const AuthGate = ({ children }) => {
@@ -13,8 +13,7 @@ const AuthGate = ({ children }) => {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    // Redirect to login with the current path as return destination
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   return children;

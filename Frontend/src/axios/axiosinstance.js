@@ -1,28 +1,35 @@
 import axios from 'axios';
 
+// Base URL for the API, can be set via environment variable or defaults to localhost
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
+
+// creating fucntion to get access token from local storage
 const getAccessToken = () => {
   return localStorage.getItem('access_token');
 };
 
+// creating function to get refresh token from local storage
 const getRefreshToken = () => {
   return localStorage.getItem('refresh_token');
 };
 
 
-// Create an axios instance
+// Creating reusable axios instance with base URL and default headers. 
 const axiosInstance = axios.create({
   baseURL: API_URL,
+  // setting default headers for JSON content type data 
   headers: {
     'Content-Type': 'application/json',
   },
+  // allowing to send and receive cookies with requests, which is important for authentication and session management.
   withCredentials: true,
 });
 
-// Request interceptor to add the access token to headers
+// Request interceptor to add the access token to headers which runs before every api request
 axiosInstance.interceptors.request.use(
     (config) => {
+        // Adding the access token to the Authorization header if it exists
         const token = getAccessToken();
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
@@ -32,15 +39,16 @@ axiosInstance.interceptors.request.use(
         if (config.data instanceof FormData) {
             delete config.headers['Content-Type'];
         }
-        
+        // Returning the modified config to proceed with the request
         return config;
     },
+    // Handling request errors
     (error) => {
         return Promise.reject(error);
     }
 );
 
-// Response interceptor to handle 401 errors and refresh token logic
+// Response interceptor created for handling 401 errors and refresh token logic which runs after every api response
 axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {

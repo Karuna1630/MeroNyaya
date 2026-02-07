@@ -45,7 +45,9 @@ const LawyerCaseDetail = () => {
   
   // Check if the current lawyer is assigned to this case
   const isAssignedLawyer = caseData?.lawyer === user?.id || caseData?.lawyer_id === user?.id;
-  const canScheduleCaseMeeting = Boolean(isAssignedLawyer && caseData?.status === "accepted");
+  const canScheduleCaseMeeting = Boolean(
+    isAssignedLawyer && (caseData?.status === "accepted" || caseData?.status === "in_progress")
+  );
 
   useEffect(() => {
     dispatch(fetchCases());

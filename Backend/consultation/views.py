@@ -15,7 +15,12 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 	permission_classes = [IsAuthenticated]
 
 	def get_queryset(self):
+		if getattr(self, 'swagger_fake_view', False):
+			return Consultation.objects.none()
+
 		user = self.request.user
+		if not user.is_authenticated:
+			return Consultation.objects.none()
 		queryset = Consultation.objects.all()
 
 		if user.is_superuser or user.is_staff:

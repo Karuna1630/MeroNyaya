@@ -8,6 +8,7 @@ export const registerUser = createAsyncThunk(
     try {
       console.log("Register payload:", userData);
 
+      // Call the API to register the user
       const response = await axiosInstance.post(
         "/authentications/register/",
         userData

@@ -4,7 +4,7 @@ from django.urls import path
 from . import views
 from rest_framework_simplejwt.views import TokenRefreshView
 
-# URL patterns for authentication app
+# creating url patterns for authenticaton app
 urlpatterns = [
     path("register/", views.RegisterUserView.as_view(), name="register"),
     path("login/", views.LoginUserView.as_view(), name="login"),

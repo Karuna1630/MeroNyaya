@@ -31,7 +31,12 @@ class CaseViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Case.objects.none()
+
         user = self.request.user
+        if not user.is_authenticated:
+            return Case.objects.none()
         queryset = Case.objects.none()
         
         # Clients see only their own cases
@@ -372,10 +377,10 @@ class CaseViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Validate that the case has been accepted by a lawyer
-        if case.status != 'accepted':
+        # Validate that the case has been accepted by a lawyer or is in progress
+        if case.status not in ['accepted', 'in_progress']:
             return Response(
-                {'error': f'Case must be accepted by a lawyer before scheduling appointments. Current status: {case.status}'},
+                {'error': f'Case must be accepted or in progress before scheduling appointments. Current status: {case.status}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -405,7 +410,12 @@ class CaseAppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = CaseAppointmentSerializer
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return CaseAppointment.objects.none()
+
         user = self.request.user
+        if not user.is_authenticated:
+            return CaseAppointment.objects.none()
         queryset = CaseAppointment.objects.none()
 
         if user.role == 'Client':

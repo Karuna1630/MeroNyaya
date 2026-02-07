@@ -27,16 +27,19 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 
-# View to register a new user
+# Creating API view for user registration which allows new users to sign up by providing their email, password, and other optional details. 
 class RegisterUserView(generics.CreateAPIView):
+   # providing permission to allow any users for access
    permission_classes = [AllowAny]
+   # specifying the serializer class to handle user registration data validation and serialization.
    serializer_class = RegisterUserSerializer
 
+    #using transation.atomic to ensure that if any part is fails during the user creation process, the entire transaction will be rolled back to maintain data integrity.
    @transaction.atomic
    def perform_create(self, serializer):
        user = serializer.save()
        return user
-   # Swagger documentation for the register endpoint
+   # creating swagger documentation for the user registration endpoint
    @swagger_auto_schema(
        operation_description="Register a new user.",
        request_body=RegisterUserSerializer,
@@ -48,13 +51,14 @@ class RegisterUserView(generics.CreateAPIView):
        tags=["User"],
    )
    
-    # post method to handle user registration
+    # Creating post method to handle user registration requests.
    def post(self, request):
         try:
+           # valdiating the incoming request data using the specified serializer and if the data is valid, creating a new user
            serializer = self.get_serializer(data=request.data)
            if serializer.is_valid():
                 user= self.perform_create(serializer)
-                # Store email in session for OTP verification
+                # Storing the user email in the session for otp verification and setting the session expiry time
                 request.session['otp_email'] = user.email
                 request.session.set_expiry(1800) 
                 return api_response(
@@ -65,6 +69,7 @@ class RegisterUserView(generics.CreateAPIView):
                          
                          },
                )
+           # if the serializer is not valid then return the error messages with bad request status code
            return api_response(
                is_success=False,
                error_message=serializer.errors,
@@ -73,6 +78,7 @@ class RegisterUserView(generics.CreateAPIView):
                    "message": "User registration failed.",
                }
            )
+        
         except Exception as e:
            return api_response(
                is_success=False,
@@ -80,7 +86,7 @@ class RegisterUserView(generics.CreateAPIView):
                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
            )
         
-# View for verifying OTP
+# Creating API view for verifying OTP which allows users to verify the OTP sent to their email for account verification.
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
     serializer_class = VerifyOTPSerializer
@@ -95,7 +101,7 @@ class VerifyOTPView(APIView):
         },
         tags=["OTP"],
     )
-    # post method to handle OTP verification
+    # Creating post method to handle OTP verification requests.
     def post(self, request):
         try:
             serializer = VerifyOTPSerializer(data=request.data)
@@ -106,7 +112,7 @@ class VerifyOTPView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             
-            # Validate OTP input format
+            # valdiating the incoming request data using the specified serializer 
             serializer = VerifyOTPSerializer(data=request.data)
             if not serializer.is_valid():
                 return api_response(
@@ -114,7 +120,7 @@ class VerifyOTPView(APIView):
                     error_message=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
-            
+            # Extracting email and otp from the validated data
             email = serializer.validated_data['email']
             otp = serializer.validated_data['otp']
 
@@ -139,7 +145,7 @@ class VerifyOTPView(APIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-# View for resending OTP
+#  Creating API view for resending OTP which allows users to request a new OTP to be sent to their email.
 class ResendOTPView(APIView):
     permission_classes = [AllowAny]
 
@@ -189,10 +195,11 @@ class ResendOTPView(APIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-# View for Resetting Password
+# Creating API view for resetting password which allows users to reset their password after OTP verification.
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
 
+    # Creating swagger documentation for the reset password endpoint
     @swagger_auto_schema(
         operation_description="Reset user password after OTP verification",
         request_body=ResetPasswordSerializer,
@@ -205,9 +212,10 @@ class ResetPasswordView(APIView):
         tags=["User"],
     )
 
-    # Created post method for resetting password
+    # Creating post method for resetting password
     def post(self, request):
         try:
+            # Validating the incoming request data using the specified serializer and if the data is valid, resetting the user's password
             serializer = ResetPasswordSerializer(data=request.data)
             if not serializer.is_valid():
                 return api_response(
@@ -215,7 +223,7 @@ class ResetPasswordView(APIView):
                     error_message=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
-
+            # Extracting email from the session or request data to identify the user whose password is being reset. This ensures that only the user who has verified their OTP can reset their password.
             email = request.session.get("reset_email") or request.data.get("email")
             if not email:
                 return api_response(
@@ -224,6 +232,7 @@ class ResetPasswordView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # Extracting new password and confirm password from the validated data
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
@@ -232,10 +241,11 @@ class ResetPasswordView(APIView):
                     error_message="User not found.",
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
-
+            # Checking if new password and confirm password match
             user.set_password(serializer.validated_data["new_password"])
             user.save()
 
+            # Clearing the reset email from the session after successful password reset to prevent unauthorized access to the password reset functionality.
             if "reset_email" in request.session:
                 del request.session["reset_email"]
 
@@ -251,12 +261,14 @@ class ResetPasswordView(APIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-# View to handle user login and JWT token generation   
+# Creating API view for handling user login and JWT token generation   
 class LoginUserView(TokenObtainPairView):
     permission_classes = [AllowAny]
+    # Specifying the authentication class to use JSON Web Token (JWT) authentication for this view 
     authentication_classes = [JWTAuthentication]
     serializer_class = LoginUserSerializer
 
+    # Creating swagger documentation for the user login endpoint
     @swagger_auto_schema(
         operation_description="User login to obtain JWT tokens.",
         request_body= LoginUserSerializer,
@@ -266,23 +278,28 @@ class LoginUserView(TokenObtainPairView):
             401: openapi.Response(description="Unauthorized."),
             500: openapi.Response(description="Internal server error."),
         },
+        # Adding tags for better organization in Swagger UI
         tags=["User"],
     )
 
+    # Creating post method to handle user login requests and generate JWT tokens upon successful authentication. 
     def post(self, request):
         try:
             serializer = self.serializer_class(data=request.data)
+            # Validating the incoming request data using the specified serializer and if the data is valid, authenticating the user and generating JWT tokens for authenticated sessions.
             if serializer.is_valid():
                email = serializer.validated_data['email']
                password = serializer.validated_data['password']
                user = authenticate(request, email=email, password=password)
 
                if user is not None:
+                  # Serializing the authenticated user's data to include in the response
                   user_data = UserResponseSerializer(user, context={'request': request}).data
                   refresh = RefreshToken.for_user(user)
                   refresh_token = str(refresh)
                   access_token = str(refresh.access_token)
 
+                # if authentication is successful, return the user data along with the generated JWT tokens in the response with a success message and status code 200 OK.                
                   return api_response(
                         is_success=True,
                         status_code=status.HTTP_200_OK,
@@ -293,6 +310,7 @@ class LoginUserView(TokenObtainPairView):
                             "access_token": access_token,
                         },
                     )
+               # If authentication fails, return an error response indicating invalid email or password with unauthorized status code.
                else:
                    return api_response(
                        is_success=False,
@@ -311,13 +329,16 @@ class LoginUserView(TokenObtainPairView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         
-# View to retrieve list of all users
+# Creating API view for retrieving list of all users
 class GetUserView(generics.ListAPIView):
+    # Specifying the queryset to retrieve all users 
     queryset = User.objects.all()
     serializer_class = UserResponseSerializer
     authentication_classes = [JWTAuthentication]
+    # Restricting access to this view to only superusers
     permission_classes = [IsSuperUser]
 
+    # Creating swagger documentation for the get users endpoint
     @swagger_auto_schema(
         operation_description="Retrieve list of all users.",
         responses={
@@ -327,9 +348,10 @@ class GetUserView(generics.ListAPIView):
             ),
             500: openapi.Response(description="Internal server error."),
         },
+        # creating tags for better organization in Swagger UI
         tags=["User"],
     )
-    # get method to handle retrieving all users
+    # Creating get method to handle retrieving list of all users 
     def get(self, request, *args, **kwargs):
         try:
             users = self.get_queryset()
@@ -350,11 +372,13 @@ class GetUserView(generics.ListAPIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         
-# View to retrieve details of a specific user by ID
+# Creating API view to retrieve details of a specific user by ID
 class UserDetailView(generics.RetrieveAPIView):
+   # Specifiying the queryset to retrieve all user details
    queryset = User.objects.all()
    serializer_class = UserResponseSerializer
    authentication_classes = [JWTAuthentication]
+   # Restricting access to this view to only authenticated users
    permission_classes = [IsAuthenticated]
 
    @swagger_auto_schema(
@@ -383,12 +407,14 @@ class UserDetailView(generics.RetrieveAPIView):
                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
            )
 
-# View to retrieve and update user profile
+# Creating API view to retrieve and update user profile
 class UserProfileView(APIView):
     authentication_classes = [JWTAuthentication]
+    # Restricting access to this view to only authenticated users
     permission_classes = [IsAuthenticated]
     serializer_class = UserProfileSerializer
 
+    # Creating swagger documentation for the user profile endpoint
     @swagger_auto_schema(
         operation_description="Retrieve the current user's profile information.",
         responses={
@@ -398,7 +424,7 @@ class UserProfileView(APIView):
         },
         tags=["Profile"],
     )
-    # get method to retrieve user profile
+    # Creating get method to handle retrieving the current user's profile information. This allows authenticated users to view their own profile details.
     def get(self, request):
         try:
             user = request.user
@@ -426,7 +452,7 @@ class UserProfileView(APIView):
         },
         tags=["Profile"],
     )
-    # put method to update user profile (full update)
+    # Creating put method to handle updating the current user's profile information. This allows authenticated users to update their own profile details.
     def put(self, request):
         try:
             user = request.user
@@ -464,10 +490,11 @@ class UserProfileView(APIView):
         },
         tags=["Profile"],
     )
-    # patch method to partially update user profile
+    # Creating patch method to partially update any field that serialzers allows except read onlyy fields.
     def patch(self, request):
         try:
             user = request.user
+            # Using partial=True to allow partial updates to the user's profile information, enabling users to update only specific fields without affecting others.
             serializer = UserProfileSerializer(user, data=request.data, partial=True, context={'request': request})
             if serializer.is_valid():
                 serializer.save()

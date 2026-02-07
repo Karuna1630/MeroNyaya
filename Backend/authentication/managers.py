@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 from typing import Any
 
-# Custom validator for email format
+# Creating a function to validate email format using Django's built-in email validator. 
 def validate_email(email: str) -> None:
     try:
         django_validate_email(email)
@@ -13,7 +13,7 @@ def validate_email(email: str) -> None:
         raise ValidationError(_("Invalid email format."))
     
 
-# Custom user manager
+# Creating a custom user manager to handle user creation with email as the unique identifier instead of username.
 class CustomUserManager(BaseUserManager):
     def _create_user(self, email, password= None, **extra_fields):
         if not email:
@@ -22,19 +22,23 @@ class CustomUserManager(BaseUserManager):
         if not password:
             raise ValueError(_("A password is required."))
         
+        # validating the email format
+        validate_email(email)
+        # Normalizing the email address by lowercasing the domain part
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
+        # Setting the user's password using Django's set_password method to ensure it's hashed properly
         user.set_password(password)
         user.save(using=self._db)
         return user
     
-    # Creating superuser with elevated privileges
+    # Creating regular user with default privileges
     def create_user(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
         return self._create_user(email, password, **extra_fields)
     
-
+    # Creating superuser with elevated privileges
     def create_superuser(self, email, password= None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
@@ -45,5 +49,5 @@ class CustomUserManager(BaseUserManager):
             raise ValueError(_("Superuser must have is_staff=True."))
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_("Superuser must have is_superuser=True."))
-
+        # creating the superuser
         return self._create_user(email, password, **extra_fields)   

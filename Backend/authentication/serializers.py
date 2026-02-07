@@ -3,7 +3,7 @@ from .models import User
 from .otp import create_otp, send_otp
 
 
-# Serializer for User Response
+# Creating Serializer for User Response
 class UserResponseSerializer(serializers.ModelSerializer):
     profile_image = serializers.SerializerMethodField()
     
@@ -12,6 +12,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'name', 'phone', 'is_verified', 'is_kyc_verified', 'is_lawyer', 'is_superuser', 'is_staff', 'role', 'date_joined', 'profile_image']
         read_only_fields = ['id', 'date_joined', 'role', 'is_verified', 'is_kyc_verified', 'is_superuser', 'is_staff', 'profile_image']
     
+    #  Creating a method to get full url for profile image
     def get_profile_image(self, obj):
         """Get full URL for profile image"""
         if obj.profile_image:
@@ -21,7 +22,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
             return obj.profile_image.url
         return None
 
-# Serializer for User Profile Page
+#  Creating Serializer for User Profile Page
 class UserProfileSerializer(serializers.ModelSerializer):
     profile_image = serializers.ImageField(required=False, allow_null=True)
     
@@ -30,20 +31,22 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'email', 'phone', 'city', 'district', 'bio', 'role', 'is_verified', 'is_kyc_verified', 'is_superuser', 'is_staff', 'profile_image']
         read_only_fields = ['id', 'email', 'role', 'is_verified', 'is_kyc_verified']
 
+    #  Creating a method to validate profile image size and format
     def validate_profile_image(self, value):
         """Validate profile image size and format"""
         if value:
-            # Check file size (max 5MB)
+            # checking file size (max 5MB)
             if value.size > 5 * 1024 * 1024:
                 raise serializers.ValidationError("Image file size must not exceed 5MB.")
             
-            # Check file format
+            # checking file format
             allowed_formats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
             if value.content_type not in allowed_formats:
                 raise serializers.ValidationError("Only JPEG, PNG, GIF, and WebP image formats are allowed.")
         
         return value
     
+    #  Overriding to_representation method to include full URL for profile image in response
     def to_representation(self, instance):
         """Get full URL for profile image in response"""
         data = super().to_representation(instance)
@@ -55,7 +58,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 data['profile_image'] = instance.profile_image.url
         return data
 
-# Serializer for Registering User
+#  Creating Serializer for Registering User
 class RegisterUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -63,16 +66,18 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email', 'password', 'name', 'phone', 'is_lawyer']
 
+    #  Creating validation methods for email unique
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Email is already exist.")
         return value
-    
+    #  Creating validation methods for password strength
     def validate_password(self, value):
         if len(value) < 8:
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         return value
     
+    #  Creating validation methods for name field
     def validate_name(self, value):
         if not value:
             raise serializers.ValidationError("Name cannot be empty.")
@@ -80,11 +85,13 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Name must be at least 2 characters long.")   
         return value
     
+    #  Creating validation methods for phone number field
     def validate_phone_number(self, value):
         if value and not value.isdigit():
             raise serializers.ValidationError("Phone number must contain only digits.")
         return value
     
+    #  Creating method to create a new user and send OTP for email verification
     def create(self, validated_data):
         user = User.objects.create_user(
             email=validated_data['email'],
@@ -94,7 +101,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             is_lawyer=validated_data.get('is_lawyer', False),
             is_verified=False
         )
-        # Send OTP for email verification
+        #  Sending OTP for email verification
         try:
             create_otp(user.email)
         except Exception as e:
@@ -102,20 +109,21 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
         return user
 
-# Verify OTP Serializer
+#  Creating Serializer for Verifying OTP
 class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     otp = serializers.CharField(max_length=6, min_length=6, required=True)
 
-# Resend OTP Serializer
+#  Creating Serializer for Resending OTP
 class ResendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
 
-# Login Serializer
+#  Creating Serializer for User Login
 class LoginUserSerializer(serializers.Serializer):
         email = serializers.EmailField(required=True)
         password = serializers.CharField(write_only=True, required=True)
 
+        #  Creating validation method to authenticate user and check if email is verified
         def validate(self, attrs):
             email = attrs.get('email')
             password = attrs.get('password')
@@ -132,20 +140,22 @@ class LoginUserSerializer(serializers.Serializer):
             if not user.is_verified and not (user.is_superuser or user.is_staff):
                 raise serializers.ValidationError("Email not verified. Please verify OTP first.")
 
-            
+            #  Adding the authenticated user to the validated data so that it can be accessed in the view for generating tokens or other login related processes.
+            # attrs = validated input data
             attrs['user'] = user
             return attrs
 
-# Serializer for User Logout
+#  Creating Serializer for User Logout
 class UserLogoutSerializers(serializers.Serializer):
     refresh = serializers.CharField(required=True)
 
 
-# Serializer for Resetting Password
+#  Creating Serializer for Resetting Password
 class ResetPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, min_length=8)
 
+    #  Creating validation method to check if new password and confirm password match
     def validate(self, attrs):
         new_password = attrs.get("new_password")
         confirm_password = attrs.get("confirm_password")
@@ -153,6 +163,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         if new_password != confirm_password:
             raise serializers.ValidationError("Passwords do not match.")
 
+        
         return attrs
     
     
