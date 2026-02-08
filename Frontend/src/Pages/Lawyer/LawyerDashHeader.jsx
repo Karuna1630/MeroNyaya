@@ -17,6 +17,7 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
   const profile = user || userProfile;
   const avatarSrc = profile?.profile_image;
 
+  // fetch user profile to get latest user data 
   useEffect(() => {
     if (isAuthenticated && !profileFetchedRef.current) {
       profileFetchedRef.current = true;
@@ -24,7 +25,9 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
     }
   }, [dispatch, isAuthenticated]);
 
+  // Check if the current route is the lawyer dashboard to apply active styles in the dropdown menu
   const isDashboardActive = location.pathname === "/lawyerdashboard";
+
 
   const handleDashboard = () => {
     if (!isDashboardActive) {

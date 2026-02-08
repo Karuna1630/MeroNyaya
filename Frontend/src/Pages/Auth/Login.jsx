@@ -19,22 +19,27 @@ const Login = () => {
 
   const { loading, error } = useAppSelector((state) => state.auth);
 
+  // Clear error messages on component mount
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
 
+
+  // Show error toast if there's an error
   useEffect(() => {
     if (error) {
       toast.error(error);
     }
   }, [error]);
 
+  // Formik setup for form handling
   const formik = useFormik({
     initialValues: {
       email: "",
       password: "",
       remember: false,
     },
+    // form validation schema
    validationSchema: loginValidationSchema,
     onSubmit: async (values) => {
       const payload = {
@@ -42,8 +47,10 @@ const Login = () => {
         password: values.password,
       };
 
+      // dispatch loginUser action and handle navigation based on role
       const result = await dispatch(loginUser(payload));
 
+      // if login is successful, navigate based on user role
       if (loginUser.fulfilled.match(result)) {
         toast.success("Login successful!");
         // User data is in result.payload.Result.user

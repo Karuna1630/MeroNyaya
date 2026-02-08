@@ -19,6 +19,7 @@ const Sidebar = () => {
     navigate("/");
   };
 
+  // Define menu items with icons, labels, and paths for navigation
   const menuItems = [
     { icon: LayoutDashboard, label: "Admin Dashboard", path: "/admindashboard" },
 
@@ -26,6 +27,7 @@ const Sidebar = () => {
     
   ];
 
+  // Function to check if a menu item is active based on the current location
   const isActive = (path) => location.pathname === path;
 
   return (

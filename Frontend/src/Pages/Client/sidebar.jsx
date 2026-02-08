@@ -30,6 +30,7 @@ const Sidebar = () => {
     { icon: CreditCard, label: "Payments", path: "/clientpayment" },
   ];
 
+  // Function to check if a menu item is active based on the current location
   const isActive = (path) => location.pathname === path;
 
   return (

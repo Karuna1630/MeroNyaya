@@ -23,6 +23,7 @@ const tabs = [
 
 const KYC_DRAFT_KEY = "lawyer_kyc_draft";
 
+// converting backend KYC data to form values for easier handling in the form and to ensure that the form is pre-filled correctly 
 const convertBackendToFormValues = (kycData) => {
   if (!kycData) return null;
   return {
@@ -53,6 +54,7 @@ const convertBackendToFormValues = (kycData) => {
   };
 };
 
+// Creaitng intial form values for the KYC form, this will be used to pre-fill the form if there is existing KYC data or to set default values for new submissions
 const initialFormValues = {
   fullName: "",
   email: "",
@@ -80,6 +82,7 @@ const initialFormValues = {
   agreeTerms: false,
 };
 
+// Mapping of step keys to their respective validation schemas
 const stepSchemas = {
   personal: PersonalValidationSchema,
   professional: ProfessionalValidationSchema,
@@ -87,6 +90,7 @@ const stepSchemas = {
   declaration: DeclarationValidationSchema,
 };
 
+// Fields associated with each step for error handling
 const stepFields = {
   personal: ["fullName", "email", "phone", "dob", "gender", "permanentAddress", "currentAddress"],
   professional: ["barCouncilNumber", "lawFirmName", "yearsOfExperience", "consultationFee", "specializations", "availabilityDays", "availableFrom", "availableUntil"],
@@ -94,6 +98,7 @@ const stepFields = {
   declaration: ["confirmAccuracy", "authorizeVerification", "agreeTerms"],
 };
 
+// Main KYC Component
 const KYC = ({ onClose }) => {
   const dispatch = useDispatch();
   const { submitLoading, submitError, status, myKyc } = useSelector((state) => state.kyc || {});
@@ -146,19 +151,23 @@ const KYC = ({ onClose }) => {
     return { ...initialFormValues, ...profileData };
   };
 
+  // Save draft to localStorage only fields that are part of the form, excluding file uploads
   const handleSaveDraft = (values) => {
     const { citizenshipFront: _CITIZENSHIP_FRONT, citizenshipBack: _CITIZENSHIP_BACK, lawyerLicense: _LAWYER_LICENSE, passportPhoto: _PASSPORT_PHOTO, lawDegree: _LAW_DEGREE, experienceCertificate: _EXPERIENCE_CERTIFICATE, ...formDataToSave } = values;
     localStorage.setItem(KYC_DRAFT_KEY, JSON.stringify(formDataToSave));
     toast.info("Draft saved successfully!");
   };
 
+  // function to extract errors for the current step
   const getStepErrors = (errors, stepKey) => {
+    // Extract errors specific to the current step
     return stepFields[stepKey]?.reduce((acc, key) => {
       if (errors[key]) acc[key] = errors[key];
       return acc;
     }, {}) || {};
   };
 
+  // Handle continue button click, validate current step and move to next step if valid, otherwise show errors
   const handleContinue = (setTouched, validateForm) => {
     return async () => {
       const errors = await validateForm();
@@ -180,8 +189,10 @@ const KYC = ({ onClose }) => {
     };
   };
 
+  // Function to check if a tab can be accessed (either it's the active tab or it's already completed)
   const canAccessTab = (tabKey) => activeTab === tabKey || completedTabs.includes(tabKey);
 
+  // Handle previous button click to navigate to the previous tab
   const handlePrevious = () => {
     const tabKeys = tabs.map(t => t.key);
     const currentIndex = tabKeys.indexOf(activeTab);
@@ -190,6 +201,7 @@ const KYC = ({ onClose }) => {
     }
   };
 
+  // Handle final submission of KYC data, dispatching either submit or update action based on whether it's a new submission or a resubmission after rejection
   const handleSubmitKyc = async (values) => {
     if (!(values.confirmAccuracy && values.authorizeVerification && values.agreeTerms)) {
       return;
@@ -199,9 +211,11 @@ const KYC = ({ onClose }) => {
       const kycStatus = status?.status || status?.kyc_status || status?.state;
       const isRejected = kycStatus === 'rejected';
       
+      // Dispatch the appropriate action based on the KYC status
       const submitAction = isRejected ? updateKyc : submitKyc;
       const action = await dispatch(submitAction(values));
       
+      // handle if the submission was successful or if there was an error, showing appropriate toast messages and clearing draft/local state as needed
       if (submitAction.fulfilled.match(action)) {
         const message = isRejected 
           ? "KYC resubmitted successfully!" 

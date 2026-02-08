@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axiosInstance from '../../axios/axiosinstance';
 
+// Helper function to build FormData from payload, handling 'documents' array specifically
 const buildFormData = (payload) => {
 	const formData = new FormData();
 	Object.entries(payload || {}).forEach(([key, value]) => {
@@ -15,6 +16,7 @@ const buildFormData = (payload) => {
 	return formData;
 };
 
+// Async thunk to fetch cases with optional filters
 export const fetchCases = createAsyncThunk(
 	'cases/fetchCases',
 	async (filters = {}, { rejectWithValue }) => {
@@ -35,6 +37,7 @@ export const fetchCases = createAsyncThunk(
 	}
 );
 
+// Async thunk to fetch case details by ID
 export const fetchCaseById = createAsyncThunk(
 	'cases/fetchCaseById',
 	async (caseId, { rejectWithValue }) => {
@@ -47,6 +50,7 @@ export const fetchCaseById = createAsyncThunk(
 	}
 );
 
+// Async thunk to create a new case
 export const createCase = createAsyncThunk(
 	'cases/createCase',
 	async (payload, { rejectWithValue }) => {
@@ -62,6 +66,7 @@ export const createCase = createAsyncThunk(
 	}
 );
 
+// Async thunk to update an existing case
 export const updateCase = createAsyncThunk(
 	'cases/updateCase',
 	async ({ caseId, data }, { rejectWithValue }) => {
@@ -74,6 +79,7 @@ export const updateCase = createAsyncThunk(
 	}
 );
 
+// Async thunk to delete a case by ID
 export const deleteCase = createAsyncThunk(
 	'cases/deleteCase',
 	async (caseId, { rejectWithValue }) => {
@@ -86,6 +92,7 @@ export const deleteCase = createAsyncThunk(
 	}
 );
 
+// Async thunk to fetch public cases
 export const fetchPublicCases = createAsyncThunk(
 	'cases/fetchPublicCases',
 	async (_, { rejectWithValue }) => {
@@ -98,6 +105,7 @@ export const fetchPublicCases = createAsyncThunk(
 	}
 );
 
+// Async thunk to fetch case appointments
 export const fetchCaseAppointments = createAsyncThunk(
 	'cases/fetchCaseAppointments',
 	async (_, { rejectWithValue }) => {
@@ -110,6 +118,7 @@ export const fetchCaseAppointments = createAsyncThunk(
 	}
 );
 
+// Async thunk to upload case documents
 export const uploadCaseDocuments = createAsyncThunk(
 	'cases/uploadCaseDocuments',
 	async ({ caseId, files }, { rejectWithValue }) => {
@@ -127,6 +136,7 @@ export const uploadCaseDocuments = createAsyncThunk(
 	}
 );
 
+//	Async thunk to accept a public case
 export const acceptCase = createAsyncThunk(
 	'cases/acceptCase',
 	async (caseId, { rejectWithValue }) => {
@@ -139,6 +149,7 @@ export const acceptCase = createAsyncThunk(
 	}
 );
 
+// Async thunk to update case status
 export const updateCaseStatus = createAsyncThunk(
 	'cases/updateCaseStatus',
 	async ({ caseId, status }, { rejectWithValue }) => {
@@ -151,6 +162,7 @@ export const updateCaseStatus = createAsyncThunk(
 	}
 );
 
+// Async thunk to update case details
 export const updateCaseDetails = createAsyncThunk(
 	'cases/updateCaseDetails',
 	async ({ caseId, data }, { rejectWithValue }) => {
@@ -163,6 +175,7 @@ export const updateCaseDetails = createAsyncThunk(
 	}
 );
 
+// Async thunk to add a timeline event to a case
 export const addTimelineEvent = createAsyncThunk(
 	'cases/addTimelineEvent',
 	async ({ caseId, eventData }, { rejectWithValue }) => {
@@ -174,6 +187,7 @@ export const addTimelineEvent = createAsyncThunk(
 		}
 	}
 );
+// Async thunk to schedule a case appointment
 export const scheduleCaseAppointment = createAsyncThunk(
 	'cases/scheduleCaseAppointment',
 	async ({ caseId, data }, { rejectWithValue }) => {
@@ -186,6 +200,7 @@ export const scheduleCaseAppointment = createAsyncThunk(
 	}
 );
 
+// creating the initial state for case slice
 const initialState = {
 	cases: [],
 	casesLoading: false,
@@ -229,23 +244,28 @@ const initialState = {
 	updateStatusError: null,
 };
 
+// creating case slice using createSlice from Redux Toolkit
 const caseSlice = createSlice({
 	name: 'cases',
 	initialState,
 	reducers: {
+		// Action to clear create case status
 		clearCreateCaseStatus: (state) => {
 			state.createCaseLoading = false;
 			state.createCaseSuccess = false;
 			state.createCaseError = null;
 		},
+		// Action to clear case details
 		clearCaseDetails: (state) => {
 			state.caseDetails = null;
 			state.caseDetailsError = null;
 		},
+		// Action to clear public cases
 		clearPublicCases: (state) => {
 			state.publicCases = [];
 			state.publicCasesError = null;
 		},
+		// Action to clear all case-related errors
 		clearCaseErrors: (state) => {
 			state.casesError = null;
 			state.caseDetailsError = null;
@@ -261,6 +281,7 @@ const caseSlice = createSlice({
 			state.caseAppointmentsError = null;
 		},
 	},
+	// Handling async thunk actions in extraReducers
 	extraReducers: (builder) => {
 		builder
 			.addCase(fetchCases.pending, (state) => {

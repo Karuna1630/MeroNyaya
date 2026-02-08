@@ -20,10 +20,12 @@ const LawyerCaseDocumentCard = ({ caseId, documents = [], isAssignedLawyer = tru
     fileInputRef.current?.click();
   };
 
+  // function to handle file input changes 
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
       try {
+        // Dispatch the uploadCaseDocuments action with the selected files and case ID, then refresh the cases to reflect the new documents in real-time
         await dispatch(uploadCaseDocuments({ caseId, files })).unwrap();
         // Refresh cases to get updated documents in real-time
         await dispatch(fetchCases()).unwrap();

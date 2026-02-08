@@ -5,6 +5,7 @@ import { LAW_CATEGORIES } from "../../utils/lawCategories";
 
 const specializations = LAW_CATEGORIES;
 
+// Days of the week for availability selection
 const daysOfWeek = [
   "Sunday",
   "Monday",
@@ -15,9 +16,11 @@ const daysOfWeek = [
   "Saturday",
 ];
 
+// ProfessionalInfo component for the KYC process, allowing lawyers to input their professional details such as bar council registration, law firm name, experience, specialization, and availability
 const ProfessionalInfo = () => {
   const { values, setFieldValue } = useFormikContext();
 
+  // Handle checkbox changes for multi-select fields (specializations and availability days)
   const handleCheckboxChange = (field, value) => {
     const currentValues = values[field] || [];
     const newValues = currentValues.includes(value)

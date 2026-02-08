@@ -30,7 +30,7 @@ const FindLawyers = () => {
     dispatch(fetchVerifiedLawyers());
   }, [dispatch]);
 
-  // Transform backend data to frontend format
+  // Transform backend data to frontend format using useMemo for performance optimization
   const lawyers = useMemo(() => {
     return lawyersData
       .filter(lawyer => lawyer) 
@@ -45,6 +45,7 @@ const FindLawyers = () => {
           }
         }
 
+        // mapping other fields from backend to frontend structure
         return {
           id: lawyer.id,
           name: lawyer.name || "Unknown",

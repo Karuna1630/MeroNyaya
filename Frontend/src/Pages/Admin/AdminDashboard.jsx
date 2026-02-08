@@ -11,10 +11,14 @@ import AdminDashHeader from './AdminDashHeader';
 import Statcard from './Statcard';
 import { fetchAdminStats, fetchKycList } from '../slices/adminSlice';
 
+
 const AdminDashboard = () => {
+  // Initialize dispatch and select necessary state from Redux store
   const dispatch = useDispatch();
+  // Destructure stats and loading states from the admin slice of the Redux store
   const { stats, statsLoading, kycList, kycLoading } = useSelector((state) => state.admin);
 
+  // Fetch admin statistics and KYC list when the component mounts
   useEffect(() => {
     dispatch(fetchAdminStats());
     dispatch(fetchKycList());
@@ -25,9 +29,10 @@ const AdminDashboard = () => {
     ? kycList.filter(kyc => (kyc.status || '').toLowerCase() === 'pending').length 
     : 0;
 
+    // Function to render status badge based on KYC status
   const getStatusBadge = (status) => {
     const baseClasses = "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold";
-    
+    // Normalize status to lowercase for consistent comparison
     switch ((status || '').toLowerCase()) {
       case 'pending':
       case 'under_review':

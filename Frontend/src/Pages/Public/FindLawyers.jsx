@@ -51,6 +51,19 @@ const FindLawyers = () => {
 		});
 	}, [verifiedLawyers]);
 
+	const maxFee = useMemo(() => {
+		const fees = normalizedLawyers
+			.map((lawyer) => Number(lawyer.consultation_fee || 0))
+			.filter((fee) => !Number.isNaN(fee));
+		return fees.length ? Math.max(...fees) : 5000;
+	}, [normalizedLawyers]);
+
+	useEffect(() => {
+		if (maxFee > 0) {
+			setFeeCap(maxFee);
+		}
+	}, [maxFee]);
+
 	const filteredLawyers = useMemo(() => {
 		const loweredSearch = searchTerm.toLowerCase();
 		const loweredSpec = selectedSpec.toLowerCase();
@@ -60,7 +73,7 @@ const FindLawyers = () => {
 			const matchesSpec =
 				selectedSpec === "All Specializations" ||
 				specializationText.toLowerCase().includes(loweredSpec);
-			const matchesFee = (lawyer.consultation_fee || 0) <= feeCap;
+			const matchesFee = (Number(lawyer.consultation_fee || 0) || 0) <= feeCap;
 			const matchesSearch =
 				(lawyer.name || "").toLowerCase().includes(loweredSearch) ||
 				specializationText.toLowerCase().includes(loweredSearch) ||
@@ -148,16 +161,16 @@ const FindLawyers = () => {
 								</div>
 								<input
 									type="range"
-									min="1000"
-									max="5000"
+									min="0"
+									max={Math.max(5000, Math.ceil(maxFee / 100) * 100)}
 									step="100"
 									value={feeCap}
 									onChange={(e) => setFeeCap(Number(e.target.value))}
 									className="w-full accent-[#0F1A3D]"
 								/>
 								<div className="flex justify-between text-xs text-slate-500">
-									<span>Rs. 1,000</span>
-									<span>Rs. 5,000</span>
+									<span>Rs. 0</span>
+									<span>Rs. {Math.max(5000, Math.ceil(maxFee / 100) * 100).toLocaleString()}</span>
 								</div>
 							</div>
 						</aside>

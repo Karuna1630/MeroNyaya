@@ -14,16 +14,20 @@ const AdminKYCVerification = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedDetails, setSelectedDetails] = useState(null);
 
+  // Fetch KYC list when component mounts
   useEffect(() => {
     dispatch(fetchKycList());
   }, [dispatch]);
 
+  // Function to normalize status for consistent comparison
   const normalizeStatus = (status) => (status || '').toLowerCase();
 
+  // Function to render status badge based on KYC status
   const getStatusBadge = (status) => {
     const baseClasses =
       'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-sm';
 
+      // Normalize status to lowercase for consistent comparison
     switch (normalizeStatus(status)) {
       case 'pending':
       case 'under_review':
@@ -53,6 +57,7 @@ const AdminKYCVerification = () => {
     }
   };
 
+  // Handle approve action for a KYC request
   const handleApprove = async (kycId) => {
     try {
       await dispatch(reviewKyc({ id: kycId, status: 'approved' })).unwrap();
@@ -62,18 +67,20 @@ const AdminKYCVerification = () => {
     }
   };
 
+  // Handle reject button click, open modal and set selected KYC
   const handleRejectClick = (kyc) => {
     setSelectedKYC(kyc);
     setRejectionReason('');
     setShowRejectModal(true);
   };
 
+  // Handle confirm reject action, dispatch reviewKyc with rejection reason
   const handleRejectConfirm = () => {
     if (!rejectionReason.trim()) {
       alert('Please provide a rejection reason');
       return;
     }
-
+// Dispatch reviewKyc action with rejection reason
     dispatch(
       reviewKyc({
         id: selectedKYC.id,
@@ -89,17 +96,19 @@ const AdminKYCVerification = () => {
         alert('Failed to reject KYC. Please try again.');
       });
 
+    // Close modal and reset state
     setShowRejectModal(false);
     setSelectedKYC(null);
     setRejectionReason('');
   };
-
+// Handle cancel reject action, close modal and reset state
   const handleCancelReject = () => {
     setShowRejectModal(false);
     setSelectedKYC(null);
     setRejectionReason('');
   };
 
+  // Utility function to format values for display in the details modal
   const formatValue = (value) => {
     if (Array.isArray(value)) return value.length ? value.join(', ') : 'N/A';
     if (value === true) return 'Yes';
@@ -108,12 +117,14 @@ const AdminKYCVerification = () => {
     return value;
   };
 
+  // Utility function to format dates for display in the details modal
   const formatDate = (value) => {
     if (!value) return 'N/A';
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
   };
 
+  // Function to determine if a KYC request is in a pending state for conditional rendering of action buttons
   const isPending = (status) =>
     ['pending', 'under_review', 'in_review'].includes(normalizeStatus(status));
 

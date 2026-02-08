@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 const Declaration = () => {
   const { values, setFieldValue } = useFormikContext();
 
+  // Handle checkbox state changes
   const handleCheckboxChange = (fieldName) => {
     setFieldValue(fieldName, !values[fieldName]);
   };

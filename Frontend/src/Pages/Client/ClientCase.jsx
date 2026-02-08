@@ -46,6 +46,7 @@ const ClientCase = () => {
     dispatch(fetchCases());
   }, [dispatch]);
 
+  // Function to format case status for display purposes
   const formatStatus = (status) => {
     const map = {
       draft: "Draft",
@@ -61,6 +62,7 @@ const ClientCase = () => {
     return map[status] || status;
   };
 
+  // Memoize the cases data to avoid unnecessary re-computations when the component re-renders
   const cases = useMemo(() => {
     return (casesData || []).map((item) => {
       const createdDate = item.created_at
@@ -71,6 +73,7 @@ const ClientCase = () => {
           })
         : "-";
 
+        // Normalize and format the case data for easier rendering in the UI
       return {
         id: item.id,
         title: item.case_title || "Untitled",
@@ -83,6 +86,7 @@ const ClientCase = () => {
     });
   }, [casesData]);
 
+  //generating category options for dropdown filter based on unique categories present in cases data
   const categoryOptions = useMemo(() => {
     const categories = cases.map((item) => item.category).filter(Boolean);
     return ["All Categories", ...Array.from(new Set(categories))];

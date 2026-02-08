@@ -6,6 +6,7 @@ const IdentityDocs = () => {
   const { values, setFieldValue } = useFormikContext();
   const [draggedOver, setDraggedOver] = useState(null);
 
+  // Handle file input changes with size validation
   const handleFileChange = (fieldName, file) => {
     if (file && file.size <= 5 * 1024 * 1024) {
       setFieldValue(fieldName, file);
@@ -14,28 +15,33 @@ const IdentityDocs = () => {
     }
   };
 
+  // Remove uploaded file
   const handleRemoveFile = (fieldName) => {
     setFieldValue(fieldName, null);
   };
 
+  // Format file size for display
   const formatFileSize = (bytes) => {
     return (bytes / 1024).toFixed(1) + " KB";
   };
 
+  // Truncate long file names for better UI
   const truncateFileName = (name, maxLength = 25) => {
     // Handle File objects and strings (URLs)
     const fileName = typeof name === 'object' ? name?.name : name;
     if (!fileName) return 'Unknown file';
     
+    // If the name is already short enough, return it as is
     const nameStr = String(fileName);
     if (nameStr.length <= maxLength) return nameStr;
-    
+    // Truncate while preserving the file extension
     const ext = nameStr.split('.').pop();
     const nameWithoutExt = nameStr.slice(0, nameStr.lastIndexOf('.'));
     const truncated = nameWithoutExt.slice(0, maxLength - ext.length - 5) + "...";
     return truncated + "." + ext;
   };
 
+  // Drag and drop handlers for handling file uploads
   const handleDrop = (e, fieldName) => {
     e.preventDefault();
     setDraggedOver(null);
@@ -45,11 +51,13 @@ const IdentityDocs = () => {
     }
   };
 
+  // Handle drag over event to indicate drag state
   const handleDragOver = (e, fieldName) => {
     e.preventDefault();
     setDraggedOver(fieldName);
   };
 
+  // Handle drag leave event to reset drag state
   const handleDragLeave = () => {
     setDraggedOver(null);
   };

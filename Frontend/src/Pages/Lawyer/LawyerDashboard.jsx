@@ -26,7 +26,7 @@ const LawyerDashboard = () => {
 
   const profile = userProfile || authUser;
 
-  /* ===== Initial data fetch ===== */
+  // on initial load fetch profile, kyc status, cases, and proposals
   useEffect(() => {
     if (!initialFetchDoneRef.current) {
       initialFetchDoneRef.current = true;
@@ -37,7 +37,7 @@ const LawyerDashboard = () => {
     }
   }, [dispatch]);
 
-  /* ===== Calculate statistics from real data ===== */
+// using memo for calcultaing stats 
   const activeCases = useMemo(() => {
     return cases.filter(c => ['accepted', 'in_progress'].includes(c.status)).length;
   }, [cases]);
@@ -61,6 +61,7 @@ const LawyerDashboard = () => {
       .slice(0, 5);
   }, [cases]);
 
+  // Helper function to format date strings into a more readable format for display in the dashboard
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -71,6 +72,7 @@ const LawyerDashboard = () => {
     });
   };
 
+  // Helper function to format case status into a more user-friendly format for display in the dashboard
   const formatStatus = (status) => {
     const map = {
       accepted: "Accepted",
@@ -81,7 +83,7 @@ const LawyerDashboard = () => {
     return map[status] || status;
   };
 
-  /* ===== KYC Status Helpers ===== */
+// determing the kyc status based on the available data from both user profile and kyc status in th store
   const kycStatusValue = status?.status || status?.kyc_status || status?.state;
   
   const isKycApproved = 
@@ -96,10 +98,10 @@ const LawyerDashboard = () => {
   const isKycNotSubmitted = !isKycApproved && !isKycPending && !isKycRejected;
   const modalOpen = showKycModal && !isKycApproved;
 
-  /* ===== Poll KYC Status (only until approved) ===== */
+ 
   useEffect(() => {
     if (isKycApproved) return;
-
+// Set up an interval to refetch KYC status every 15 seconds if not approved, to get real-time updates without needing a page refresh
     const interval = setInterval(() => {
       dispatch(fetchKycStatus());
     }, 15000);
@@ -107,7 +109,7 @@ const LawyerDashboard = () => {
     return () => clearInterval(interval);
   }, [dispatch, isKycApproved]);
 
-  /* ===== Show Toast Once Ever (persists across login/refresh) ===== */
+// showing a one-time toast notification when KYC gets approved
   useEffect(() => {
     if (!isKycApproved) return;
   
@@ -119,12 +121,13 @@ const LawyerDashboard = () => {
     localStorage.setItem('kycApprovedToastShown', '1');
   }, [isKycApproved]);
 
-  /* ===== Lock body scroll when modal is open ===== */
+  // Prevent background scrolling when KYC modal is open by toggling overflow style on the body element
   useEffect(() => {
     document.body.style.overflow = modalOpen ? 'hidden' : 'unset';
     return () => (document.body.style.overflow = 'unset');
   }, [modalOpen]);
 
+  // function for css of status badge
   const getCaseStatusClasses = (status) => {
     const statusLower = status?.toLowerCase();
     switch (statusLower) {
@@ -143,7 +146,7 @@ const LawyerDashboard = () => {
         return 'bg-gray-100 text-gray-700';
     }
   };
-
+// function for schedule status badge css
   const getScheduleStatusClasses = (status) => {
     switch (status) {
       case 'Confirmed':

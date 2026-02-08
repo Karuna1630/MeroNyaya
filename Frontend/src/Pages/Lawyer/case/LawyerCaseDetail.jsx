@@ -39,6 +39,7 @@ const LawyerCaseDetail = () => {
     status: "",
   });
 
+  // Select necessary state from Redux store
   const { cases, casesLoading } = useSelector((state) => state.case);
   const { user } = useSelector((state) => state.auth);
   const caseData = cases?.find((c) => c.id === parseInt(id));
@@ -49,6 +50,7 @@ const LawyerCaseDetail = () => {
     isAssignedLawyer && (caseData?.status === "accepted" || caseData?.status === "in_progress")
   );
 
+  // Fetch cases when component mounts
   useEffect(() => {
     dispatch(fetchCases());
   }, [dispatch]);

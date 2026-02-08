@@ -57,8 +57,10 @@ const ClientConsultation = () => {
   }, [appointments]);
 
   const cancelledCount = useMemo(() => {
-    return consultations.filter((item) => item.status === "rejected").length;
-  }, [consultations]);
+    const cancelledConsultations = consultations.filter((item) => item.status === "rejected").length;
+    const cancelledAppointments = appointments.filter((item) => item.status === "cancelled").length;
+    return cancelledConsultations + cancelledAppointments;
+  }, [consultations, appointments]);
 
   const displayConsultations = useMemo(() => {
     if (activeTab === "Requests") {
@@ -70,13 +72,19 @@ const ClientConsultation = () => {
     return consultations.filter((item) => item.status === "rejected");
   }, [activeTab, consultations]);
 
+  const cancelledAppointments = useMemo(() => {
+    return appointments.filter((item) => item.status === "cancelled");
+  }, [appointments]);
+
   const displayAppointments = useMemo(() => {
     return appointments;
   }, [appointments]);
 
   const tableRows = useMemo(() => {
-    return activeTab === "Appointments" ? displayAppointments : displayConsultations;
-  }, [activeTab, displayAppointments, displayConsultations]);
+    if (activeTab === "Appointments") return displayAppointments;
+    if (activeTab === "Cancelled") return [...displayConsultations, ...cancelledAppointments];
+    return displayConsultations;
+  }, [activeTab, displayAppointments, displayConsultations, cancelledAppointments]);
 
   const getModeIcon = (mode) => {
     switch (mode) {
@@ -242,14 +250,29 @@ const ClientConsultation = () => {
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <span 
+                        <span
                           className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-xs ${
-                              statusValue === "requested" || statusValue === "accepted" || statusValue === "pending" || statusValue === "confirmed"
-                                ? "bg-amber-50 text-amber-600 border border-amber-100" 
+                            statusValue === "requested" ||
+                            statusValue === "accepted" ||
+                            statusValue === "pending" ||
+                            statusValue === "confirmed"
+                              ? "bg-amber-50 text-amber-600 border border-amber-100"
+                              : statusValue === "completed"
+                                ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                                 : "bg-red-50 text-red-600 border border-red-100"
                           }`}
                         >
-                            {statusValue === "requested" ? "Pending" : statusValue === "accepted" ? "Accepted" : statusValue === "pending" ? "Appointment" : statusValue === "confirmed" ? "Confirmed" : "Cancelled"}
+                          {statusValue === "requested"
+                            ? "Pending"
+                            : statusValue === "accepted"
+                              ? "Accepted"
+                              : statusValue === "pending"
+                                ? "Appointment"
+                                : statusValue === "confirmed"
+                                  ? "Confirmed"
+                                  : statusValue === "completed"
+                                    ? "Completed"
+                                    : "Cancelled"}
                         </span>
                       </td>
                       <td className="px-6 py-5">

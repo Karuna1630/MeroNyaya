@@ -5,24 +5,45 @@ from authentication.models import User
 
 class CaseDocumentSerializer(serializers.ModelSerializer):
     """Serializer for case documents"""
+
     uploaded_by_name = serializers.SerializerMethodField()
     uploaded_by_role = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = CaseDocument
-        fields = ['id', 'file', 'file_name', 'file_type', 'file_size', 'uploaded_at', 'uploaded_by', 'uploaded_by_name', 'uploaded_by_role']
+        fields = [
+            'id', 'file', 'file_name', 'file_type', 'file_size',
+            'uploaded_at', 'uploaded_by', 'uploaded_by_name', 'uploaded_by_role'
+        ]
         read_only_fields = ['id', 'uploaded_at']
-    
+
+    # FILE VALIDATION (size + type)
+    def validate_file(self, value):
+        # max 5MB
+        max_size = 5 * 1024 * 1024
+
+        if value.size > max_size:
+            raise serializers.ValidationError("File must be under 5MB")
+
+        allowed_extensions = ['pdf', 'jpg', 'png', 'docx']
+        ext = value.name.split('.')[-1].lower()
+
+        if ext not in allowed_extensions:
+            raise serializers.ValidationError(
+                "Allowed file types: pdf, jpg, png, docx"
+            )
+
+        return value
+
     def get_uploaded_by_name(self, obj):
         if obj.uploaded_by:
             return obj.uploaded_by.name
         return None
-    
+
     def get_uploaded_by_role(self, obj):
         if obj.uploaded_by:
             return obj.uploaded_by.role
         return None
-
 
 class CaseTimelineSerializer(serializers.ModelSerializer):
     """Serializer for case timeline events"""

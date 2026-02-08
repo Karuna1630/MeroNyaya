@@ -49,6 +49,7 @@ const LawyerFindCases = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Handlers for search and filter changes, which also reset pagination to the first page when filters change
   const handleSearchChange = (value) => {
     setSearchTerm(value);
     setCurrentPage(1);
@@ -90,7 +91,7 @@ const LawyerFindCases = () => {
     console.log('Error:', publicCasesError);
   }, [publicCases, publicCasesLoading, publicCasesError]);
 
-  // Filtering Logic
+  // Filtering cases based on search term, category, and priority
   const filteredCases = useMemo(() => {
     if (!publicCases || publicCases.length === 0) return [];
     
@@ -104,12 +105,14 @@ const LawyerFindCases = () => {
     });
   }, [publicCases, searchTerm, categoryFilter, priorityFilter]);
 
+  // handling proposal model open and close, and setting selected case for proposal submission
   const handleOpenProposal = (item) => {
     setSelectedCase(item);
     setShowProposedViewModal(false);
     setShowProposalModal(true);
   };
 
+  // handliing viewing proposed cases, which can come from either the public case list or the proposals list
   const handleViewProposed = ({ caseData, proposal }) => {
     const fallbackCase = caseData || {
       case_title: proposal.case_title,
@@ -118,6 +121,7 @@ const LawyerFindCases = () => {
       urgency_level: "Medium",
       created_at: proposal.created_at,
     };
+    
     setSelectedProposedCase(fallbackCase);
     setSelectedProposal(proposal || null);
     setShowProposalModal(false);
@@ -143,6 +147,7 @@ const LawyerFindCases = () => {
     return map;
   }, [publicCases]);
 
+  // cmbining proposal data with case data for proposed cases tab, 
   const proposedItems = useMemo(() => {
     const list = proposals || [];
     return list
@@ -150,6 +155,7 @@ const LawyerFindCases = () => {
         const caseData = caseById.get(proposal.case) || null;
         return { proposal, caseData };
       })
+      // filtering poposed cases based on category, priority and search term
       .filter(({ proposal, caseData }) => {
         const title = (caseData?.case_title || proposal.case_title || "").toLowerCase();
         const description = (caseData?.case_description || "").toLowerCase();
@@ -163,6 +169,7 @@ const LawyerFindCases = () => {
       });
   }, [proposals, caseById, searchTerm, categoryFilter, priorityFilter]);
 
+  // pagination logic for public cases tab, which calculates total pages and the cases to show on the current page based on the filtered and available cases
   const totalPublicPages = Math.ceil(availableCases.length / itemsPerPage) || 1;
   const pagedPublicCases = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -170,7 +177,7 @@ const LawyerFindCases = () => {
     return availableCases.slice(start, end);
   }, [availableCases, currentPage]);
 
-
+// function to get css classes for priority badge based on urgency level
   const getPriorityClasses = (priority) => {
     const upperPriority = (priority || "").toUpperCase();
     switch (upperPriority) {
@@ -181,7 +188,7 @@ const LawyerFindCases = () => {
       default: return "bg-gray-100 text-gray-700";
     }
   };
-
+// function to format date in a more readable format, used for displaying case posting date and proposal submission date
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);

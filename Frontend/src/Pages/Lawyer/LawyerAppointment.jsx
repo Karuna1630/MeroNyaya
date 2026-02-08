@@ -28,7 +28,7 @@ const LawyerAppointment = () => {
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("Pending");
   const [selectedDate, setSelectedDate] = useState(5);
-  const [currentMonth, setCurrentMonth] = useState({ month: 1, year: 2026 }); // February 2026
+  const [currentMonth, setCurrentMonth] = useState({ month: 2, year: 2026 }); // February 2026
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -46,9 +46,11 @@ const LawyerAppointment = () => {
   const [caseAppointmentProcessingId, setCaseAppointmentProcessingId] = useState(null);
   const initialFetchDoneRef = useRef(false);
 
+  // Select necessary state from Redux store
   const { consultations = [] } = useSelector(
     (state) => state.consultation || {}
   );
+  // slect case appoinments from both case details and case appoinments
   const { caseAppointments = [], caseAppointmentsLoading, cases = [] } = useSelector(
     (state) => state.case || {}
   );
@@ -63,24 +65,30 @@ const LawyerAppointment = () => {
     }
   }, [dispatch]);
 
+  // Combine case appointments from both case details and case appointments slice
   const caseAppointmentsFromCases = useMemo(() => {
     return (cases || []).flatMap((item) => item.appointments || []);
   }, [cases]);
 
+  // Merge case appointments from both case details and case appointments slice, removing duplicates based on appointment ID
   const mergedCaseAppointments = useMemo(() => {
     const map = new Map();
+    // Use a Map to ensure uniqueness of appointments based on their ID
     [...caseAppointmentsFromCases, ...caseAppointments].forEach((appointment) => {
       if (appointment?.id !== undefined && appointment?.id !== null) {
         map.set(appointment.id, appointment);
       }
     });
+    // Return the unique appointments as an array
     return Array.from(map.values());
   }, [caseAppointmentsFromCases, caseAppointments]);
 
+  // Calculate statistics for the dashboard based on consultations
   const stats = useMemo(() => {
     const pending = consultations.filter(c => c.status === "requested").length;
     const accepted = consultations.filter(c => c.status === "accepted").length;
     const completed = consultations.filter(c => c.status === "completed").length;
+    // retuning an arrray of objects with value, label and color for each stats
     return [
       { value: pending, label: "Pending", color: "text-amber-500" },
       { value: accepted, label: "Accepted", color: "text-green-500" },
@@ -88,6 +96,7 @@ const LawyerAppointment = () => {
     ];
   }, [consultations]);
 
+  // Filter consultations based on active tab selection
   const filteredConsultations = useMemo(() => {
     if (activeTab === "Pending") {
       return consultations.filter(c => c.status === "requested");
@@ -102,14 +111,16 @@ const LawyerAppointment = () => {
   const firstDayOfMonth = new Date(currentMonth.year, currentMonth.month, 1).getDay();
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   
+  // Handle file input changes for document uploads in case appointments
   const calendarDays = [];
   for (let i = 0; i < firstDayOfMonth; i++) {
     calendarDays.push(null);
   }
+  // Fill the calendar days for the current month
   for (let day = 1; day <= daysInMonth; day++) {
     calendarDays.push(day);
   }
-
+  // Function to handle month navigation in the calendar sidebar
   const handlePrevMonth = () => {
     setCurrentMonth(prev => ({
       month: prev.month === 0 ? 11 : prev.month - 1,
@@ -117,6 +128,7 @@ const LawyerAppointment = () => {
     }));
   };
 
+  // Function to handle month navigation in the calendar sidebar
   const handleNextMonth = () => {
     setCurrentMonth(prev => ({
       month: prev.month === 11 ? 0 : prev.month + 1,
@@ -124,6 +136,7 @@ const LawyerAppointment = () => {
     }));
   };
 
+  // Helper function to get the appropriate icon for the consultation mode (video, in-person, or default)
   const getModeIcon = (mode) => {
     switch (mode) {
       case "video":
@@ -135,6 +148,7 @@ const LawyerAppointment = () => {
     }
   };
 
+  // Helper function to format time strings into a more readable format for display in the consultations table
   const getModeLabel = (mode) => {
     switch (mode) {
       case "video":
@@ -146,6 +160,7 @@ const LawyerAppointment = () => {
     }
   };
 
+  // Handle file input changes for document uploads in case appointments
   const getProfileImageUrl = (profileImage, clientName = "Client") => {
     return profileImage || `https://ui-avatars.com/api/?name=${clientName}&background=0F1A3D&color=fff`;
   };
@@ -213,6 +228,7 @@ const LawyerAppointment = () => {
     }
   };
 
+  
   const handleConfirmCaseReject = async () => {
     if (!caseAppointmentToReject) return;
 

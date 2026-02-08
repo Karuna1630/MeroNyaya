@@ -30,7 +30,7 @@ const ClientDashboard = () => {
   const activeCases = useMemo(() => {
     return cases.filter(c => ['public', 'proposals_received', 'accepted', 'in_progress'].includes(c.status)).length;
   }, [cases]);
-
+  // Calculate new cases in the last 7 days for the subtitle of the Active Cases stat card
   const newCases = useMemo(() => {
     const recentDate = new Date();
     recentDate.setDate(recentDate.getDate() - 7);
@@ -83,6 +83,7 @@ const ClientDashboard = () => {
     }
   };
 
+  // Function to format dates in a user-friendly way for display in the recent cases list
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);

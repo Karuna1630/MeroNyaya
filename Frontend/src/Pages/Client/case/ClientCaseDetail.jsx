@@ -45,13 +45,16 @@ const ClientCaseDetail = () => {
     (caseData?.status === "accepted" || caseData?.status === "in_progress") &&
     hasAssignedLawyer;
 
+    // Fetch case details on component mount
   useEffect(() => {
     dispatch(fetchCases());
   }, [dispatch]);
 
+  // Reset schedule form when case data changes (e.g., when loading new case details)
   const availableDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
   const timeSlots = ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
 
+  // Function to reset the schedule meeting form to its initial state
   const resetScheduleForm = () => {
     setSelectedMeetingType("Video");
     setSelectedDay("Mon");
@@ -60,6 +63,7 @@ const ClientCaseDetail = () => {
     setScheduleError("");
   };
 
+  // Handle changes in the schedule meeting form inputs and update state accordingly
   const handleScheduleChange = (e) => {
     const { name, value } = e.target;
     setMeetingForm((prev) => ({ ...prev, [name]: value }));
@@ -68,6 +72,7 @@ const ClientCaseDetail = () => {
     }
   };
 
+  // Function to validate the schedule meeting form inputs before submission
   const validateScheduleForm = () => {
     if (!meetingForm.title.trim()) {
       return "Meeting title is required.";
@@ -82,7 +87,7 @@ const ClientCaseDetail = () => {
     }
     return "";
   };
-
+// Handle form submission for scheduling a case meeting, including validation and dispatching the scheduleCaseAppointment action
   const handleScheduleMeeting = async (e) => {
     e.preventDefault();
     if (!caseData?.id) {
@@ -99,6 +104,7 @@ const ClientCaseDetail = () => {
       return;
     }
 
+    // Dispatch the scheduleCaseAppointment action with the form data and handle success/error cases
     try {
       await dispatch(
         scheduleCaseAppointment({

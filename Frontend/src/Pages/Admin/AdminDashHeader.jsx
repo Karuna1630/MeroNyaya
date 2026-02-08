@@ -14,9 +14,11 @@ const AdminDashHeader = ({ title, subtitle }) => {
   const { userProfile } = useSelector((state) => state.profile);
   const profileFetchedRef = useRef(false);
 
+  // Normalize user role for consistent access
   const profile = user || userProfile;
   const avatarSrc = profile?.profile_image;
 
+  // Fetch user profile if authenticated and not already fetched
   useEffect(() => {
     if (isAuthenticated && !profileFetchedRef.current) {
       profileFetchedRef.current = true;
@@ -24,20 +26,22 @@ const AdminDashHeader = ({ title, subtitle }) => {
     }
   }, [dispatch, isAuthenticated]);
 
+  // Determine if the current route is the admin dashboard to apply active styles
   const isDashboardActive = location.pathname === "/admindashboard";
 
+  // Close dropdown when clicking outside
   const handleDashboard = () => {
     if (!isDashboardActive) {
       navigate("/admindashboard");
     }
     setOpen(false);
   };
-
+// Close dropdown when clicking outside and navigate to view profile
   const handleViewProfile = () => {
     navigate("/viewprofile");
     setOpen(false);
   };
-
+// Handle logout action, dispatching logout and navigating to login page
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login");
@@ -69,6 +73,7 @@ const AdminDashHeader = ({ title, subtitle }) => {
               onClick={() => setOpen(!open)}
               className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0F1A3D] text-white hover:bg-blue-950 transition font-semibold overflow-hidden"
             >
+         { /* Display user avatar if available, otherwise show the first letter of the user's name or a default "A" */}
               {avatarSrc ? (
                 <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
               ) : (

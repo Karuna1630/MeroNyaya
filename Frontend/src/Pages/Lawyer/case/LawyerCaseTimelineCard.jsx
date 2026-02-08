@@ -9,6 +9,7 @@ const LawyerCaseTimelineCard = ({ caseId, timeline = [], onTimelineUpdate, isAss
   const [description, setDescription] = useState("");
   const { addTimelineEventLoading } = useSelector((state) => state.case);
 
+  // Helper function to format date strings into a more readable format for display in the timeline events
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -19,6 +20,7 @@ const LawyerCaseTimelineCard = ({ caseId, timeline = [], onTimelineUpdate, isAss
     });
   };
 
+  // Determine if the current user is the assigned lawyer and if the case is in a state that allows adding timeline events
   const handleAddNote = async () => {
     if (!topic.trim() || !description.trim()) return;
 

@@ -24,16 +24,22 @@ class CaseViewSet(viewsets.ModelViewSet):
     ViewSet for managing legal cases
     """
     permission_classes = [IsAuthenticated]
+    # Using different serializers for list and detail views
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    # Enable searching and ordering on list endpoints
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    # Allow searching by case title and description, and ordering by creation or update time
     search_fields = ['case_title', 'case_description']
     ordering_fields = ['created_at', 'updated_at']
     ordering = ['-created_at']
     
+    
+    # filtering queryset based on user role and query parameters
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return Case.objects.none()
 
+        # Get the authenticated user
         user = self.request.user
         if not user.is_authenticated:
             return Case.objects.none()
@@ -70,6 +76,7 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         return queryset
     
+    # Dynamically select serializer based on action (list, retrieve, etc.)
     def get_serializer_class(self):
         if self.action == 'list':
             return CaseListSerializer
@@ -77,6 +84,8 @@ class CaseViewSet(viewsets.ModelViewSet):
             return PublicCaseSerializer
         return CaseSerializer
     
+
+    # CREATE CASE - only clients can create cases, with optional preferred lawyers and document uploads
     def create(self, request, *args, **kwargs):
         """
         Create a new case (clients only)
@@ -86,13 +95,14 @@ class CaseViewSet(viewsets.ModelViewSet):
                 {'error': 'Only clients can create cases'},
                 status=status.HTTP_403_FORBIDDEN
             )
-
+        # handle preferred lawyers if provided (accepting both list and comma-separated string formats)
         preferred_ids = []
         if 'preferred_lawyers' in request.data:
             preferred_ids = request.data.getlist('preferred_lawyers')
             if len(preferred_ids) == 1 and isinstance(preferred_ids[0], str) and ',' in preferred_ids[0]:
                 preferred_ids = [item.strip() for item in preferred_ids[0].split(',') if item.strip()]
 
+        # Validate preferred lawyer IDs if provided
         if preferred_ids:
             valid_lawyers = User.objects.filter(id__in=preferred_ids, role='Lawyer')
             if valid_lawyers.count() != len(set(preferred_ids)):
@@ -101,10 +111,13 @@ class CaseViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         
+        # Validate the request data using the serializer
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        # Save the case to database, associating it with the authenticated client
         case = serializer.save()
 
+        # Set preferred lawyers if provided
         if preferred_ids:
             case.preferred_lawyers.set(valid_lawyers)
         
@@ -117,18 +130,23 @@ class CaseViewSet(viewsets.ModelViewSet):
             created_by=request.user
         )
         
-        # Handle file uploads
+      # Handle file uploads using serializer validation
         files = request.FILES.getlist('documents')
+
+        # Validate each file using the CaseDocumentSerializer
         for file in files:
-            doc = CaseDocument.objects.create(
-                case=case,
-                uploaded_by=request.user,
-                file=file,
-                file_name=file.name,
-                file_type=file.name.split('.')[-1].lower(),
-                file_size=file.size
-            )
-            
+            document_data = {
+                "file": file,
+                "file_name": file.name,
+                "file_type": file.name.split('.')[-1].lower(),
+                "file_size": file.size,
+                "uploaded_by": request.user.id
+            }
+
+            doc_serializer = CaseDocumentSerializer(data=document_data)
+            doc_serializer.is_valid(raise_exception=True)
+            doc_serializer.save(case=case)
+
             # Create timeline event for document upload
             CaseTimeline.objects.create(
                 case=case,

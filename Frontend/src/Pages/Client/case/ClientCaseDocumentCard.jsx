@@ -52,6 +52,7 @@ const ClientCaseDocumentCard = ({ caseId, documents = [] }) => {
     });
   };
 
+  // Handle document download by creating a temporary link and triggering a click event
   const handleDownload = (fileUrl, fileName) => {
     const link = document.createElement('a');
     link.href = fileUrl;
