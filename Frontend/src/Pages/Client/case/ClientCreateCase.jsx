@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
@@ -6,23 +6,13 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '../sidebar';
 import ClientDashHeader from '../ClientDashHeader';
-import { FileText, Users, Calendar, Upload, AlertCircle, Info, Lock, Globe } from 'lucide-react';
+import { FileText, Users, Upload, AlertCircle, Info } from 'lucide-react';
 import { CreateCaseInitialValues, CreateCaseValidationSchema } from '../../utils/CreateCaseValidation';
+import { LAW_CATEGORIES } from '../../../utils/lawCategories';
 import { createCase, updateCase, fetchCaseById } from '../../slices/caseSlice';
 import { fetchVerifiedLawyers } from '../../slices/lawyerSlice';
 
-const caseCategories = [
-  "Family Law",
-  "Property Law",
-  "Criminal Law",
-  "Corporate Law",
-  "Civil Litigation",
-  "Banking & Finance",
-  "Labor Law",
-  "Immigration Law",
-  "Insurance Law",
-  "Tort Law",
-];
+const caseCategories = LAW_CATEGORIES;
 
 const ClientCreateCase = () => {
   const dispatch = useDispatch();
@@ -41,7 +31,7 @@ const ClientCreateCase = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const [lawyerSelectionMode, setLawyerSelectionMode] = useState('public');
-  const [lawyerSearchTerm, setLawyerSearchTerm] = useState('');
+  const [lawyerDropdownValue, setLawyerDropdownValue] = useState('');
   const [casePrivacy, setCasePrivacy] = useState('public');
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const formikRef = useRef();
@@ -64,13 +54,6 @@ const ClientCreateCase = () => {
       dispatch(fetchVerifiedLawyers());
     }
   }, [dispatch, lawyerSelectionMode]);
-
-  const filteredLawyers = useMemo(() => {
-    const list = Array.isArray(verifiedLawyers) ? verifiedLawyers : [];
-    if (!lawyerSearchTerm.trim()) return [];
-    const term = lawyerSearchTerm.toLowerCase();
-    return list.filter((lawyer) => (lawyer.name || '').toLowerCase().includes(term));
-  }, [verifiedLawyers, lawyerSearchTerm]);
 
 
   const handleDrag = (e) => {
@@ -123,7 +106,9 @@ const ClientCreateCase = () => {
         urgency_level: values.urgencyLevel,
         lawyer_selection: values.lawyerSelection,
         preferred_lawyers: values.lawyerSelection === 'specific' ? values.selectedLawyerIds : [],
-        request_consultation: values.requestConsultation,
+        request_consultation: isEditMode
+          ? caseDetails?.request_consultation ?? false
+          : false,
         status: casePrivacy === 'private' ? 'draft' : 'public',
         documents: uploadedFiles,
       };
@@ -159,7 +144,12 @@ const ClientCreateCase = () => {
         {/* Main Content */}
         <div className="flex-1">
           {/* Header */}
-          <ClientDashHeader />
+          <ClientDashHeader
+            title={isEditMode ? 'Edit Case' : 'Create New Case'}
+            subtitle={isEditMode
+              ? 'Update your case details or change its privacy settings.'
+              : 'Provide details about your legal issue to connect with suitable lawyers.'}
+          />
 
           {/* Page Content */}
           <div className="p-8">
@@ -172,18 +162,6 @@ const ClientCreateCase = () => {
               </div>
             ) : (
             <>
-            {/* Page Header */}
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-[#0F1A3D] mb-2">
-                {isEditMode ? 'Edit Case' : 'Create New Case'}
-              </h1>
-              <p className="text-sm text-gray-600">
-                {isEditMode 
-                  ? 'Update your case details or change its privacy settings.'
-                  : 'Provide details about your legal issue to connect with suitable lawyers.'}
-              </p>
-            </div>
-
             {/* Main Form Card */}
             <div className="max-w-4xl mx-auto">
               <Formik
@@ -192,10 +170,9 @@ const ClientCreateCase = () => {
                   caseCategory: caseDetails.case_category || '',
                   caseDescription: caseDetails.case_description || '',
                   opposingParty: caseDetails.opposing_party || '',
-                  urgencyLevel: caseDetails.urgency_level || 'medium',
+                  urgencyLevel: caseDetails.urgency_level || 'Medium',
                   lawyerSelection: caseDetails.lawyer_selection || 'public',
                   selectedLawyerIds: caseDetails.preferred_lawyers || [],
-                  requestConsultation: caseDetails.request_consultation || false,
                 } : CreateCaseInitialValues}
                 validationSchema={CreateCaseValidationSchema}
                 onSubmit={handleSubmit}
@@ -211,7 +188,7 @@ const ClientCreateCase = () => {
                   const selectedLawyers = (Array.isArray(verifiedLawyers) ? verifiedLawyers : []).filter(
                     (lawyer) => selectedIds.includes(String(lawyer.id))
                   );
-                  const availableLawyers = filteredLawyers.filter(
+                  const availableLawyers = (Array.isArray(verifiedLawyers) ? verifiedLawyers : []).filter(
                     (lawyer) => !selectedIds.includes(String(lawyer.id))
                   );
 
@@ -384,6 +361,7 @@ const ClientCreateCase = () => {
                       onChange={(e) => {
                         setFieldValue('lawyerSelection', e.target.value);
                         setFieldValue('selectedLawyerIds', []);
+                        setLawyerDropdownValue('');
                         setLawyerSelectionMode('public');
                       }}
                     />
@@ -393,15 +371,41 @@ const ClientCreateCase = () => {
 
                 {values.lawyerSelection === 'specific' && (
                   <div className="mt-4 border border-gray-200 rounded-lg p-4 space-y-3">
-                    <label className="block text-sm font-medium text-gray-700">Search Lawyer</label>
-                    <input
-                      type="text"
-                      value={lawyerSearchTerm}
-                      onChange={(e) => setLawyerSearchTerm(e.target.value)}
-                      placeholder="Search by lawyer name"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent"
-                    />
+                    <label className="block text-sm font-medium text-gray-700">Available Lawyers</label>
+                    <select
+                      value={lawyerDropdownValue}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        if (!id) return;
+                        if (selectedIds.includes(id)) {
+                          setLawyerDropdownValue('');
+                          return;
+                        }
+                        if (selectedIds.length >= 3) {
+                          setFieldTouched('selectedLawyerIds', true, false);
+                          setFieldError('selectedLawyerIds', 'You can select up to 3 lawyers');
+                          setLawyerDropdownValue('');
+                          return;
+                        }
+                        setFieldError('selectedLawyerIds', undefined);
+                        setFieldValue('selectedLawyerIds', [...selectedIds, id]);
+                        setLawyerDropdownValue('');
+                      }}
+                      disabled={verifiedLawyersLoading}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0F1A3D] focus:border-transparent bg-white disabled:bg-gray-100"
+                    >
+                      <option value="">Select a lawyer</option>
+                      {availableLawyers.map((lawyer) => (
+                        <option key={lawyer.id} value={String(lawyer.id)}>
+                          {lawyer.name || 'Unnamed lawyer'}
+                          {lawyer.city ? ` - ${lawyer.city}` : ''}
+                        </option>
+                      ))}
+                    </select>
                     <p className="text-xs text-gray-500">Select up to 3 lawyers</p>
+                    {!verifiedLawyersLoading && !verifiedLawyersError && availableLawyers.length === 0 && (
+                      <p className="text-xs text-gray-500">No lawyers available right now.</p>
+                    )}
 
                     {selectedLawyers.length > 0 && (
                       <div className="space-y-2">
@@ -433,46 +437,11 @@ const ClientCreateCase = () => {
                       </div>
                     )}
 
-                    {verifiedLawyersLoading ? (
+                    {verifiedLawyersLoading && (
                       <p className="text-sm text-gray-500">Loading lawyers...</p>
-                    ) : verifiedLawyersError ? (
+                    )}
+                    {verifiedLawyersError && (
                       <p className="text-sm text-red-500">{verifiedLawyersError}</p>
-                    ) : lawyerSearchTerm.trim() ? (
-                      <div className="max-h-56 overflow-y-auto border border-gray-200 rounded-lg">
-                        {availableLawyers.length === 0 ? (
-                          <p className="text-sm text-gray-500 p-3">No lawyers found.</p>
-                        ) : (
-                          availableLawyers.map((lawyer) => (
-                            <button
-                              key={lawyer.id}
-                              type="button"
-                              onClick={() => {
-                                const id = String(lawyer.id);
-                                if (selectedIds.includes(id)) {
-                                  return;
-                                }
-                                if (selectedIds.length >= 3) {
-                                  setFieldTouched('selectedLawyerIds', true, false);
-                                  setFieldError('selectedLawyerIds', 'You can select up to 3 lawyers');
-                                  return;
-                                }
-                                setFieldError('selectedLawyerIds', undefined);
-                                setFieldValue('selectedLawyerIds', [...selectedIds, id]);
-                              }}
-                              className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                                ''
-                              }`}
-                            >
-                              <p className="text-sm font-medium text-[#0F1A3D]">{lawyer.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {lawyer.city || 'Unknown city'}{lawyer.law_firm_name ? ` • ${lawyer.law_firm_name}` : ''}
-                              </p>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">Start typing to see matching lawyers.</p>
                     )}
                     <ErrorMessage
                       name="selectedLawyerIds"
@@ -492,28 +461,7 @@ const ClientCreateCase = () => {
                 )}
               </div>
 
-              <hr className="my-8 border-gray-200" />
-
-              {/* Section 4: Consultation Preference */}
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-6">
-                  <Calendar size={20} className="text-[#0F1A3D]" />
-                  <h2 className="text-lg font-semibold text-[#0F1A3D]">Consultation Preference</h2>
-                </div>
-
-                <label className="flex items-start cursor-pointer">
-                  <Field
-                    type="checkbox"
-                    name="requestConsultation"
-                    className="w-4 h-4 mt-0.5 text-[#0F1A3D] focus:ring-[#0F1A3D] rounded"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">I want to request a consultation for this case</span>
-                </label>
-              </div>
-
-              <hr className="my-8 border-gray-200" />
-
-              {/* Section 5: Case Documents */}
+              {/* Section 4: Case Documents */}
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-6">
                   <Upload size={20} className="text-[#0F1A3D]" />
@@ -578,7 +526,7 @@ const ClientCreateCase = () => {
 
               <hr className="my-8 border-gray-200" />
 
-              {/* Section 6: Privacy & Terms */}
+              {/* Section 5: Privacy & Terms */}
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-6">
                   <Info size={20} className="text-[#0F1A3D]" />

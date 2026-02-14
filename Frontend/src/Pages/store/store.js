@@ -24,5 +24,6 @@ export const store = configureStore({
     consultation: consultationReducer,
     appointment: appointmentReducer,
   },
+  // Enable Redux DevTools only in development mode
   devTools: import.meta.env.DEV,
 });

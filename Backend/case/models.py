@@ -30,16 +30,16 @@ class Case(models.Model):
     
     # Category Choices
     CATEGORY_CHOICES = [
+        ('Criminal Law', 'Criminal Law'),
+        ('Civil Law', 'Civil Law'),
         ('Family Law', 'Family Law'),
         ('Property Law', 'Property Law'),
-        ('Criminal Law', 'Criminal Law'),
         ('Corporate Law', 'Corporate Law'),
-        ('Civil Litigation', 'Civil Litigation'),
-        ('Banking & Finance', 'Banking & Finance'),
         ('Labor Law', 'Labor Law'),
+        ('Constitutional Law', 'Constitutional Law'),
+        ('Environmental Law', 'Environmental Law'),
+        ('Tax Law', 'Tax Law'),
         ('Immigration Law', 'Immigration Law'),
-        ('Insurance Law', 'Insurance Law'),
-        ('Tort Law', 'Tort Law'),
     ]
     
     # Relationships

@@ -6,6 +6,7 @@ import ClientDashHeader from "./ClientDashHeader";
 import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCircle2, MessageSquare, Video, Filter } from "lucide-react";
 import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
 import { LAW_CATEGORIES } from "../../utils/lawCategories";
+import LawyerProfileModal from "./LawyerProfileModal";
 
 const specializations = [
   "All Specializations",
@@ -24,6 +25,8 @@ const FindLawyers = () => {
   // Local component state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialization, setSelectedSpecialization] = useState("All Specializations");
+  const [selectedLawyer, setSelectedLawyer] = useState(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Fetch verified lawyers on component mount
   useEffect(() => {
@@ -110,6 +113,16 @@ const FindLawyers = () => {
     // Default: sort by rating (Top Rated)
     return [...filteredLawyers].sort((a, b) => b.rating - a.rating);
   }, [filteredLawyers]);
+
+  const handleOpenProfile = (lawyer) => {
+    setSelectedLawyer(lawyer);
+    setIsProfileOpen(true);
+  };
+
+  const handleCloseProfile = () => {
+    setIsProfileOpen(false);
+    setSelectedLawyer(null);
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -267,7 +280,14 @@ const FindLawyers = () => {
                 </div>
 
                 {/* Footer Action */}
-                <div className="mt-auto">
+                <div className="mt-auto space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenProfile(lawyer)}
+                    className="w-full py-2.5 px-4 border border-[#0F1A3D] text-[#0F1A3D] rounded-lg font-semibold text-sm hover:bg-[#0F1A3D] hover:text-white transition"
+                  >
+                    View Profile
+                  </button>
                   <button 
                     onClick={() => navigate(`/lawyer/${lawyer.id}`)}
                     className="w-full py-2.5 px-4 bg-[#0F1A3D] text-white rounded-lg font-semibold text-sm hover:bg-[#1a2b5a] transition"
@@ -289,6 +309,11 @@ const FindLawyers = () => {
           )}
         </div>
       </div>
+      <LawyerProfileModal
+        isOpen={isProfileOpen}
+        onClose={handleCloseProfile}
+        lawyer={selectedLawyer}
+      />
     </div>
   );
 };
