@@ -1,5 +1,14 @@
 import React from "react";
-import { X, MapPin, Briefcase, Star, CheckCircle2, Phone, CalendarDays, Clock } from "lucide-react";
+import {
+  X,
+  MapPin,
+  Briefcase,
+  Star,
+  CheckCircle2,
+  Phone,
+  CalendarDays,
+  Clock,
+} from "lucide-react";
 
 const formatAvailability = (days) => {
   if (!days) return "N/A";
@@ -11,7 +20,10 @@ const getCategories = (specialization) => {
   if (!specialization) return [];
   if (Array.isArray(specialization)) return specialization.filter(Boolean);
   if (typeof specialization === "string") {
-    return specialization.split(",").map((s) => s.trim()).filter(Boolean);
+    return specialization
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   return [];
 };
@@ -22,7 +34,6 @@ const LawyerProfileModal = ({ isOpen, onClose, lawyer }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden">
-
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-[#0F1A3D]">
@@ -37,10 +48,8 @@ const LawyerProfileModal = ({ isOpen, onClose, lawyer }) => {
         </div>
 
         <div className="p-6 space-y-6">
-
           {/* Top Section */}
           <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-
             <div className="flex gap-5 flex-1">
               <img
                 src={lawyer.image}
@@ -100,9 +109,7 @@ const LawyerProfileModal = ({ isOpen, onClose, lawyer }) => {
 
           {/* About */}
           <div>
-            <h4 className="text-sm font-semibold text-[#0F1A3D] mb-2">
-              About
-            </h4>
+            <h4 className="text-sm font-semibold text-[#0F1A3D] mb-2">About</h4>
             <p className="text-sm text-gray-600 leading-relaxed">
               {lawyer.bio || "No bio available yet."}
             </p>
@@ -149,72 +156,54 @@ const LawyerProfileModal = ({ isOpen, onClose, lawyer }) => {
                   </span>
                 ))
               ) : (
-                <span className="text-sm text-gray-500">
-                  General Practice
-                </span>
+                <span className="text-sm text-gray-500">General Practice</span>
               )}
             </div>
           </div>
+          {/* Availability */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Availability Days */}
+            <div>
+              <h4 className="text-sm font-semibold text-[#0F1A3D] mb-3">
+                Availability Days
+              </h4>
 
-      {/* Availability Section */}
-<div className="bg-gray-50 rounded-xl p-5 space-y-6">
+              <div className="flex flex-wrap gap-2">
+                {lawyer.availabilityDays ? (
+                  Array.isArray(lawyer.availabilityDays) ? (
+                    lawyer.availabilityDays.map((day) => (
+                      <span
+                        key={day}
+                        className="px-3 py-1 rounded-full text-xs bg-[#0F1A3D] text-white"
+                      >
+                        {day}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-xs bg-[#0F1A3D] text-white">
+                      {lawyer.availabilityDays}
+                    </span>
+                  )
+                ) : (
+                  <span className="text-sm text-gray-500">N/A</span>
+                )}
+              </div>
+            </div>
 
-  <h4 className="text-sm font-semibold text-[#0F1A3D]">
-    Availability
-  </h4>
+            {/* Availability Time */}
+            <div>
+              <h4 className="text-sm font-semibold text-[#0F1A3D] mb-3">
+                Availability Time
+              </h4>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-    {/* Availability Days */}
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <CalendarDays size={16} className="text-blue-600" />
-        <p className="text-sm font-medium text-[#0F1A3D]">
-          Available Days
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {lawyer.availabilityDays ? (
-          Array.isArray(lawyer.availabilityDays)
-            ? lawyer.availabilityDays.map((day) => (
-                <span
-                  key={day}
-                  className="px-3 py-1.5 rounded-full text-xs bg-blue-100 text-blue-700 font-medium"
-                >
-                  {day}
+              <div className="flex flex-wrap gap-2">
+                <span className="px-3 py-1 rounded-full text-xs bg-[#0F1A3D] text-white">
+                  {lawyer.availableFrom || "N/A"} —{" "}
+                  {lawyer.availableUntil || "N/A"}
                 </span>
-              ))
-            : (
-              <span className="px-3 py-1.5 rounded-full text-xs bg-blue-100 text-blue-700 font-medium">
-                {lawyer.availabilityDays}
-              </span>
-            )
-        ) : (
-          <span className="text-gray-500 text-sm">N/A</span>
-        )}
-      </div>
-    </div>
-
-    {/* Availability Time */}
-    <div>
-      <div className="flex items-center gap-2 mb-3">
-        <Clock size={16} className="text-blue-600" />
-        <p className="text-sm font-medium text-[#0F1A3D]">
-          Available Time
-        </p>
-      </div>
-
-      <div className="px-5 py-3 rounded-lg bg-white border border-blue-200 text-blue-700 text-sm font-semibold shadow-sm w-fit">
-        {lawyer.availableFrom || "N/A"} — {lawyer.availableUntil || "N/A"}
-      </div>
-    </div>
-
-  </div>
-</div>
-
-
-
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
