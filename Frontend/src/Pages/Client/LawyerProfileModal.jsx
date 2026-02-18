@@ -1,5 +1,5 @@
 import React from "react";
-import { X, MapPin, Briefcase, Star, CheckCircle2, Phone, CalendarDays } from "lucide-react";
+import { X, MapPin, Briefcase, Star, CheckCircle2, Phone, CalendarDays, Clock } from "lucide-react";
 
 const formatAvailability = (days) => {
   if (!days) return "N/A";
@@ -156,22 +156,64 @@ const LawyerProfileModal = ({ isOpen, onClose, lawyer }) => {
             </div>
           </div>
 
-          {/* Availability - BLUE STYLE */}
-          <div>
-            <h4 className="text-sm font-semibold text-[#0F1A3D] mb-3">
-              Availability
-            </h4>
-            <div className="flex flex-wrap gap-3">
-              <span className="px-4 py-1.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-200">
-                {formatAvailability(lawyer.availabilityDays)}
-              </span>
+      {/* Availability Section */}
+<div className="bg-gray-50 rounded-xl p-5 space-y-6">
 
-              <span className="px-4 py-1.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-200">
-                {lawyer.availableFrom || "N/A"} -{" "}
-                {lawyer.availableUntil || "N/A"}
+  <h4 className="text-sm font-semibold text-[#0F1A3D]">
+    Availability
+  </h4>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+    {/* Availability Days */}
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <CalendarDays size={16} className="text-blue-600" />
+        <p className="text-sm font-medium text-[#0F1A3D]">
+          Available Days
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {lawyer.availabilityDays ? (
+          Array.isArray(lawyer.availabilityDays)
+            ? lawyer.availabilityDays.map((day) => (
+                <span
+                  key={day}
+                  className="px-3 py-1.5 rounded-full text-xs bg-blue-100 text-blue-700 font-medium"
+                >
+                  {day}
+                </span>
+              ))
+            : (
+              <span className="px-3 py-1.5 rounded-full text-xs bg-blue-100 text-blue-700 font-medium">
+                {lawyer.availabilityDays}
               </span>
-            </div>
-          </div>
+            )
+        ) : (
+          <span className="text-gray-500 text-sm">N/A</span>
+        )}
+      </div>
+    </div>
+
+    {/* Availability Time */}
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <Clock size={16} className="text-blue-600" />
+        <p className="text-sm font-medium text-[#0F1A3D]">
+          Available Time
+        </p>
+      </div>
+
+      <div className="px-5 py-3 rounded-lg bg-white border border-blue-200 text-blue-700 text-sm font-semibold shadow-sm w-fit">
+        {lawyer.availableFrom || "N/A"} — {lawyer.availableUntil || "N/A"}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
 
         </div>
       </div>
