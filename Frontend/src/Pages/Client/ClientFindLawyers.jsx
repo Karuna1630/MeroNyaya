@@ -7,6 +7,7 @@ import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCirc
 import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
 import { LAW_CATEGORIES } from "../../utils/lawCategories";
 import LawyerProfileModal from "./LawyerProfileModal";
+import ConsultationModal from "./ConsultationModal";
 
 const specializations = [
   "All Specializations",
@@ -27,6 +28,7 @@ const FindLawyers = () => {
   const [selectedSpecialization, setSelectedSpecialization] = useState("All Specializations");
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isConsultOpen, setIsConsultOpen] = useState(false);
 
   // Fetch verified lawyers on component mount
   useEffect(() => {
@@ -288,8 +290,11 @@ const FindLawyers = () => {
                   >
                     View Profile
                   </button>
-                  <button 
-                    onClick={() => navigate(`/lawyer/${lawyer.id}`)}
+                 <button 
+  onClick={() => {
+    setSelectedLawyer(lawyer);
+    setIsConsultOpen(true);
+  }}
                     className="w-full py-2.5 px-4 bg-[#0F1A3D] text-white rounded-lg font-semibold text-sm hover:bg-[#1a2b5a] transition"
                   >
                     Request Consultation
@@ -314,6 +319,12 @@ const FindLawyers = () => {
         onClose={handleCloseProfile}
         lawyer={selectedLawyer}
       />
+      <ConsultationModal
+  isOpen={isConsultOpen}
+  onClose={() => setIsConsultOpen(false)}
+  lawyer={selectedLawyer}
+/>
+
     </div>
   );
 };
