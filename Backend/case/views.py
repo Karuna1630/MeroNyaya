@@ -8,6 +8,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from authentication.models import User
+from notification.utils import send_notification
 
 from .models import Case, CaseDocument, CaseTimeline, CaseAppointment
 from .serializers import (
@@ -156,6 +157,16 @@ class CaseViewSet(viewsets.ModelViewSet):
                 created_by=request.user
             )
         
+        # Notify preferred lawyers about the new case
+        if preferred_ids:
+            for lawyer in valid_lawyers:
+                send_notification(
+                    user=lawyer,
+                    title='New Case Available',
+                    message=f'{request.user.name} posted a new case: "{case.case_title}"',
+                    notif_type='case'
+                )
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
@@ -221,6 +232,16 @@ class CaseViewSet(viewsets.ModelViewSet):
                 created_by=request.user
             )
         
+        # Notify the other party about new documents
+        notify_user = case.lawyer if case.client == request.user else case.client
+        if notify_user:
+            send_notification(
+                user=notify_user,
+                title='New Document Uploaded',
+                message=f'{request.user.name} uploaded {len(documents)} document(s) to case "{case.case_title}"',
+                notif_type='case'
+            )
+
         serializer = CaseDocumentSerializer(documents, many=True)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
@@ -255,6 +276,14 @@ class CaseViewSet(viewsets.ModelViewSet):
             title='Case Accepted',
             description=f'Lawyer {request.user.name} accepted the case',
             created_by=request.user
+        )
+
+        # Notify client that their case was accepted
+        send_notification(
+            user=case.client,
+            title='Case Accepted',
+            message=f'Lawyer {request.user.name} accepted your case "{case.case_title}"',
+            notif_type='case'
         )
         
         serializer = self.get_serializer(case)
@@ -301,6 +330,23 @@ class CaseViewSet(viewsets.ModelViewSet):
             description=f'Case status changed to {new_status.replace("_", " ").title()}',
             created_by=request.user
         )
+
+        # Notify the other party about status change
+        if case.client and case.client != request.user:
+            send_notification(
+                user=case.client,
+                title='Case Status Updated',
+                message=f'Your case "{case.case_title}" is now {new_status.replace("_", " ").title()}',
+                notif_type='case'
+            )
+        if case.lawyer and case.lawyer != request.user:
+            send_notification(
+                user=case.lawyer,
+                title='Case Status Updated',
+                message=f'Case "{case.case_title}" is now {new_status.replace("_", " ").title()}',
+                notif_type='case'
+            )
+
         serializer = self.get_serializer(case)
         return Response(serializer.data)
     @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
@@ -417,6 +463,14 @@ class CaseViewSet(viewsets.ModelViewSet):
             lawyer=case.lawyer
         )
 
+        # Notify lawyer about the new meeting request
+        send_notification(
+            user=case.lawyer,
+            title='New Meeting Request',
+            message=f'{request.user.name} requested a meeting for case "{case.case_title}"',
+            notif_type='appointment'
+        )
+
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
 
 
@@ -489,6 +543,14 @@ class CaseAppointmentViewSet(viewsets.ModelViewSet):
         appointment.status = CaseAppointment.STATUS_CONFIRMED
         appointment.save()
 
+        # Notify client that appointment is confirmed
+        send_notification(
+            user=appointment.client,
+            title='Appointment Confirmed',
+            message=f'Your appointment for case "{appointment.case.case_title}" has been confirmed by {request.user.name}',
+            notif_type='appointment'
+        )
+
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
@@ -513,6 +575,14 @@ class CaseAppointmentViewSet(viewsets.ModelViewSet):
         appointment.status = CaseAppointment.STATUS_CANCELLED
         appointment.save()
 
+        # Notify client that appointment was rejected
+        send_notification(
+            user=appointment.client,
+            title='Appointment Rejected',
+            message=f'Your appointment for case "{appointment.case.case_title}" was rejected by {request.user.name}',
+            notif_type='appointment'
+        )
+
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
@@ -536,5 +606,13 @@ class CaseAppointmentViewSet(viewsets.ModelViewSet):
 
         appointment.status = CaseAppointment.STATUS_COMPLETED
         appointment.save()
+
+        # Notify client that appointment is completed
+        send_notification(
+            user=appointment.client,
+            title='Appointment Completed',
+            message=f'Your appointment for case "{appointment.case.case_title}" has been marked as completed',
+            notif_type='appointment'
+        )
 
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)

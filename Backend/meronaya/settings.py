@@ -35,6 +35,7 @@ AUTH_USER_MODEL = 'authentication.User'
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'corsheaders',
+    'channels',
     'rest_framework_simplejwt.token_blacklist',
     
     #My apps
@@ -57,6 +59,7 @@ INSTALLED_APPS = [
     'proposal',
     'consultation',
     'appointment',
+    'notification',
     
 ]
 
@@ -98,6 +101,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'meronaya.wsgi.application'
+ASGI_APPLICATION  = 'meronaya.asgi.application'
+
+# Channel layer — InMemoryChannelLayer is fine for development.
+# Switch to channels_redis for production.
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 
 # Database

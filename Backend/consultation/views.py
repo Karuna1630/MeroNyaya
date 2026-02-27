@@ -8,6 +8,7 @@ from case.models import Case
 from .models import Consultation
 from .serializers import ConsultationSerializer
 from appointment.models import Appointment
+from notification.utils import send_notification
 
 
 class ConsultationViewSet(viewsets.ModelViewSet):
@@ -66,7 +67,15 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 		return super().create(request, *args, **kwargs)
 
 	def perform_create(self, serializer):
-		serializer.save(client=self.request.user)
+		consultation = serializer.save(client=self.request.user)
+
+		# Notify the lawyer about new consultation request
+		send_notification(
+			user=consultation.lawyer,
+			title='New Consultation Request',
+			message=f'{self.request.user.name} requested a consultation with you',
+			notif_type='appointment'
+		)
 
 	@action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
 	def accept(self, request, pk=None):
@@ -104,6 +113,15 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 		else:
 			appointment.status = Appointment.STATUS_PENDING
 		appointment.save(update_fields=["scheduled_date", "scheduled_time", "payment_status", "status", "updated_at"])
+
+		# Notify client that consultation was accepted
+		send_notification(
+			user=consultation.client,
+			title='Consultation Accepted',
+			message=f'Lawyer {request.user.name} accepted your consultation request',
+			notif_type='appointment'
+		)
+
 		return Response(self.get_serializer(consultation).data)
 
 	@action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
@@ -114,6 +132,15 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 
 		consultation.status = Consultation.STATUS_REJECTED
 		consultation.save(update_fields=["status", "updated_at"])
+
+		# Notify client that consultation was rejected
+		send_notification(
+			user=consultation.client,
+			title='Consultation Rejected',
+			message=f'Lawyer {request.user.name} rejected your consultation request',
+			notif_type='appointment'
+		)
+
 		return Response(self.get_serializer(consultation).data)
 
 	@action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
@@ -137,4 +164,13 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 		except Appointment.DoesNotExist:
 			pass
 		
+		# Notify the other party about completion
+		notify_user = consultation.client if request.user == consultation.lawyer else consultation.lawyer
+		send_notification(
+			user=notify_user,
+			title='Consultation Completed',
+			message=f'Your consultation has been marked as completed',
+			notif_type='appointment'
+		)
+
 		return Response(self.get_serializer(consultation).data)

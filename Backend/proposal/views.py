@@ -9,6 +9,7 @@ from django.utils import timezone
 from .models import Proposal
 from case.models import Case
 from .serializers import ProposalSerializer, ProposalListSerializer
+from notification.utils import send_notification
 
 
 class ProposalViewSet(viewsets.ModelViewSet):
@@ -93,6 +94,14 @@ class ProposalViewSet(viewsets.ModelViewSet):
             case.status = 'proposals_received'
         case.save()
         
+        # Notify client that a new proposal was received
+        send_notification(
+            user=case.client,
+            title='New Proposal Received',
+            message=f'Lawyer {request.user.name} submitted a proposal for your case "{case.case_title}"',
+            notif_type='case'
+        )
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'])
@@ -139,6 +148,27 @@ class ProposalViewSet(viewsets.ModelViewSet):
         case.save()
         
         serializer = self.get_serializer(proposal)
+
+        # Notify the accepted lawyer
+        send_notification(
+            user=proposal.lawyer,
+            title='Proposal Accepted',
+            message=f'Your proposal for case "{proposal.case.case_title}" has been accepted by {request.user.name}',
+            notif_type='case'
+        )
+
+        # Notify rejected lawyers
+        rejected_proposals = Proposal.objects.filter(
+            case=proposal.case, status='rejected'
+        ).exclude(id=proposal.id).select_related('lawyer')
+        for p in rejected_proposals:
+            send_notification(
+                user=p.lawyer,
+                title='Proposal Not Selected',
+                message=f'Your proposal for case "{proposal.case.case_title}" was not selected',
+                notif_type='case'
+            )
+
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
@@ -173,6 +203,15 @@ class ProposalViewSet(viewsets.ModelViewSet):
         proposal.reject(feedback)
         
         serializer = self.get_serializer(proposal)
+
+        # Notify lawyer that their proposal was rejected
+        send_notification(
+            user=proposal.lawyer,
+            title='Proposal Rejected',
+            message=f'Your proposal for case "{proposal.case.case_title}" was rejected',
+            notif_type='case'
+        )
+
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'])

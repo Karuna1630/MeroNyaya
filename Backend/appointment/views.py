@@ -8,6 +8,7 @@ from django.utils.dateparse import parse_date, parse_time
 from .models import Appointment
 from .serializers import AppointmentSerializer
 from consultation.models import Consultation
+from notification.utils import send_notification
 
 
 class AppointmentViewSet(viewsets.ModelViewSet):
@@ -85,5 +86,14 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 		appointment.payment_status = Appointment.PAYMENT_PAID
 		appointment.status = Appointment.STATUS_CONFIRMED
 		appointment.save(update_fields=["payment_status", "status", "updated_at"])
+
+		# Notify lawyer that payment was received
+		send_notification(
+			user=appointment.consultation.lawyer,
+			title='Payment Received',
+			message=f'{user.name} has paid for the consultation appointment',
+			notif_type='payment'
+		)
+
 		serializer = self.get_serializer(appointment)
 		return Response(serializer.data, status=status.HTTP_200_OK)
