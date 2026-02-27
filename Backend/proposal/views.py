@@ -99,7 +99,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
             user=case.client,
             title='New Proposal Received',
             message=f'Lawyer {request.user.name} submitted a proposal for your case "{case.case_title}"',
-            notif_type='case'
+            notif_type='case',
+            link=f'/client/case/{case.id}/proposals'
         )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -154,7 +155,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
             user=proposal.lawyer,
             title='Proposal Accepted',
             message=f'Your proposal for case "{proposal.case.case_title}" has been accepted by {request.user.name}',
-            notif_type='case'
+            notif_type='case',
+            link=f'/lawyercase/{proposal.case.id}'
         )
 
         # Notify rejected lawyers
@@ -166,7 +168,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 user=p.lawyer,
                 title='Proposal Not Selected',
                 message=f'Your proposal for case "{proposal.case.case_title}" was not selected',
-                notif_type='case'
+                notif_type='case',
+                link='/lawyerfindcases'
             )
 
         return Response(serializer.data)
@@ -209,7 +212,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
             user=proposal.lawyer,
             title='Proposal Rejected',
             message=f'Your proposal for case "{proposal.case.case_title}" was rejected',
-            notif_type='case'
+            notif_type='case',
+            link='/lawyerfindcases'
         )
 
         return Response(serializer.data)

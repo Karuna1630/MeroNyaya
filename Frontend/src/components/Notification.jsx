@@ -14,6 +14,7 @@ import {
   Info,
   X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   fetchNotifications,
   markNotificationRead,
@@ -54,6 +55,7 @@ const NotificationDropdown = () => {
   const dropdownRef = useRef(null);
   const socketRef = useRef(null);
   const reconnectTimer = useRef(null);
+  const navigate = useNavigate();
 
   const dispatch = useDispatch();
   const { notifications, unreadCount, notificationsLoading } = useSelector(
@@ -154,6 +156,17 @@ const NotificationDropdown = () => {
     dispatch(deleteNotification(id));
   };
 
+  // Handle navigating to link
+  const handleNavigate = (n) => {
+    if (!n.is_read) {
+      dispatch(markNotificationRead(n.id));
+    }
+    setOpen(false);
+    if (n.link) {
+      navigate(n.link);
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Bell button */}
@@ -239,6 +252,7 @@ const NotificationDropdown = () => {
                   notification={n}
                   onRead={handleMarkRead}
                   onRemove={handleDelete}
+                  onClick={() => handleNavigate(n)}
                 />
               ))
             )}
@@ -260,7 +274,7 @@ const NotificationDropdown = () => {
 
 
 // Individual notification item
-const NotificationItem = ({ notification, onRead, onRemove }) => {
+const NotificationItem = ({ notification, onRead, onRemove, onClick }) => {
   const { id, notif_type, title, message, created_at, is_read } = notification;
   const IconComp = IconMap[notif_type] || Bell;
   const c = colorMap[notif_type] || colorMap.system;
@@ -270,7 +284,8 @@ const NotificationItem = ({ notification, onRead, onRemove }) => {
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition cursor-default group ${
+      onClick={onClick}
+      className={`flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition cursor-pointer group ${
         !is_read ? "bg-blue-50/40" : ""
       }`}
     >
@@ -290,7 +305,7 @@ const NotificationItem = ({ notification, onRead, onRemove }) => {
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
             {!is_read && (
               <button
-                onClick={() => onRead(id)}
+                onClick={(e) => { e.stopPropagation(); onRead(id); }}
                 title="Mark as read"
                 className="p-1 hover:bg-blue-100 rounded-full transition text-blue-400"
               >
@@ -298,7 +313,7 @@ const NotificationItem = ({ notification, onRead, onRemove }) => {
               </button>
             )}
             <button
-              onClick={() => onRemove(id)}
+              onClick={(e) => { e.stopPropagation(); onRemove(id); }}
               title="Dismiss"
               className="p-1 hover:bg-red-100 rounded-full transition text-slate-300 hover:text-red-400"
             >

@@ -164,7 +164,8 @@ class CaseViewSet(viewsets.ModelViewSet):
                     user=lawyer,
                     title='New Case Available',
                     message=f'{request.user.name} posted a new case: "{case.case_title}"',
-                    notif_type='case'
+                    notif_type='case',
+                    link='/lawyerfindcases'
                 )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -239,7 +240,8 @@ class CaseViewSet(viewsets.ModelViewSet):
                 user=notify_user,
                 title='New Document Uploaded',
                 message=f'{request.user.name} uploaded {len(documents)} document(s) to case "{case.case_title}"',
-                notif_type='case'
+                notif_type='case',
+                link=f'/client/case/{case.id}' if notify_user == case.client else f'/lawyercase/{case.id}'
             )
 
         serializer = CaseDocumentSerializer(documents, many=True)
@@ -283,7 +285,8 @@ class CaseViewSet(viewsets.ModelViewSet):
             user=case.client,
             title='Case Accepted',
             message=f'Lawyer {request.user.name} accepted your case "{case.case_title}"',
-            notif_type='case'
+            notif_type='case',
+            link=f'/client/case/{case.id}'
         )
         
         serializer = self.get_serializer(case)
@@ -337,14 +340,16 @@ class CaseViewSet(viewsets.ModelViewSet):
                 user=case.client,
                 title='Case Status Updated',
                 message=f'Your case "{case.case_title}" is now {new_status.replace("_", " ").title()}',
-                notif_type='case'
+                notif_type='case',
+                link=f'/client/case/{case.id}'
             )
         if case.lawyer and case.lawyer != request.user:
             send_notification(
                 user=case.lawyer,
                 title='Case Status Updated',
                 message=f'Case "{case.case_title}" is now {new_status.replace("_", " ").title()}',
-                notif_type='case'
+                notif_type='case',
+                link=f'/lawyercase/{case.id}'
             )
 
         serializer = self.get_serializer(case)
@@ -468,7 +473,8 @@ class CaseViewSet(viewsets.ModelViewSet):
             user=case.lawyer,
             title='New Meeting Request',
             message=f'{request.user.name} requested a meeting for case "{case.case_title}"',
-            notif_type='appointment'
+            notif_type='appointment',
+            link='/lawyerappointment'
         )
 
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
@@ -548,7 +554,8 @@ class CaseAppointmentViewSet(viewsets.ModelViewSet):
             user=appointment.client,
             title='Appointment Confirmed',
             message=f'Your appointment for case "{appointment.case.case_title}" has been confirmed by {request.user.name}',
-            notif_type='appointment'
+            notif_type='appointment',
+            link='/clientappointment'
         )
 
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
@@ -580,7 +587,8 @@ class CaseAppointmentViewSet(viewsets.ModelViewSet):
             user=appointment.client,
             title='Appointment Rejected',
             message=f'Your appointment for case "{appointment.case.case_title}" was rejected by {request.user.name}',
-            notif_type='appointment'
+            notif_type='appointment',
+            link='/clientappointment'
         )
 
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
@@ -612,7 +620,8 @@ class CaseAppointmentViewSet(viewsets.ModelViewSet):
             user=appointment.client,
             title='Appointment Completed',
             message=f'Your appointment for case "{appointment.case.case_title}" has been marked as completed',
-            notif_type='appointment'
+            notif_type='appointment',
+            link='/clientappointment'
         )
 
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)

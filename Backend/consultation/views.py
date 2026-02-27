@@ -74,7 +74,8 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 			user=consultation.lawyer,
 			title='New Consultation Request',
 			message=f'{self.request.user.name} requested a consultation with you',
-			notif_type='appointment'
+			notif_type='appointment',
+			link='/lawyerappointment'
 		)
 
 	@action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
@@ -119,7 +120,8 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 			user=consultation.client,
 			title='Consultation Accepted',
 			message=f'Lawyer {request.user.name} accepted your consultation request',
-			notif_type='appointment'
+			notif_type='appointment',
+			link='/clientappointment'
 		)
 
 		return Response(self.get_serializer(consultation).data)
@@ -138,7 +140,8 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 			user=consultation.client,
 			title='Consultation Rejected',
 			message=f'Lawyer {request.user.name} rejected your consultation request',
-			notif_type='appointment'
+			notif_type='appointment',
+			link='/client/consultation'
 		)
 
 		return Response(self.get_serializer(consultation).data)
@@ -166,11 +169,13 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 		
 		# Notify the other party about completion
 		notify_user = consultation.client if request.user == consultation.lawyer else consultation.lawyer
+		notify_link = '/clientappointment' if notify_user == consultation.client else '/lawyerappointment'
 		send_notification(
 			user=notify_user,
 			title='Consultation Completed',
 			message=f'Your consultation has been marked as completed',
-			notif_type='appointment'
+			notif_type='appointment',
+			link=notify_link
 		)
 
 		return Response(self.get_serializer(consultation).data)

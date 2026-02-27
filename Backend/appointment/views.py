@@ -92,7 +92,8 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 			user=appointment.consultation.lawyer,
 			title='Payment Received',
 			message=f'{user.name} has paid for the consultation appointment',
-			notif_type='payment'
+			notif_type='payment',
+			link='/lawyerappointment'
 		)
 
 		serializer = self.get_serializer(appointment)

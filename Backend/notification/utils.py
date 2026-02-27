@@ -5,7 +5,7 @@ from .models import Notification
 from .serializers import NotificationSerializer
 
 
-def send_notification(user, title, message, notif_type='system'):
+def send_notification(user, title, message, notif_type='system', link=None):
     """
     Create a Notification record and push it to the user's WebSocket group.
 
@@ -16,6 +16,7 @@ def send_notification(user, title, message, notif_type='system'):
         title       : Short title string
         message     : Full message string
         notif_type  : One of 'case', 'appointment', 'message', 'payment', 'alert', 'system'
+        link        : Frontend route to navigate to when clicked (e.g. '/client/case/5')
     """
     # Persist the notification in the database
     notification = Notification.objects.create(
@@ -23,6 +24,7 @@ def send_notification(user, title, message, notif_type='system'):
         title=title,
         message=message,
         notif_type=notif_type,
+        link=link,
     )
 
     # Push to the user's channel group so their open browser tab gets it instantly

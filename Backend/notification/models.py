@@ -47,6 +47,14 @@ class Notification(models.Model):
         help_text="Whether the user has read this notification"
     )
 
+    # Navigation link (frontend route to navigate to when clicked)
+    link = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Frontend route to navigate to when notification is clicked"
+    )
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
 
