@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Bell, User, LogOut } from "lucide-react";
 import { fetchUserProfile } from "../slices/profileSlice";
 import { logoutUser } from "../slices/auth";
+import NotificationDropdown from "../../components/Notification.jsx";
 
 const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
   const [open, setOpen] = useState(false);
@@ -58,14 +59,7 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="relative p-2 hover:bg-gray-100 rounded-full transition">
-            <Bell size={24} className="text-gray-600" />
-            {notificationCount > 0 && (
-              <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {notificationCount}
-              </span>
-            )}
-          </button>
+          <NotificationDropdown role="lawyer" />
 
           {/* Profile Avatar with Dropdown */}
           <div className="relative">
