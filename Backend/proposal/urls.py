@@ -1,13 +1,10 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from .views import ProposalViewSet
 
-
-# Create a router and register our viewsets with it. The router will automatically generate the URL conf for our API.
-router = DefaultRouter()
-# Register more specific prefixes first to avoid being captured by the empty prefix detail route.
-router.register(r'', ProposalViewSet, basename='proposal')
-
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', ProposalViewSet.as_view({'get': 'list', 'post': 'create'}), name='proposal-list'),
+    path('<int:pk>/', ProposalViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='proposal-detail'),
+    path('<int:pk>/accept/', ProposalViewSet.as_view({'post': 'accept'}), name='proposal-accept'),
+    path('<int:pk>/reject/', ProposalViewSet.as_view({'post': 'reject'}), name='proposal-reject'),
+    path('<int:pk>/withdraw/', ProposalViewSet.as_view({'post': 'withdraw'}), name='proposal-withdraw'),
 ]
