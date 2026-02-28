@@ -135,11 +135,8 @@ const LawyerCaseRequest = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50/50">
-      {/* Sidebar - Integrated from existing components */}
       <Sidebar />
-      
       <div className="flex-1 ml-64">
-        {/* Header - Integrated from existing components */}
         <DashHeader 
           title="Case Requests" 
           subtitle="Review and respond to client case requests" 

@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import Sidebar from "./sidebar";
 import ClientDashHeader from "./ClientDashHeader";
 import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCircle2, MessageSquare, Video, Filter } from "lucide-react";
@@ -16,7 +15,7 @@ const specializations = [
 
 const FindLawyers = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  
 
   // Redux selectors
   const lawyersData = useSelector((state) => state.lawyer.verifiedLawyers);
