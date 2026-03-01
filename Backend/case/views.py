@@ -165,6 +165,17 @@ class CaseViewSet(viewsets.ModelViewSet):
                     title='New Case Available',
                     message=f'{request.user.name} posted a new case: "{case.case_title}"',
                     notif_type='case',
+                    link='/lawyercaserequest'
+                )
+        else:
+            # Notify all lawyers about the new public case
+            all_lawyers = User.objects.filter(role='Lawyer')
+            for lawyer in all_lawyers:
+                send_notification(
+                    user=lawyer,
+                    title='New Public Case Available',
+                    message=f'{request.user.name} posted a new public case: "{case.case_title}"',
+                    notif_type='case',
                     link='/lawyerfindcases'
                 )
 
