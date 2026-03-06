@@ -240,4 +240,4 @@ PLATFORM_COMMISSION_PERCENT = Decimal(config('PLATFORM_COMMISSION_PERCENT', defa
 
 # eSewa external API URLs (sandbox)
 ESEWA_PAYMENT_URL = "https://rc-epay.esewa.com.np/api/epay/main/v2/form"  # sandbox payment form
-ESEWA_VERIFY_URL = "https://uat.esewa.com.np/api/epay/transaction/status/"  # sandbox transaction status check
+ESEWA_VERIFY_URL = config('ESEWA_STATUS_URL', default='https://uat.esewa.com.np/api/epay/transaction/status/')  # sandbox transaction status check

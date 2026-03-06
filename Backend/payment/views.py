@@ -21,6 +21,7 @@ from meronaya.resonses import api_response
 
 from .models import Payment, Payout
 from .serializers import PaymentSerializer, EsewaInitiateSerializer, PayoutSerializer, CreatePayoutSerializer
+import hmac as hmac_compare
 from .utils import generate_esewa_signature, build_esewa_signature_message
 
 
@@ -242,7 +243,10 @@ class EsewaVerifyView(APIView):
                     },
                 )
 
-            # Verifying with eSewa's transaction status API
+            # Verifying with eSewa's transaction status API (with signature fallback)
+            esewa_transaction_status = None
+            esewa_ref = esewa_ref_id
+
             try:
                 verify_response = requests.get(
                     settings.ESEWA_VERIFY_URL,
@@ -251,18 +255,38 @@ class EsewaVerifyView(APIView):
                         "total_amount": str(payment.total_amount),
                         "transaction_uuid": str(payment.transaction_uuid),
                     },
-                    timeout=30,
+                    timeout=15,
                 )
                 verify_data = verify_response.json()
-            except Exception as e:
-                return api_response(
-                    is_success=False,
-                    error_message={"error": f"eSewa verification failed: {str(e)}"},
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                )
+                esewa_transaction_status = verify_data.get("status")
+                esewa_ref = verify_data.get("ref_id", esewa_ref_id)
+            except Exception:
+                # Server-to-server call failed — fall back to HMAC signature verification
+                callback_status = payment_data.get("status")
+                callback_signature = payment_data.get("signature")
+                signed_field_names = payment_data.get("signed_field_names", "")
 
-            esewa_transaction_status = verify_data.get("status")
-            esewa_ref = verify_data.get("ref_id", esewa_ref_id)
+                if callback_status == "COMPLETE" and callback_signature and signed_field_names:
+                    # Rebuilding the signed message from the callback fields
+                    signed_fields = signed_field_names.split(",")
+                    message_parts = [f"{field}={payment_data.get(field, '')}" for field in signed_fields]
+                    message = ",".join(message_parts)
+                    expected_signature = generate_esewa_signature(message)
+
+                    if hmac_compare.compare_digest(callback_signature, expected_signature):
+                        esewa_transaction_status = "COMPLETE"
+                    else:
+                        return api_response(
+                            is_success=False,
+                            error_message={"error": "eSewa signature verification failed."},
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                        )
+                else:
+                    return api_response(
+                        is_success=False,
+                        error_message={"error": "eSewa server unreachable and callback data insufficient for verification."},
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                    )
 
             if esewa_transaction_status == "COMPLETE":
                 # Marking payment as completed
