@@ -44,6 +44,10 @@ class LawyerKYC(models.Model):
     available_from = models.TimeField(blank=True, null=True)
     available_until = models.TimeField(blank=True, null=True)
     
+    # Payment Wallet Numbers
+    esewa_number = models.CharField(max_length=20, blank=True, null=True, help_text='eSewa wallet number for receiving payouts')
+    khalti_number = models.CharField(max_length=20, blank=True, null=True, help_text='Khalti wallet number for receiving payouts')
+    
     # Identity Documents
     citizenship_front = models.FileField(upload_to='kyc/documents/citizenship/')
     citizenship_back = models.FileField(upload_to='kyc/documents/citizenship/')

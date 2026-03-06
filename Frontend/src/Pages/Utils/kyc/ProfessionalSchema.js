@@ -9,6 +9,8 @@ export const ProfessionalInitialValues = {
   availabilityDays: [],
   availableFrom: '',
   availableUntil: '',
+  esewaNumber: '',
+  khaltiNumber: '',
 };
 
 export const ProfessionalValidationSchema = Yup.object().shape({
@@ -32,4 +34,24 @@ export const ProfessionalValidationSchema = Yup.object().shape({
     .required('Available from time is required'),
   availableUntil: Yup.string()
     .required('Available until time is required'),
+  esewaNumber: Yup.string()
+    .nullable()
+    .matches(/^(98|97)\d{8}$/, 'Enter a valid 10-digit Nepali mobile number')
+    .test(
+      'at-least-one-wallet',
+      'At least one wallet number (eSewa or Khalti) is required',
+      function (value) {
+        return !!value || !!this.parent.khaltiNumber;
+      }
+    ),
+  khaltiNumber: Yup.string()
+    .nullable()
+    .matches(/^(98|97)\d{8}$/, 'Enter a valid 10-digit Nepali mobile number')
+    .test(
+      'at-least-one-wallet',
+      'At least one wallet number (eSewa or Khalti) is required',
+      function (value) {
+        return !!value || !!this.parent.esewaNumber;
+      }
+    ),
 });

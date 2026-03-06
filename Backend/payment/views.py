@@ -852,7 +852,7 @@ class AdminRevenueView(APIView):
 
             # Per-lawyer breakdown with payout status
             lawyer_breakdown = (
-                completed_payments.values("lawyer__id", "lawyer__name", "lawyer__email")
+                completed_payments.values("lawyer__id", "lawyer__name", "lawyer__email", "lawyer__phone")
                 .annotate(
                     total_paid=Sum("total_amount"),
                     platform_fee=Sum("platform_fee"),
@@ -1058,6 +1058,16 @@ class AdminLawyerPendingPaymentsView(APIView):
 
             total_pending = pending_payments.aggregate(total=Sum("lawyer_earning"))["total"] or 0
 
+            # Get the lawyer's wallet numbers from KYC
+            esewa_number = None
+            khalti_number = None
+            try:
+                kyc = lawyer.lawyer_kyc
+                esewa_number = kyc.esewa_number or None
+                khalti_number = kyc.khalti_number or None
+            except Exception:
+                pass
+
             return api_response(
                 is_success=True,
                 status_code=status.HTTP_200_OK,
@@ -1065,6 +1075,8 @@ class AdminLawyerPendingPaymentsView(APIView):
                     "message": "Pending payments retrieved.",
                     "lawyer_name": lawyer.name,
                     "lawyer_email": lawyer.email,
+                    "esewa_number": esewa_number,
+                    "khalti_number": khalti_number,
                     "total_pending": str(total_pending),
                     "payments": serializer.data,
                 },

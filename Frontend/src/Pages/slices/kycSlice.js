@@ -21,6 +21,9 @@ const buildKycFormData = (values) => {
 		availabilityDays: 'availability_days',
 		availableFrom: 'available_from',
 		availableUntil: 'available_until',
+		// Payment Wallet Numbers
+		esewaNumber: 'esewa_number',
+		khaltiNumber: 'khalti_number',
 		// Documents
 		citizenshipFront: 'citizenship_front',
 		citizenshipBack: 'citizenship_back',

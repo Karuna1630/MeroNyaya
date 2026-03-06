@@ -42,6 +42,8 @@ const convertBackendToFormValues = (kycData) => {
     availabilityDays: Array.isArray(kycData.availability_days) ? kycData.availability_days : [],
     availableFrom: kycData.available_from || "",
     availableUntil: kycData.available_until || "",
+    esewaNumber: kycData.esewa_number || "",
+    khaltiNumber: kycData.khalti_number || "",
     citizenshipFront: kycData.citizenship_front || null,
     citizenshipBack: kycData.citizenship_back || null,
     lawyerLicense: kycData.lawyer_license || null,
@@ -71,6 +73,8 @@ const initialFormValues = {
   availabilityDays: [],
   availableFrom: "",
   availableUntil: "",
+  esewaNumber: "",
+  khaltiNumber: "",
   citizenshipFront: null,
   citizenshipBack: null,
   lawyerLicense: null,
@@ -93,7 +97,7 @@ const stepSchemas = {
 // Fields associated with each step for error handling
 const stepFields = {
   personal: ["fullName", "email", "phone", "dob", "gender", "permanentAddress", "currentAddress"],
-  professional: ["barCouncilNumber", "lawFirmName", "yearsOfExperience", "consultationFee", "specializations", "availabilityDays", "availableFrom", "availableUntil"],
+  professional: ["barCouncilNumber", "lawFirmName", "yearsOfExperience", "consultationFee", "specializations", "availabilityDays", "availableFrom", "availableUntil", "esewaNumber", "khaltiNumber"],
   identity: ["citizenshipFront", "citizenshipBack", "lawyerLicense", "passportPhoto", "lawDegree", "experienceCertificate"],
   declaration: ["confirmAccuracy", "authorizeVerification", "agreeTerms"],
 };

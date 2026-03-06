@@ -38,8 +38,8 @@ const AdminRevenue = () => {
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [selectedPaymentIds, setSelectedPaymentIds] = useState([]);
-  const [referenceNumber, setReferenceNumber] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+
+  const [paymentMethod, setPaymentMethod] = useState('esewa');
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
@@ -63,8 +63,7 @@ const AdminRevenue = () => {
   const handleOpenPayoutModal = (lawyer) => {
     setSelectedLawyer(lawyer);
     setSelectedPaymentIds([]);
-    setReferenceNumber('');
-    setPaymentMethod('bank_transfer');
+    setPaymentMethod('esewa');
     setNotes('');
     setShowPayoutModal(true);
     dispatch(fetchLawyerPendingPayments(lawyer.lawyer__id));
@@ -105,7 +104,6 @@ const AdminRevenue = () => {
       createPayout({
         lawyer_id: selectedLawyer.lawyer__id,
         payment_ids: selectedPaymentIds,
-        reference_number: referenceNumber,
         payment_method: paymentMethod,
         notes,
       })
@@ -279,10 +277,8 @@ const AdminRevenue = () => {
                           <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer</th>
                           <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
                           <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Reference</th>
                           <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Method</th>
                           <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Payments</th>
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Processed By</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -301,10 +297,8 @@ const AdminRevenue = () => {
                             <td className="py-3 px-3 text-right text-sm font-bold text-green-600">
                               Rs. {parseFloat(payout.amount || 0).toLocaleString()}
                             </td>
-                            <td className="py-3 px-3 text-sm text-gray-700">{payout.reference_number || '-'}</td>
                             <td className="py-3 px-3 text-sm text-gray-700 capitalize">{(payout.payment_method || '-').replace('_', ' ')}</td>
                             <td className="py-3 px-3 text-sm text-gray-700">{(payout.payment_ids || []).length} payments</td>
-                            <td className="py-3 px-3 text-sm text-gray-600">{payout.processed_by_name}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -407,6 +401,27 @@ const AdminRevenue = () => {
 
             {/* Body */}
             <div className="p-6 space-y-6">
+              {/* Lawyer Contact Info */}
+              <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Send Payment To</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{pendingPayments?.lawyer_name || selectedLawyer.lawyer__name}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{pendingPayments?.lawyer_email || selectedLawyer.lawyer__email}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium text-gray-500">
+                      {paymentMethod === 'esewa' ? 'eSewa Number' : 'Khalti Number'}
+                    </p>
+                    <p className="text-sm font-bold text-indigo-600">
+                      {paymentMethod === 'esewa'
+                        ? (pendingPayments?.esewa_number || 'Not available')
+                        : (pendingPayments?.khalti_number || 'Not available')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Payout Error */}
               {payoutError && (
                 <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-3">
@@ -487,17 +502,7 @@ const AdminRevenue = () => {
               </div>
 
               {/* Payout Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
-                  <input
-                    type="text"
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
-                    placeholder="e.g., TXN123456"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
-                </div>
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
                   <select
@@ -508,6 +513,35 @@ const AdminRevenue = () => {
                     <option value="esewa">eSewa</option>
                     <option value="khalti">Khalti</option>
                   </select>
+                </div>
+
+                {/* Auto-display wallet number based on selected payment method */}
+                <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                  paymentMethod === 'esewa' ? 'bg-green-50 border-green-200' : 'bg-purple-50 border-purple-200'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                      paymentMethod === 'esewa' ? 'bg-green-500' : 'bg-purple-500'
+                    }`}>
+                      {paymentMethod === 'esewa' ? 'eS' : 'K'}
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        {paymentMethod === 'esewa' ? 'eSewa' : 'Khalti'} Wallet Number
+                      </p>
+                      <p className={`text-sm font-bold ${
+                        paymentMethod === 'esewa' ? 'text-green-700' : 'text-purple-700'
+                      }`}>
+                        {paymentMethod === 'esewa'
+                          ? (pendingPayments?.esewa_number || 'Not provided')
+                          : (pendingPayments?.khalti_number || 'Not provided')}
+                      </p>
+                    </div>
+                  </div>
+                  {((paymentMethod === 'esewa' && !pendingPayments?.esewa_number) ||
+                    (paymentMethod === 'khalti' && !pendingPayments?.khalti_number)) && (
+                    <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-1 rounded-md">Not set by lawyer</span>
+                  )}
                 </div>
               </div>
 

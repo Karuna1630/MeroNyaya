@@ -118,7 +118,9 @@ class LawyerKYCSerializer(serializers.ModelSerializer):
             'full_name', 'email', 'phone', 'dob', 'gender', 'permanent_address', 'current_address',
             # Professional Info
             'bar_council_number', 'law_firm_name', 'years_of_experience', 'consultation_fee',
-            'specializations', 'availability_days', 'available_from', 'available_until',
+            'specializations', 'availability_days', 'available_from', 'available_until',            # Payment Wallet Numbers
+            'esewa_number', 'khalti_number',            # Payment Wallet Numbers
+            'esewa_number', 'khalti_number',
             # Identity Documents
             'citizenship_front', 'citizenship_back', 'lawyer_license', 'passport_photo',
             'law_degree', 'experience_certificate',
@@ -155,6 +157,12 @@ class LawyerKYCSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         user = self.context.get('request').user if self.context.get('request') else None
+
+        # Validate at least one wallet number is provided
+        esewa = attrs.get('esewa_number') or (self.instance and self.instance.esewa_number if self.instance else None)
+        khalti = attrs.get('khalti_number') or (self.instance and self.instance.khalti_number if self.instance else None)
+        if not esewa and not khalti:
+            raise serializers.ValidationError("At least one payment wallet number (eSewa or Khalti) is required.")
 
         # Validate all document files
         for field in ['citizenship_front', 'citizenship_back', 'lawyer_license', 'passport_photo', 'law_degree', 'experience_certificate']:
@@ -230,6 +238,8 @@ class AdminKYCReviewSerializer(serializers.ModelSerializer):
             # Professional Info
             'bar_council_number', 'law_firm_name', 'years_of_experience', 'consultation_fee',
             'specializations', 'availability_days', 'available_from', 'available_until',
+            # Payment Wallet Numbers
+            'esewa_number', 'khalti_number',
             # Identity Documents
             'citizenship_front', 'citizenship_back', 'lawyer_license', 'passport_photo',
             'law_degree', 'experience_certificate',
