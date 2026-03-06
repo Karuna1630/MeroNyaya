@@ -151,33 +151,33 @@ const AdminKYCVerification = () => {
           subtitle="Review and manage lawyer identity verification requests"
         />
 
-        <main className="flex-1 p-8 bg-gradient-to-b from-slate-50 to-slate-100">
+        <main className="flex-1 p-8 bg-linear-to-b from-slate-50 to-slate-100">
           <div className="mx-auto max-w-6xl space-y-6">
             {/* Stats row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-2xl bg-white shadow-sm border border-slate-100 p-4">
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                  Total Requests
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900">{total}</p>
+              <div className="relative overflow-hidden rounded-2xl p-5 text-white shadow-lg bg-linear-to-br from-blue-500 to-blue-600 ring-1 ring-blue-500/20">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <p className="relative z-10 text-sm font-medium text-white/80">Total Requests</p>
+                <p className="relative z-10 mt-2 text-2xl font-extrabold tracking-tight">{total}</p>
               </div>
-              <div className="rounded-2xl bg-indigo-50 shadow-sm border border-indigo-100 p-4">
-                <p className="text-xs font-medium text-indigo-600 uppercase tracking-wide">
-                  Pending
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-indigo-900">{pendingCount}</p>
+              <div className="relative overflow-hidden rounded-2xl p-5 text-white shadow-lg bg-linear-to-br from-indigo-500 to-blue-700 ring-1 ring-indigo-500/20">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <p className="relative z-10 text-sm font-medium text-white/80">Pending</p>
+                <p className="relative z-10 mt-2 text-2xl font-extrabold tracking-tight">{pendingCount}</p>
               </div>
-              <div className="rounded-2xl bg-emerald-50 shadow-sm border border-emerald-100 p-4">
-                <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">
-                  Approved
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-emerald-900">{approvedCount}</p>
+              <div className="relative overflow-hidden rounded-2xl p-5 text-white shadow-lg bg-linear-to-br from-emerald-500 to-emerald-600 ring-1 ring-emerald-500/20">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <p className="relative z-10 text-sm font-medium text-white/80">Approved</p>
+                <p className="relative z-10 mt-2 text-2xl font-extrabold tracking-tight">{approvedCount}</p>
               </div>
-              <div className="rounded-2xl bg-rose-50 shadow-sm border border-rose-100 p-4">
-                <p className="text-xs font-medium text-rose-600 uppercase tracking-wide">
-                  Rejected
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-rose-900">{rejectedCount}</p>
+              <div className="relative overflow-hidden rounded-2xl p-5 text-white shadow-lg bg-linear-to-br from-rose-500 to-pink-600 ring-1 ring-rose-500/20">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <p className="relative z-10 text-sm font-medium text-white/80">Rejected</p>
+                <p className="relative z-10 mt-2 text-2xl font-extrabold tracking-tight">{rejectedCount}</p>
               </div>
             </div>
 

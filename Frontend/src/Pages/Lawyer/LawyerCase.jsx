@@ -91,10 +91,10 @@ const LawyerCase = () => {
     const pendingPayments = active > 1 ? 2 : 0;
 
     return [
-      { icon: <Briefcase size={20} />, title: "Active Cases", value: active, subtitle: "Assigned to you" },
-      { icon: <Calendar size={20} />, title: "Hearings Scheduled", value: hearings, subtitle: "Upcoming" },
-      { icon: <Clock size={20} />, title: "Pending Payments", value: pendingPayments, subtitle: "Awaiting" },
-      { icon: <CheckCircle size={20} />, title: "Completed", value: completed, subtitle: "Closed cases" },
+      { icon: <Briefcase size={20} />, title: "Active Cases", value: active, subtitle: "Assigned to you", color: "blue" },
+      { icon: <Calendar size={20} />, title: "Hearings Scheduled", value: hearings, subtitle: "Upcoming", color: "violet" },
+      { icon: <Clock size={20} />, title: "Pending Payments", value: pendingPayments, subtitle: "Awaiting", color: "amber" },
+      { icon: <CheckCircle size={20} />, title: "Completed", value: completed, subtitle: "Closed cases", color: "emerald" },
     ];
   }, [myCases]);
 
@@ -143,6 +143,7 @@ const LawyerCase = () => {
                 title={stat.title}
                 value={stat.value}
                 subtitle={stat.subtitle}
+                color={stat.color}
               />
             ))}
           </div>

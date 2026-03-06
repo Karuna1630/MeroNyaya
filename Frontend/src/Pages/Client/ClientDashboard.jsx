@@ -117,24 +117,28 @@ const ClientDashboard = () => {
               title="Active Cases"
               value={activeCases}
               subtitle={`${newCases} New cases`}
+              color="blue"
             />
             <StatCard
               icon={<Calendar size={24} />}
               title="Appointments"
               value={upcomingAppointments.length}
               subtitle="Upcoming"
+              color="violet"
             />
             <StatCard
               icon={<MessageSquare size={24} />}
               title="Messages"
               value="0"
               subtitle="Coming soon"
+              color="cyan"
             />
             <StatCard
               icon={<CreditCard size={24} />}
               title="Total Cases"
               value={cases.length}
               subtitle="All time"
+              color="emerald"
             />
           </div>
 

@@ -167,24 +167,28 @@ const LawyerDashboard = () => {
       title: 'Active Cases',
       value: activeCases.toString(),
       subtitle: `${acceptedProposals} accepted proposals`,
+      color: 'blue',
     },
     {
       icon: <FileText size={20} />,
       title: 'Pending Proposals',
       value: pendingProposals.toString(),
       subtitle: 'Awaiting response',
+      color: 'amber',
     },
     {
       icon: <Calendar size={20} />,
       title: 'Appointments',
       value: '0',
       subtitle: 'Coming soon',
+      color: 'violet',
     },
     {
       icon: <AlertCircle size={20} />,
       title: 'Rejected Proposals',
       value: rejectedProposals.toString(),
       subtitle: 'Client declined',
+      color: 'rose',
     },
   ];
 
@@ -321,7 +325,7 @@ const LawyerDashboard = () => {
                             className="w-12 h-12 rounded-full object-cover shrink-0 border-2 border-blue-200"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold flex items-center justify-center shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-white font-bold flex items-center justify-center shrink-0">
                             {caseItem.client_name?.charAt(0) || 'C'}
                           </div>
                         )}
@@ -375,7 +379,7 @@ const LawyerDashboard = () => {
                     <div className="space-y-4">
                       {todaySchedule.map((appointment) => (
                         <div key={appointment.id} className="flex gap-3 items-center">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
                             {appointment.avatar}
                           </div>
                           <div className="flex-1">

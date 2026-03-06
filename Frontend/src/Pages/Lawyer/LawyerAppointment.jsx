@@ -88,11 +88,10 @@ const LawyerAppointment = () => {
     const pending = consultations.filter(c => c.status === "requested").length;
     const accepted = consultations.filter(c => c.status === "accepted").length;
     const completed = consultations.filter(c => c.status === "completed").length;
-    // retuning an arrray of objects with value, label and color for each stats
     return [
-      { value: pending, label: "Pending", color: "text-amber-500" },
-      { value: accepted, label: "Accepted", color: "text-green-500" },
-      { value: completed, label: "Completed", color: "text-blue-500" },
+      { value: pending, label: "Pending", gradient: "from-amber-500 to-orange-500", ring: "ring-amber-500/20" },
+      { value: accepted, label: "Accepted", gradient: "from-emerald-500 to-emerald-600", ring: "ring-emerald-500/20" },
+      { value: completed, label: "Completed", gradient: "from-blue-500 to-blue-600", ring: "ring-blue-500/20" },
     ];
   }, [consultations]);
 
@@ -351,9 +350,11 @@ const LawyerAppointment = () => {
           {/* Stats Cards */}
           <div className="grid grid-cols-3 gap-6 mb-8">
             {stats.map((stat, index) => (
-              <div key={index} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
-                <span className={`text-3xl font-bold ${stat.color} mb-1`}>{stat.value}</span>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{stat.label}</span>
+              <div key={index} className={`relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br ${stat.gradient} ring-1 ${stat.ring} flex flex-col items-center justify-center text-center`}>
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <span className="relative z-10 text-3xl font-extrabold mb-1">{stat.value}</span>
+                <span className="relative z-10 text-xs font-semibold text-white/70 uppercase tracking-widest">{stat.label}</span>
               </div>
             ))}
           </div>
@@ -889,7 +890,7 @@ const LawyerAppointment = () => {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 animate-in scale-in-95 duration-300">
             {/* Header */}
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="bg-linear-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Consultation Details</h2>
               <button
                 onClick={() => setSelectedConsultation(null)}
@@ -1004,7 +1005,7 @@ const LawyerAppointment = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100">
             {/* Header */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between rounded-t-2xl">
+            <div className="bg-linear-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between rounded-t-2xl">
               <h2 className="text-lg font-bold text-slate-900">Complete Consultation</h2>
               <button
                 onClick={() => {
@@ -1059,7 +1060,7 @@ const LawyerAppointment = () => {
       {selectedCaseAppointmentView && !showCaseAcceptModal && !showCaseRejectModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 animate-in scale-in-95 duration-300">
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div className="bg-linear-to-r from-slate-50 to-slate-100 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Case Appointment Details</h2>
               <button
                 onClick={() => setSelectedCaseAppointmentView(null)}

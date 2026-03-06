@@ -154,17 +154,23 @@ const ClientConsultation = () => {
         <div className="flex-1 p-8 overflow-y-auto">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
-              <span className="text-4xl font-bold text-amber-500 mb-1">{pendingCount}</span>
-              <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Requests</span>
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-amber-500 to-orange-500 ring-1 ring-amber-500/20 flex flex-col items-center justify-center text-center">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+              <span className="relative z-10 text-4xl font-extrabold mb-1">{pendingCount}</span>
+              <span className="relative z-10 text-sm font-medium text-white/70 uppercase tracking-wider">Requests</span>
             </div>
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
-              <span className="text-4xl font-bold text-emerald-500 mb-1">{appointmentCount}</span>
-              <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Appointments</span>
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-emerald-500 to-emerald-600 ring-1 ring-emerald-500/20 flex flex-col items-center justify-center text-center">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+              <span className="relative z-10 text-4xl font-extrabold mb-1">{appointmentCount}</span>
+              <span className="relative z-10 text-sm font-medium text-white/70 uppercase tracking-wider">Appointments</span>
             </div>
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
-              <span className="text-4xl font-bold text-red-500 mb-1">{cancelledCount}</span>
-              <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Cancelled</span>
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-rose-500 to-pink-600 ring-1 ring-rose-500/20 flex flex-col items-center justify-center text-center">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+              <span className="relative z-10 text-4xl font-extrabold mb-1">{cancelledCount}</span>
+              <span className="relative z-10 text-sm font-medium text-white/70 uppercase tracking-wider">Cancelled</span>
             </div>
           </div>
 

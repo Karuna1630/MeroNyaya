@@ -82,8 +82,7 @@ const AdminDashboard = () => {
               title="Total Users"
               value={statsLoading ? "..." : stats.totalUsers.toLocaleString()}
               subtitle={`${stats.totalClients} Clients • ${stats.totalLawyers} Lawyers`}
-              bgColor="bg-blue-100"
-              iconColor="text-blue-600"
+              color="blue"
             />
 
             <Statcard
@@ -91,8 +90,7 @@ const AdminDashboard = () => {
               title="Total Clients"
               value={statsLoading ? "..." : stats.totalClients.toLocaleString()}
               subtitle="Active clients"
-              bgColor="bg-cyan-100"
-              iconColor="text-cyan-600"
+              color="cyan"
             />
 
             <Statcard
@@ -100,8 +98,7 @@ const AdminDashboard = () => {
               title="Total Lawyers"
               value={statsLoading ? "..." : stats.totalLawyers}
               subtitle="Verified professionals"
-              bgColor="bg-indigo-100"
-              iconColor="text-indigo-600"
+              color="indigo"
             />
 
             <Statcard
@@ -109,8 +106,7 @@ const AdminDashboard = () => {
               title="Pending KYC Requests"
               value={kycLoading ? "..." : pendingKycCount}
               subtitle="Requires verification"
-              bgColor="bg-red-100"
-              iconColor="text-red-600"
+              color="red"
             />
           </div>
 

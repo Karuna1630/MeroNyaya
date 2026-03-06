@@ -61,24 +61,28 @@ const LawyerCaseRequest = () => {
       count: specificCases.filter(c => c.status === "sent_to_lawyers").length,
       icon: <Clock size={20} />,
       onClick: () => setActiveTab("Pending"),
+      color: "amber",
     },
     {
       label: "Urgent",
       count: specificCases.filter(c => c.urgency_level === "High" && c.status === "sent_to_lawyers").length,
       icon: <AlertTriangle size={20} />,
       onClick: () => setActiveTab("Pending"),
+      color: "rose",
     },
     {
       label: "Accepted",
       count: specificCases.filter(c => c.status === "accepted").length,
       icon: <CheckCircle size={20} />,
       onClick: () => setActiveTab("Accepted"),
+      color: "emerald",
     },
     {
       label: "Rejected",
       count: specificCases.filter(c => c.status === "rejected").length,
       icon: <XCircle size={20} />,
       onClick: () => setActiveTab("Rejected"),
+      color: "slate",
     }
   ];
 
@@ -153,6 +157,7 @@ const LawyerCaseRequest = () => {
                 value={stat.count}
                 subtitle="Click to view"
                 onClick={stat.onClick}
+                color={stat.color}
                 className="w-full text-left hover:shadow-lg transition-shadow"
               />
             ))}

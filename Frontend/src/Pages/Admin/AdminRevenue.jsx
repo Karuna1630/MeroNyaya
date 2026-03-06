@@ -149,32 +149,28 @@ const AdminRevenue = () => {
                   title="Platform Revenue"
                   value={`Rs. ${parseFloat(summary?.total_platform_revenue || 0).toLocaleString()}`}
                   subtitle={`${summary?.commission_rate || 0}% commission`}
-                  bgColor="bg-emerald-100"
-                  iconColor="text-emerald-600"
+                  color="emerald"
                 />
                 <Statcard
                   icon={<TrendingUp size={20} />}
                   title="Total Collected"
                   value={`Rs. ${parseFloat(summary?.total_collected || 0).toLocaleString()}`}
                   subtitle="From all client payments"
-                  bgColor="bg-blue-100"
-                  iconColor="text-blue-600"
+                  color="blue"
                 />
                 <Statcard
                   icon={<CheckCircle size={20} />}
                   title="Paid to Lawyers"
                   value={`Rs. ${parseFloat(summary?.total_paid_out || 0).toLocaleString()}`}
                   subtitle="Settled payouts"
-                  bgColor="bg-green-100"
-                  iconColor="text-green-600"
+                  color="green"
                 />
                 <Statcard
                   icon={<Clock size={20} />}
                   title="Pending Payouts"
                   value={`Rs. ${parseFloat(summary?.total_pending_payout || 0).toLocaleString()}`}
                   subtitle={`${summary?.total_transactions || 0} total transactions`}
-                  bgColor="bg-amber-100"
-                  iconColor="text-amber-600"
+                  color="amber"
                 />
               </div>
 
