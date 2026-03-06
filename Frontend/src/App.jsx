@@ -44,6 +44,7 @@ import AdminRevenue from './Pages/Admin/AdminRevenue.jsx';
 import KYC from './Pages/KYC/KYC.jsx';
 import EsewaSuccess from './Pages/Payment/EsewaSuccess.jsx';
 import EsewaFailure from './Pages/Payment/EsewaFailure.jsx';
+import KhaltiSuccess from './Pages/Payment/KhaltiSuccess.jsx';
 
 
 
@@ -106,7 +107,8 @@ function App() {
 
         {/* Payment callback routes */}
         <Route path='/payment/esewa-success' element={<ProtectedRoute requiredRole="client"><EsewaSuccess /></ProtectedRoute>} />
-        <Route path='/payment/esewa-failure' element={<ProtectedRoute requiredRole="client"><EsewaFailure /></ProtectedRoute>} />  
+        <Route path='/payment/esewa-failure' element={<ProtectedRoute requiredRole="client"><EsewaFailure /></ProtectedRoute>} />
+        <Route path='/payment/khalti-success' element={<ProtectedRoute requiredRole="client"><KhaltiSuccess /></ProtectedRoute>} />  
       </Routes>
     </BrowserRouter>
     </Provider>

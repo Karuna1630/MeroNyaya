@@ -2,6 +2,8 @@ from django.urls import path
 from .views import (
     EsewaInitiateView,
     EsewaVerifyView,
+    KhaltiInitiateView,
+    KhaltiVerifyView,
     PaymentListView,
     PaymentDetailView,
     LawyerEarningsView,
@@ -13,6 +15,8 @@ from .views import (
 urlpatterns = [
     path("esewa/initiate/", EsewaInitiateView.as_view(), name="esewa-initiate"),
     path("esewa/verify/", EsewaVerifyView.as_view(), name="esewa-verify"),
+    path("khalti/initiate/", KhaltiInitiateView.as_view(), name="khalti-initiate"),
+    path("khalti/verify/", KhaltiVerifyView.as_view(), name="khalti-verify"),
     path("earnings/", LawyerEarningsView.as_view(), name="lawyer-earnings"),
     path("admin/revenue/", AdminRevenueView.as_view(), name="admin-revenue"),
     path("admin/payout/", AdminCreatePayoutView.as_view(), name="admin-create-payout"),

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyAppointments } from "../slices/appointmentSlice";
-import { initiateEsewaPayment } from "../slices/paymentSlice";
+import { initiateEsewaPayment, initiateKhaltiPayment } from "../slices/paymentSlice";
 import { redirectToEsewa } from "../../utils/esewaRedirect";
 import { fetchCaseAppointments } from "../slices/caseSlice";
 
@@ -27,6 +27,7 @@ const ClientAppointment = () => {
   const [appointmentToPay, setAppointmentToPay] = useState(null);
   const [paymentError, setPaymentError] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("esewa");
   const dispatch = useDispatch();
   const { appointments = [], appointmentsLoading, appointmentsError } = useSelector(
     (state) => state.appointment || {} 
@@ -35,6 +36,9 @@ const ClientAppointment = () => {
     (state) => state.case || {}
   );
   const { initiating: esewaInitiating } = useSelector(
+    (state) => state.payment || {}
+  );
+  const { khaltiInitiating } = useSelector(
     (state) => state.payment || {}
   );
 
@@ -141,6 +145,7 @@ const ClientAppointment = () => {
   const handleOpenPayment = (appointment) => {
     setAppointmentToPay(appointment);
     setPaymentError("");
+    setSelectedPaymentMethod("esewa");
     setShowPaymentModal(true);
   };
 
@@ -148,18 +153,34 @@ const ClientAppointment = () => {
     if (!appointmentToPay?.id) return;
     setPaymentLoading(true);
     setPaymentError("");
-    dispatch(initiateEsewaPayment(appointmentToPay.id)).then((res) => {
-      setPaymentLoading(false);
-      if (!res?.error) {
-        // Redirect to eSewa payment page
-        const { esewa_url, params } = res.payload;
-        setShowPaymentModal(false);
-        setAppointmentToPay(null);
-        redirectToEsewa(esewa_url, params);
-      } else {
-        setPaymentError(res?.payload || "Payment initiation failed. Please try again.");
-      }
-    });
+
+    if (selectedPaymentMethod === "khalti") {
+      dispatch(initiateKhaltiPayment(appointmentToPay.id)).then((res) => {
+        setPaymentLoading(false);
+        if (!res?.error) {
+          const { khalti_payment_url } = res.payload;
+          setShowPaymentModal(false);
+          setAppointmentToPay(null);
+          // Khalti uses a simple redirect (GET) to their payment page
+          window.location.href = khalti_payment_url;
+        } else {
+          setPaymentError(res?.payload || "Khalti payment initiation failed. Please try again.");
+        }
+      });
+    } else {
+      dispatch(initiateEsewaPayment(appointmentToPay.id)).then((res) => {
+        setPaymentLoading(false);
+        if (!res?.error) {
+          // Redirect to eSewa payment page
+          const { esewa_url, params } = res.payload;
+          setShowPaymentModal(false);
+          setAppointmentToPay(null);
+          redirectToEsewa(esewa_url, params);
+        } else {
+          setPaymentError(res?.payload || "Payment initiation failed. Please try again.");
+        }
+      });
+    }
   };
 
   return (
@@ -538,7 +559,7 @@ const ClientAppointment = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 overflow-hidden flex flex-col">
             <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Pay with eSewa</h2>
+              <h2 className="text-lg font-bold text-white">Pay for Consultation</h2>
               <button
                 type="button"
                 onClick={() => {
@@ -574,6 +595,37 @@ const ClientAppointment = () => {
                   Rs. {appointmentToPay.consultation_details?.lawyer?.consultation_fee?.toLocaleString() || "0"}
                 </p>
               </div>
+
+              {/* Payment Method Selection */}
+              <div className="mt-4">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Payment Method</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPaymentMethod("esewa")}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
+                      selectedPaymentMethod === "esewa"
+                        ? "border-green-500 bg-green-50 text-green-700 ring-2 ring-green-200"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    eSewa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPaymentMethod("khalti")}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
+                      selectedPaymentMethod === "khalti"
+                        ? "border-purple-500 bg-purple-50 text-purple-700 ring-2 ring-purple-200"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                    Khalti
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
@@ -592,9 +644,15 @@ const ClientAppointment = () => {
                 type="button"
                 onClick={handleConfirmPayment}
                 disabled={paymentLoading}
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className={`px-6 py-2 text-white rounded-lg font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+                  selectedPaymentMethod === "khalti"
+                    ? "bg-purple-600 hover:bg-purple-700"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
               >
-                {paymentLoading || esewaInitiating ? "Redirecting to eSewa..." : "Pay with eSewa"}
+                {paymentLoading || esewaInitiating || khaltiInitiating
+                  ? `Redirecting to ${selectedPaymentMethod === "khalti" ? "Khalti" : "eSewa"}...`
+                  : `Pay with ${selectedPaymentMethod === "khalti" ? "Khalti" : "eSewa"}`}
               </button>
             </div>
           </div>

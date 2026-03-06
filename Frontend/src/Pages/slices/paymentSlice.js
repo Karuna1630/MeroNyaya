@@ -110,12 +110,49 @@ export const createPayout = createAsyncThunk(
   }
 );
 
+// Initiate Khalti payment for an appointment
+export const initiateKhaltiPayment = createAsyncThunk(
+  'payment/initiateKhaltiPayment',
+  async (appointmentId, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post('/payment/khalti/initiate/', {
+        appointment_id: appointmentId,
+      });
+      return response.data.Result;
+    } catch (error) {
+      return rejectWithValue(extractErrorMessage(error, 'Failed to initiate Khalti payment'));
+    }
+  }
+);
+
+// Verify Khalti payment after redirect
+export const verifyKhaltiPayment = createAsyncThunk(
+  'payment/verifyKhaltiPayment',
+  async ({ pidx, transaction_id, purchase_order_id }, { rejectWithValue }) => {
+    try {
+      const params = new URLSearchParams({ pidx });
+      if (transaction_id) params.append('transaction_id', transaction_id);
+      if (purchase_order_id) params.append('purchase_order_id', purchase_order_id);
+      const response = await axiosInstance.get(`/payment/khalti/verify/?${params.toString()}`);
+      return response.data.Result;
+    } catch (error) {
+      return rejectWithValue(extractErrorMessage(error, 'Khalti payment verification failed'));
+    }
+  }
+);
+
 const initialState = {
   // Initiation
   initiating: false,
   initiateError: null,
   esewaParams: null,
   esewaUrl: null,
+
+  // Khalti Initiation
+  khaltiInitiating: false,
+  khaltiInitiateError: null,
+  khaltiPaymentUrl: null,
+  khaltiPidx: null,
 
   // Verification
   verifying: false,
@@ -159,6 +196,10 @@ const paymentSlice = createSlice({
       state.esewaParams = null;
       state.esewaUrl = null;
     },
+    clearKhaltiParams: (state) => {
+      state.khaltiPaymentUrl = null;
+      state.khaltiPidx = null;
+    },
     clearVerifiedPayment: (state) => {
       state.verifiedPayment = null;
     },
@@ -193,6 +234,38 @@ const paymentSlice = createSlice({
         state.verifiedPayment = action.payload;
       })
       .addCase(verifyEsewaPayment.rejected, (state, action) => {
+        state.verifying = false;
+        state.verifyError = action.payload;
+      })
+
+      // Khalti Initiate
+      .addCase(initiateKhaltiPayment.pending, (state) => {
+        state.khaltiInitiating = true;
+        state.khaltiInitiateError = null;
+        state.khaltiPaymentUrl = null;
+        state.khaltiPidx = null;
+      })
+      .addCase(initiateKhaltiPayment.fulfilled, (state, action) => {
+        state.khaltiInitiating = false;
+        state.khaltiPaymentUrl = action.payload.khalti_payment_url;
+        state.khaltiPidx = action.payload.pidx;
+      })
+      .addCase(initiateKhaltiPayment.rejected, (state, action) => {
+        state.khaltiInitiating = false;
+        state.khaltiInitiateError = action.payload;
+      })
+
+      // Khalti Verify
+      .addCase(verifyKhaltiPayment.pending, (state) => {
+        state.verifying = true;
+        state.verifyError = null;
+        state.verifiedPayment = null;
+      })
+      .addCase(verifyKhaltiPayment.fulfilled, (state, action) => {
+        state.verifying = false;
+        state.verifiedPayment = action.payload;
+      })
+      .addCase(verifyKhaltiPayment.rejected, (state, action) => {
         state.verifying = false;
         state.verifyError = action.payload;
       })
@@ -270,5 +343,5 @@ const paymentSlice = createSlice({
   },
 });
 
-export const { clearPaymentErrors, clearEsewaParams, clearVerifiedPayment } = paymentSlice.actions;
+export const { clearPaymentErrors, clearEsewaParams, clearKhaltiParams, clearVerifiedPayment } = paymentSlice.actions;
 export default paymentSlice.reducer;

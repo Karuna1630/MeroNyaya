@@ -285,69 +285,61 @@ const ClientCase = () => {
             {/* SUMMARY CARDS */}
             <div className="grid grid-cols-4 gap-6 mb-8">
               {/* Total Cases Card */}
-              <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 mb-2">
-                      Total Cases
-                    </p>
-                    <p className="text-3xl font-bold text-slate-900">
-                      {getTotalCases()}
-                    </p>
+              <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-blue-500 to-blue-600 ring-1 ring-blue-500/20">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <div className="relative z-10 flex items-start justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-white/80">Total Cases</p>
+                    <h3 className="text-2xl font-extrabold tracking-tight">{getTotalCases()}</h3>
                   </div>
-                  <div className="p-3 bg-slate-100 rounded-lg">
-                    <FileText size={24} className="text-slate-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-400/20">
+                    <FileText size={20} />
                   </div>
                 </div>
               </div>
 
               {/* Active Card */}
-              <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 mb-2">
-                      Active
-                    </p>
-                    <p className="text-3xl font-bold text-blue-700">
-                      {getActiveCases()}
-                    </p>
+              <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-violet-500 to-purple-600 ring-1 ring-violet-500/20">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <div className="relative z-10 flex items-start justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-white/80">Active</p>
+                    <h3 className="text-2xl font-extrabold tracking-tight">{getActiveCases()}</h3>
                   </div>
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Briefcase size={24} className="text-blue-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-400/20">
+                    <Briefcase size={20} />
                   </div>
                 </div>
               </div>
 
               {/* Public Cases Card */}
-              <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 mb-2">
-                      Public Cases
-                    </p>
-                    <p className="text-3xl font-bold text-purple-700">
-                      {getPublicCases()}
-                    </p>
+              <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-amber-500 to-orange-500 ring-1 ring-amber-500/20">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <div className="relative z-10 flex items-start justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-white/80">Public Cases</p>
+                    <h3 className="text-2xl font-extrabold tracking-tight">{getPublicCases()}</h3>
                   </div>
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <AlertCircle size={24} className="text-purple-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/20">
+                    <AlertCircle size={20} />
                   </div>
                 </div>
               </div>
 
               {/* Completed Card */}
-              <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 mb-2">
-                      Completed
-                    </p>
-                    <p className="text-3xl font-bold text-green-700">
-                      {getCompletedCases()}
-                    </p>
+              <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-emerald-500 to-emerald-600 ring-1 ring-emerald-500/20">
+                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+                <div className="relative z-10 flex items-start justify-between">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-white/80">Completed</p>
+                    <h3 className="text-2xl font-extrabold tracking-tight">{getCompletedCases()}</h3>
                   </div>
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <CheckCircle size={24} className="text-green-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/20">
+                    <CheckCircle size={20} />
                   </div>
                 </div>
               </div>

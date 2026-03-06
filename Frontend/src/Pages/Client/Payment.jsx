@@ -1,375 +1,408 @@
-import React, { useState } from 'react';
-import { Download, ArrowUpRight, ArrowDownLeft, CheckCircle, Clock, XCircle, Filter, Shield, Receipt, RefreshCw } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  CreditCard,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Filter,
+  Receipt,
+  TrendingUp,
+  AlertTriangle,
+  Search,
+  ChevronDown,
+} from 'lucide-react';
 import DashHeader from './ClientDashHeader';
 import Sidebar from './sidebar';
+import { fetchPaymentHistory } from '../slices/paymentSlice';
 
-const Payment= () => {
-  const [activeTab, setActiveTab] = useState('history');
+const Payment = () => {
+  const dispatch = useDispatch();
+  const { payments, paymentsLoading, paymentsError } = useSelector(
+    (state) => state.payment
+  );
+
   const [filterStatus, setFilterStatus] = useState('all');
-  const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('esewa');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Sample transaction data
-  const transactions = [
-    {
-      id: 1,
-      type: 'payment',
-      title: 'Consultation Fee - Adv. Rajesh Sharma',
-      caseType: 'Property Dispute',
-      paymentMethod: 'eSewa',
-      amount: 5000,
-      status: 'completed',
-      date: 'Dec 5, 2025'
-    },
-    {
-      id: 2,
-      type: 'payment',
-      title: 'Document Filing Fee',
-      caseType: 'Property Dispute',
-      paymentMethod: 'Khalti',
-      amount: 2500,
-      status: 'completed',
-      date: 'Dec 3, 2025'
-    },
-    {
-      id: 3,
-      type: 'payment',
-      title: 'Consultation Fee - Adv. Priya Sharma',
-      caseType: 'Divorce Proceedings',
-      paymentMethod: 'eSewa',
-      amount: 5000,
-      status: 'pending',
-      date: 'Dec 1, 2025'
-    },
-    {
-      id: 4,
-      type: 'refund',
-      title: 'Refund - Cancelled Appointment',
-      caseType: 'Employment Dispute',
-      paymentMethod: 'eSewa',
-      amount: 3000,
-      status: 'completed',
-      date: 'Nov 28, 2025'
-    },
-    {
-      id: 5,
-      type: 'payment',
-      title: 'Retainer Fee - Adv. Sita Karki',
-      caseType: 'Business Contract Review',
-      paymentMethod: 'Khalti',
-      amount: 15000,
-      status: 'completed',
-      date: 'Nov 25, 2025'
-    },
-    {
-      id: 6,
-      type: 'payment',
-      title: 'Court Fee Deposit',
-      caseType: 'Property Dispute',
-      paymentMethod: 'eSewa',
-      amount: 10000,
-      status: 'failed',
-      date: 'Nov 20, 2025'
-    }
-  ];
+  useEffect(() => {
+    dispatch(fetchPaymentHistory());
+  }, [dispatch]);
 
-  // Filter transactions based on active tab and status
-  const filteredTransactions = transactions.filter(transaction => {
-    // First filter by active tab
-    if (activeTab === 'pending') {
-      // On pending tab, only show pending transactions
-      if (transaction.status !== 'pending') {
-        return false;
-      }
-    }
-    
-    // Then filter by dropdown status (only on Transaction History tab)
-    if (activeTab === 'history') {
-      if (filterStatus === 'all') return true;
-      return transaction.status === filterStatus;
-    }
-    
-    // For pending tab, all pending transactions are shown (no additional filter)
-    return true;
-  });
+  // Compute stats
+  const stats = useMemo(() => {
+    const total = payments.length;
+    const completed = payments.filter((p) => p.status === 'completed').length;
+    const pending = payments.filter((p) => p.status === 'initiated').length;
+    const failed = payments.filter((p) => p.status === 'failed').length;
+    const totalAmount = payments
+      .filter((p) => p.status === 'completed')
+      .reduce((sum, p) => sum + parseFloat(p.total_amount || 0), 0);
+    return { total, completed, pending, failed, totalAmount };
+  }, [payments]);
 
-  // Get pending count
-  const pendingCount = transactions.filter(t => t.status === 'pending').length;
+  // Filter payments
+  const filteredPayments = useMemo(() => {
+    return payments.filter((p) => {
+      const statusMapping = { completed: 'completed', pending: 'initiated', failed: 'failed' };
+      const matchesStatus =
+        filterStatus === 'all' ||
+        p.status === (statusMapping[filterStatus] || filterStatus);
+      const matchesSearch =
+        !searchQuery ||
+        (p.lawyer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.transaction_uuid || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.esewa_ref_id || '').toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesStatus && matchesSearch;
+    });
+  }, [payments, filterStatus, searchQuery]);
 
-  const getStatusIcon = (status) => {
-    switch(status) {
-      case 'completed':
-        return <CheckCircle className="text-green-500" size={16} />;
-      case 'pending':
-        return <Clock className="text-yellow-500" size={16} />;
-      case 'failed':
-        return <XCircle className="text-red-500" size={16} />;
-      default:
-        return null;
-    }
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'completed':
-        return 'text-green-600';
-      case 'pending':
-        return 'text-yellow-600';
-      case 'failed':
-        return 'text-red-600';
-      default:
-        return 'text-gray-600';
-    }
+  const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
-  const getTransactionIcon = (type) => {
-    if (type === 'refund') {
-      return <ArrowDownLeft className="text-green-600" size={20} />;
-    }
-    return <ArrowUpRight className="text-gray-600" size={20} />;
-  };
-
-  const handleProceedToPay = (e) => {
-    e.preventDefault();
-    if (!amount || parseFloat(amount) <= 0) {
-      alert('Please enter a valid amount');
-      return;
-    }
-    alert(`Processing payment of Rs. ${amount} via ${paymentMethod === 'esewa' ? 'eSewa' : 'Khalti'}`);
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      completed: {
+        icon: <CheckCircle size={14} />,
+        bg: 'bg-emerald-50',
+        text: 'text-emerald-700',
+        ring: 'ring-emerald-200',
+        label: 'Completed',
+      },
+      initiated: {
+        icon: <Clock size={14} />,
+        bg: 'bg-amber-50',
+        text: 'text-amber-700',
+        ring: 'ring-amber-200',
+        label: 'Pending',
+      },
+      failed: {
+        icon: <XCircle size={14} />,
+        bg: 'bg-red-50',
+        text: 'text-red-700',
+        ring: 'ring-red-200',
+        label: 'Failed',
+      },
+      refunded: {
+        icon: <CheckCircle size={14} />,
+        bg: 'bg-blue-50',
+        text: 'text-blue-700',
+        ring: 'ring-blue-200',
+        label: 'Refunded',
+      },
+    };
+    const s = statusMap[status] || statusMap['initiated'];
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ${s.bg} ${s.text} ${s.ring}`}
+      >
+        {s.icon}
+        {s.label || status}
+      </span>
+    );
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      
+
       <div className="flex-1 flex flex-col">
         <div className="sticky top-0 z-50 bg-white">
-          <DashHeader 
-            title="Payments" 
-            subtitle="Manage your payments and transactions"
+          <DashHeader
+            title="Payments"
+            subtitle="Your transaction history"
           />
         </div>
 
-        <div className="flex gap-6 p-8 overflow-y-auto">
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Tabs */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex gap-6">
-              <button
-                onClick={() => setActiveTab('history')}
-                className={`pb-2 font-medium transition-colors ${
-                  activeTab === 'history'
-                    ? 'text-gray-900 border-b-2 border-gray-900'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Transaction History
-              </button>
-              <button
-                onClick={() => setActiveTab('pending')}
-                className={`pb-2 font-medium transition-colors ${
-                  activeTab === 'pending'
-                    ? 'text-gray-900 border-b-2 border-gray-900'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Pending ({pendingCount})
-              </button>
+        <div className="p-8 overflow-y-auto space-y-8">
+          {/* Stat Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Total Payments */}
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-blue-500 to-blue-600 ring-1 ring-blue-500/20">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+              <div className="relative z-10 flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-white/80">Total Payments</p>
+                  <h3 className="text-2xl font-extrabold tracking-tight">{stats.total}</h3>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-400/20">
+                  <CreditCard size={20} />
+                </div>
+              </div>
             </div>
 
-            {/* Filter Dropdown */}
+            {/* Completed */}
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-emerald-500 to-emerald-600 ring-1 ring-emerald-500/20">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+              <div className="relative z-10 flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-white/80">Completed</p>
+                  <h3 className="text-2xl font-extrabold tracking-tight">{stats.completed}</h3>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/20">
+                  <CheckCircle size={20} />
+                </div>
+              </div>
+            </div>
+
+            {/* Pending */}
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-amber-500 to-orange-500 ring-1 ring-amber-500/20">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+              <div className="relative z-10 flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-white/80">Pending</p>
+                  <h3 className="text-2xl font-extrabold tracking-tight">{stats.pending}</h3>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/20">
+                  <Clock size={20} />
+                </div>
+              </div>
+            </div>
+
+            {/* Total Spent */}
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-violet-500 to-purple-600 ring-1 ring-violet-500/20">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+              <div className="relative z-10 flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-white/80">Total Spent</p>
+                  <h3 className="text-2xl font-extrabold tracking-tight">
+                    Rs. {stats.totalAmount.toLocaleString()}
+                  </h3>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-400/20">
+                  <TrendingUp size={20} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Bar */}
+          <div className="flex items-center justify-between">
+            {/* Search */}
+            <div className="relative w-80">
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by lawyer, transaction ID..."
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 bg-white"
+              />
+            </div>
+
+            {/* Status Filter */}
             <div className="relative">
               <button
-                onClick={() => activeTab === 'history' && setShowFilterDropdown(!showFilterDropdown)}
-                disabled={activeTab === 'pending'}
-                className={`flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg transition ${
-                  activeTab === 'pending' 
-                    ? 'bg-gray-100 cursor-not-allowed opacity-60' 
-                    : 'hover:bg-gray-50 cursor-pointer'
-                }`}
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium bg-white hover:bg-gray-50 transition cursor-pointer"
               >
-                
-                <Filter size={16} />
-                <span className="text-sm font-medium">
-                  {activeTab === 'pending' 
-                    ? 'Pending' 
-                    : (filterStatus === 'all' ? 'All Status' : 
-                       filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1))
-                  }
+                <Filter size={16} className="text-gray-500" />
+                <span>
+                  {filterStatus === 'all'
+                    ? 'All Status'
+                    : filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
                 </span>
-                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <ChevronDown size={14} className="text-gray-400" />
               </button>
 
-              {showFilterDropdown && activeTab === 'history' && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  <button
-                    onClick={() => { setFilterStatus('all'); setShowFilterDropdown(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                  >
-                    All Status
-                  </button>
-                  <button
-                    onClick={() => { setFilterStatus('completed'); setShowFilterDropdown(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                  >
-                    Completed
-                  </button>
-                  <button
-                    onClick={() => { setFilterStatus('pending'); setShowFilterDropdown(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                  >
-                    Pending
-                  </button>
-                  <button
-                    onClick={() => { setFilterStatus('failed'); setShowFilterDropdown(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                  >
-                    Failed
-                  </button>
+              {showFilterDropdown && (
+                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-xl z-10 overflow-hidden">
+                  {['all', 'completed', 'pending', 'failed'].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setFilterStatus(status);
+                        setShowFilterDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition ${
+                        filterStatus === status
+                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          : 'text-gray-700'
+                      }`}
+                    >
+                      {status === 'all' ? 'All Status' : status.charAt(0).toUpperCase() + status.slice(1)}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Transactions List */}
-          <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
-            {filteredTransactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-              >
-                <div className="flex items-center gap-4">
-                  {/* Icon */}
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                    {getTransactionIcon(transaction.type)}
-                  </div>
+          {/* Transaction History Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-6 py-3.5 bg-gray-50/80 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <div className="col-span-3">Lawyer</div>
+              <div className="col-span-2">Transaction ID</div>
+              <div className="col-span-2">Date</div>
+              <div className="col-span-1">Method</div>
+              <div className="col-span-2 text-right">Amount</div>
+              <div className="col-span-2 text-center">Status</div>
+            </div>
 
-                  {/* Transaction Details */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{transaction.title}</h3>
-                    <p className="text-sm text-gray-600">
-                      {transaction.caseType} • {transaction.paymentMethod}
-                    </p>
-                  </div>
+            {/* Loading State */}
+            {paymentsLoading && (
+              <div className="flex items-center justify-center py-20">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-8 w-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-gray-500">Loading transactions...</p>
                 </div>
+              </div>
+            )}
 
-                {/* Amount and Status */}
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <p className="font-bold text-gray-900">
-                      {transaction.type === 'refund' ? '+' : '-'} Rs. {transaction.amount.toLocaleString()}
-                    </p>
-                    <div className="flex items-center gap-1 justify-end mt-1">
-                      {getStatusIcon(transaction.status)}
-                      <span className={`text-sm capitalize ${getStatusColor(transaction.status)}`}>
-                        {transaction.status}
-                      </span>
-                      <span className="text-sm text-gray-500 ml-2">{transaction.date}</span>
+            {/* Error State */}
+            {paymentsError && !paymentsLoading && (
+              <div className="flex items-center justify-center py-20">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
+                    <AlertTriangle size={24} className="text-red-500" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">Failed to load transactions</p>
+                  <p className="text-sm text-gray-500">{paymentsError}</p>
+                  <button
+                    onClick={() => dispatch(fetchPaymentHistory())}
+                    className="mt-2 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!paymentsLoading && !paymentsError && filteredPayments.length === 0 && (
+              <div className="flex items-center justify-center py-20">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Receipt size={24} className="text-gray-400" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">No transactions found</p>
+                  <p className="text-sm text-gray-500">
+                    {filterStatus !== 'all' || searchQuery
+                      ? 'Try adjusting your filters'
+                      : 'Your payment history will appear here'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Transaction Rows */}
+            {!paymentsLoading &&
+              !paymentsError &&
+              filteredPayments.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="grid grid-cols-12 gap-4 px-6 py-4 items-center border-b border-gray-50 hover:bg-gray-50/50 transition"
+                >
+                  {/* Lawyer */}
+                  <div className="col-span-3 flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-linear-to-br from-blue-500 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {(payment.lawyer_name || 'L')
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {payment.lawyer_name || 'Unknown Lawyer'}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {payment.lawyer_email || `Appointment #${payment.appointment_id || '—'}`}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Download Button */}
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition">
-                    <Download size={20} className="text-gray-600" />
-                  </button>
+                  {/* Transaction ID */}
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-700 font-mono truncate">
+                      {payment.transaction_uuid
+                        ? payment.transaction_uuid.slice(0, 12) + '...'
+                        : '—'}
+                    </p>
+                    {payment.esewa_ref_id && (
+                      <p className="text-xs text-gray-400 truncate">
+                        Ref: {payment.esewa_ref_id}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Date */}
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-700">{formatDate(payment.created_at)}</p>
+                    <p className="text-xs text-gray-400">{formatTime(payment.created_at)}</p>
+                  </div>
+
+                  {/* Method */}
+                  <div className="col-span-1">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                      {payment.payment_method || 'eSewa'}
+                    </span>
+                  </div>
+
+                  {/* Amount */}
+                  <div className="col-span-2 text-right">
+                    <p className="text-sm font-bold text-gray-900">
+                      Rs. {parseFloat(payment.total_amount || 0).toLocaleString()}
+                    </p>
+                    {payment.tax_amount && parseFloat(payment.tax_amount) > 0 && (
+                      <p className="text-xs text-gray-400">
+                        Tax: Rs. {parseFloat(payment.tax_amount).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Status */}
+                  <div className="col-span-2 flex justify-center">
+                    {getStatusBadge(payment.status)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
-        </div>
 
-        {/* Quick Pay Sidebar */}
-        <div className="w-96">
-          <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Pay</h2>
-
-            <form onSubmit={handleProceedToPay}>
-              {/* Amount Input */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount (Rs.)
-                </label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="0"
-                  step="1"
-                />
-              </div>
-
-              {/* Payment Method */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Method
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('esewa')}
-                    className={`px-6 py-3 rounded-lg font-semibold transition ${
-                      paymentMethod === 'esewa'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    eSewa
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('khalti')}
-                    className={`px-6 py-3 rounded-lg font-semibold transition ${
-                      paymentMethod === 'khalti'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Khalti
-                  </button>
-                </div>
-              </div>
-
-              {/* Proceed Button */}
-              <button
-                type="submit"
-                className="w-full bg-[#0F1A3D] text-white py-3 rounded-lg font-semibold hover:bg-blue-950 transition"
-              >
-                Proceed to Pay
-              </button>
-            </form>
-
-            {/* Payment Information */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-4">Payment Information</h3>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Shield className="text-green-500 mt-0.5" size={20} />
-                  <p className="text-sm text-gray-600">
-                    All payments are secured with 256-bit encryption
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Receipt className="text-blue-500 mt-0.5" size={20} />
-                  <p className="text-sm text-gray-600">
-                    Digital receipts are generated automatically
-                  </p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <RefreshCw className="text-orange-500 mt-0.5" size={20} />
-                  <p className="text-sm text-gray-600">
-                    Refunds processed within 5-7 business days
-                  </p>
-                </div>
-              </div>
-        </div>
+          {/* Footer summary */}
+          {!paymentsLoading && filteredPayments.length > 0 && (
+            <div className="flex items-center justify-between text-sm text-gray-500 px-1">
+              <p>
+                Showing {filteredPayments.length} of {payments.length} transactions
+              </p>
+              <p>
+                Total:{' '}
+                <span className="font-semibold text-gray-900">
+                  Rs.{' '}
+                  {filteredPayments
+                    .filter((p) => p.status === 'completed')
+                    .reduce((sum, p) => sum + parseFloat(p.total_amount || 0), 0)
+                    .toLocaleString()}
+                </span>
+              </p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

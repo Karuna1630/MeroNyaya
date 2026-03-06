@@ -50,6 +50,11 @@ class EsewaInitiateSerializer(serializers.Serializer):
     appointment_id = serializers.IntegerField()
 
 
+class KhaltiInitiateSerializer(serializers.Serializer):
+    """Serializer for the Khalti payment initiation request."""
+    appointment_id = serializers.IntegerField()
+
+
 class PayoutSerializer(serializers.ModelSerializer):
     """Serializer for the Payout model."""
     lawyer_name = serializers.CharField(source="lawyer.name", read_only=True)

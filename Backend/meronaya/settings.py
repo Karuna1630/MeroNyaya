@@ -241,3 +241,9 @@ PLATFORM_COMMISSION_PERCENT = Decimal(config('PLATFORM_COMMISSION_PERCENT', defa
 # eSewa external API URLs (sandbox)
 ESEWA_PAYMENT_URL = "https://rc-epay.esewa.com.np/api/epay/main/v2/form"  # sandbox payment form
 ESEWA_VERIFY_URL = config('ESEWA_STATUS_URL', default='https://uat.esewa.com.np/api/epay/transaction/status/')  # sandbox transaction status check
+
+# Khalti Payment Gateway — Sandbox Configuration (read from .env)
+KHALTI_SECRET_KEY = config('KHALTI_SECRET_KEY', default='')
+KHALTI_BASE_URL = config('KHALTI_BASE_URL', default='https://dev.khalti.com/api/v2')
+KHALTI_RETURN_URL = config('KHALTI_RETURN_URL', default='http://localhost:5173/payment/khalti-success')
+KHALTI_WEBSITE_URL = config('KHALTI_WEBSITE_URL', default='http://localhost:5173/payment/khalti-success')

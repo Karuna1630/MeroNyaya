@@ -20,7 +20,7 @@ from notification.utils import send_notification
 from meronaya.resonses import api_response
 
 from .models import Payment, Payout
-from .serializers import PaymentSerializer, EsewaInitiateSerializer, PayoutSerializer, CreatePayoutSerializer
+from .serializers import PaymentSerializer, EsewaInitiateSerializer, KhaltiInitiateSerializer, PayoutSerializer, CreatePayoutSerializer
 import hmac as hmac_compare
 from .utils import generate_esewa_signature, build_esewa_signature_message
 
@@ -325,6 +325,325 @@ class EsewaVerifyView(APIView):
                 return api_response(
                     is_success=False,
                     error_message={"error": f"Payment verification failed. eSewa status: {esewa_transaction_status}"},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+# Creating API view for initiating Khalti payment for video consultation appointments.
+class KhaltiInitiateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Initiate a Khalti payment for a video consultation appointment.",
+        request_body=KhaltiInitiateSerializer,
+        responses={
+            200: openapi.Response(description="Khalti payment URL returned successfully."),
+            400: openapi.Response(description="Bad request."),
+            403: openapi.Response(description="Not allowed."),
+            404: openapi.Response(description="Appointment not found."),
+            500: openapi.Response(description="Internal server error."),
+        },
+        tags=["Payment"],
+    )
+    def post(self, request):
+        try:
+            serializer = KhaltiInitiateSerializer(data=request.data)
+            if not serializer.is_valid():
+                return api_response(
+                    is_success=False,
+                    error_message=serializer.errors,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            appointment_id = serializer.validated_data["appointment_id"]
+            user = request.user
+
+            # Validating the appointment exists
+            try:
+                appointment = Appointment.objects.select_related(
+                    "consultation", "consultation__lawyer", "consultation__client"
+                ).get(id=appointment_id)
+            except Appointment.DoesNotExist:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "Appointment not found."},
+                    status_code=status.HTTP_404_NOT_FOUND,
+                )
+
+            # Only the client who owns this appointment can pay
+            if appointment.consultation.client != user:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "Not allowed."},
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
+
+            # Only video consultations require payment
+            if appointment.consultation.mode != Consultation.MODE_VIDEO:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "Payment is only required for video consultations."},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Don't allow double payment
+            if appointment.payment_status == Appointment.PAYMENT_PAID:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "This appointment is already paid."},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Getting the consultation fee from the lawyer's KYC profile
+            lawyer = appointment.consultation.lawyer
+            try:
+                consultation_fee = lawyer.lawyer_kyc.consultation_fee
+            except Exception:
+                consultation_fee = Decimal("100.00")  # fallback for testing
+
+            amount = consultation_fee
+            tax_amount = Decimal("0")
+            total_amount = amount + tax_amount
+
+            # Calculating the platform commission and the lawyer's earning
+            commission_percent = settings.PLATFORM_COMMISSION_PERCENT
+            platform_fee = (total_amount * commission_percent / Decimal("100")).quantize(Decimal("0.01"))
+            lawyer_earning = total_amount - platform_fee
+
+            # Creating a Payment record in the database
+            payment = Payment.objects.create(
+                appointment=appointment,
+                user=user,
+                lawyer=lawyer,
+                amount=amount,
+                tax_amount=tax_amount,
+                total_amount=total_amount,
+                platform_fee=platform_fee,
+                lawyer_earning=lawyer_earning,
+                payment_method="khalti",
+                status=Payment.STATUS_INITIATED,
+            )
+
+            # Khalti expects amount in paisa (1 Rs = 100 paisa)
+            amount_in_paisa = int(total_amount * 100)
+
+            # Calling Khalti's ePayment initiate API
+            khalti_payload = {
+                "return_url": settings.KHALTI_RETURN_URL,
+                "website_url": settings.KHALTI_WEBSITE_URL,
+                "amount": amount_in_paisa,
+                "purchase_order_id": str(payment.transaction_uuid),
+                "purchase_order_name": f"Consultation - {lawyer.name}",
+                "customer_info": {
+                    "name": user.name,
+                    "email": user.email,
+                    "phone": getattr(user, "phone", "9800000000"),
+                },
+            }
+
+            khalti_response = requests.post(
+                f"{settings.KHALTI_BASE_URL}/epayment/initiate/",
+                json=khalti_payload,
+                headers={
+                    "Authorization": f"key {settings.KHALTI_SECRET_KEY}",
+                    "Content-Type": "application/json",
+                },
+                timeout=30,
+            )
+
+            if khalti_response.status_code != 200:
+                # Khalti API returned an error — mark payment as failed
+                payment.status = Payment.STATUS_FAILED
+                payment.save(update_fields=["status", "updated_at"])
+                error_detail = khalti_response.json() if khalti_response.text else "Unknown Khalti error"
+                return api_response(
+                    is_success=False,
+                    error_message={"error": f"Khalti initiation failed: {error_detail}"},
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            khalti_data = khalti_response.json()
+            khalti_pidx = khalti_data.get("pidx")
+            khalti_payment_url = khalti_data.get("payment_url")
+
+            # Store Khalti pidx in esewa_ref_id field for lookup during verification
+            payment.esewa_ref_id = khalti_pidx
+            payment.save(update_fields=["esewa_ref_id", "updated_at"])
+
+            return api_response(
+                is_success=True,
+                status_code=status.HTTP_200_OK,
+                result={
+                    "message": "Khalti payment initiated successfully.",
+                    "payment_id": payment.id,
+                    "khalti_payment_url": khalti_payment_url,
+                    "pidx": khalti_pidx,
+                },
+            )
+
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+# Creating API view for verifying Khalti payment after the user is redirected back.
+class KhaltiVerifyView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Verify Khalti payment using the pidx returned after redirect.",
+        manual_parameters=[
+            openapi.Parameter(
+                "pidx",
+                openapi.IN_QUERY,
+                description="Khalti payment identifier (pidx) from redirect",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "transaction_id",
+                openapi.IN_QUERY,
+                description="Khalti transaction ID from redirect",
+                type=openapi.TYPE_STRING,
+                required=False,
+            ),
+            openapi.Parameter(
+                "purchase_order_id",
+                openapi.IN_QUERY,
+                description="Our transaction UUID",
+                type=openapi.TYPE_STRING,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(description="Payment verified successfully."),
+            400: openapi.Response(description="Invalid or missing payment data."),
+            404: openapi.Response(description="Payment record not found."),
+            502: openapi.Response(description="Khalti verification service error."),
+        },
+        tags=["Payment"],
+    )
+    def get(self, request):
+        try:
+            pidx = request.query_params.get("pidx")
+            purchase_order_id = request.query_params.get("purchase_order_id")
+
+            if not pidx:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "Missing Khalti pidx parameter."},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Finding the payment record — look up by transaction_uuid (purchase_order_id) or pidx stored in esewa_ref_id
+            payment = None
+            if purchase_order_id:
+                try:
+                    payment = Payment.objects.select_related(
+                        "appointment",
+                        "appointment__consultation",
+                        "appointment__consultation__lawyer",
+                        "appointment__consultation__client",
+                    ).get(transaction_uuid=purchase_order_id)
+                except Payment.DoesNotExist:
+                    pass
+
+            if not payment:
+                try:
+                    payment = Payment.objects.select_related(
+                        "appointment",
+                        "appointment__consultation",
+                        "appointment__consultation__lawyer",
+                        "appointment__consultation__client",
+                    ).get(esewa_ref_id=pidx, payment_method="khalti")
+                except Payment.DoesNotExist:
+                    return api_response(
+                        is_success=False,
+                        error_message={"error": "Payment record not found."},
+                        status_code=status.HTTP_404_NOT_FOUND,
+                    )
+
+            # If already completed, return success without re-verifying
+            if payment.status == Payment.STATUS_COMPLETED:
+                return api_response(
+                    is_success=True,
+                    status_code=status.HTTP_200_OK,
+                    result={
+                        "message": "Payment already verified.",
+                        "payment": PaymentSerializer(payment).data,
+                    },
+                )
+
+            # Calling Khalti's lookup API to verify the payment
+            try:
+                lookup_response = requests.post(
+                    f"{settings.KHALTI_BASE_URL}/epayment/lookup/",
+                    json={"pidx": pidx},
+                    headers={
+                        "Authorization": f"key {settings.KHALTI_SECRET_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    timeout=15,
+                )
+                lookup_data = lookup_response.json()
+            except Exception:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "Khalti verification service unreachable."},
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            khalti_status = lookup_data.get("status")
+            khalti_transaction_id = lookup_data.get("transaction_id", "")
+
+            if khalti_status == "Completed":
+                # Marking payment as completed
+                payment.status = Payment.STATUS_COMPLETED
+                payment.esewa_ref_id = f"pidx:{pidx}|txn:{khalti_transaction_id}"
+                payment.save(update_fields=["status", "esewa_ref_id", "updated_at"])
+
+                # Updating appointment payment status
+                appointment = payment.appointment
+                appointment.payment_status = Appointment.PAYMENT_PAID
+                appointment.status = Appointment.STATUS_CONFIRMED
+                appointment.save(update_fields=["payment_status", "status", "updated_at"])
+
+                # Sending notification to the lawyer about payment received
+                send_notification(
+                    user=appointment.consultation.lawyer,
+                    title="Payment Received",
+                    message=f"{payment.user.name} has paid Rs. {payment.total_amount} for the consultation via Khalti. Your earning: Rs. {payment.lawyer_earning}",
+                    notif_type="payment",
+                    link="/lawyerearning",
+                )
+
+                return api_response(
+                    is_success=True,
+                    status_code=status.HTTP_200_OK,
+                    result={
+                        "message": "Payment verified successfully.",
+                        "payment": PaymentSerializer(payment).data,
+                    },
+                )
+            else:
+                # Payment not complete on Khalti's side
+                if khalti_status in ("Expired", "User canceled"):
+                    payment.status = Payment.STATUS_FAILED
+                    payment.save(update_fields=["status", "updated_at"])
+
+                return api_response(
+                    is_success=False,
+                    error_message={"error": f"Payment verification failed. Khalti status: {khalti_status}"},
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
 
