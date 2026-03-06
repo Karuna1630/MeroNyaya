@@ -10,6 +10,7 @@ import proposalReducer from '../slices/proposalSlice';
 import consultationReducer from '../slices/consultationSlice';
 import appointmentReducer from '../slices/appointmentSlice';
 import notificationReducer from '../slices/notificationSlice';
+import paymentReducer from '../slices/paymentSlice';
 
 // Configure the Redux store with the auth reducer
 export const store = configureStore({
@@ -25,6 +26,7 @@ export const store = configureStore({
     consultation: consultationReducer,
     appointment: appointmentReducer,
     notifications: notificationReducer,
+    payment: paymentReducer,
   },
   // Enable Redux DevTools only in development mode
   devTools: import.meta.env.DEV,

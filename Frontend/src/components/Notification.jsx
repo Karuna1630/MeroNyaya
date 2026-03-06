@@ -97,9 +97,9 @@ const NotificationDropdown = () => {
         const data = JSON.parse(event.data);
 
         if (data.type === "new_notification") {
-          dispatch(addNotification(data.notification));
+          dispatch(addNotification(data.notification)); // Add new notification to store
         }
-        // initial_notifications are sent on connect but we already fetch via REST
+        
       };
 
       socket.onclose = () => {

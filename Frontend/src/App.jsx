@@ -37,10 +37,13 @@ import EditProfile from './Pages/Profile/EditProfile.jsx';
 
 import AdminDashboard from './Pages/Admin/AdminDashboard.jsx';
 import AdminKYCVerification from './Pages/Admin/AdminKYCVerification.jsx';
+import AdminRevenue from './Pages/Admin/AdminRevenue.jsx';
 
 
 
 import KYC from './Pages/KYC/KYC.jsx';
+import EsewaSuccess from './Pages/Payment/EsewaSuccess.jsx';
+import EsewaFailure from './Pages/Payment/EsewaFailure.jsx';
 
 
 
@@ -96,9 +99,14 @@ function App() {
         {/* Admin Routes - Protected */}
         <Route path='/admindashboard' element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path='/admin/verification' element={<ProtectedRoute requiredRole="admin"><AdminKYCVerification /></ProtectedRoute>} />
+        <Route path='/admin/revenue' element={<ProtectedRoute requiredRole="admin"><AdminRevenue /></ProtectedRoute>} />
 
         {/* KYC - Protected */}
-        <Route path='/kyc' element={<ProtectedRoute requiredRole="lawyer"><KYC /></ProtectedRoute>} />  
+        <Route path='/kyc' element={<ProtectedRoute requiredRole="lawyer"><KYC /></ProtectedRoute>} />
+
+        {/* Payment callback routes */}
+        <Route path='/payment/esewa-success' element={<ProtectedRoute requiredRole="client"><EsewaSuccess /></ProtectedRoute>} />
+        <Route path='/payment/esewa-failure' element={<ProtectedRoute requiredRole="client"><EsewaFailure /></ProtectedRoute>} />  
       </Routes>
     </BrowserRouter>
     </Provider>

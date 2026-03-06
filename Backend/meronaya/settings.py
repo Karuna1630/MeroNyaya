@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 from decouple import config
 
@@ -60,6 +61,7 @@ INSTALLED_APPS = [
     'consultation',
     'appointment',
     'notification',
+    'payment',
     
 ]
 
@@ -226,3 +228,16 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+
+# eSewa Payment Gateway — Sandbox Configuration (read from .env)
+ESEWA_PRODUCT_CODE = config('ESEWA_PRODUCT_CODE', default='EPAYTEST')
+ESEWA_SECRET_KEY = config('ESEWA_SECRET_KEY', default='8gBm/:&EnhH.1/q')
+ESEWA_SUCCESS_URL = config('ESEWA_SUCCESS_URL', default='http://localhost:5173/payment/esewa-success')
+ESEWA_FAILURE_URL = config('ESEWA_FAILURE_URL', default='http://localhost:5173/payment/esewa-failure')
+
+# Platform commission — percentage the platform takes from each payment
+PLATFORM_COMMISSION_PERCENT = Decimal(config('PLATFORM_COMMISSION_PERCENT', default='10'))
+
+# eSewa external API URLs (sandbox)
+ESEWA_PAYMENT_URL = "https://rc-epay.esewa.com.np/api/epay/main/v2/form"  # sandbox payment form
+ESEWA_VERIFY_URL = "https://uat.esewa.com.np/api/epay/transaction/status/"  # sandbox transaction status check

@@ -15,7 +15,9 @@ import {
   X
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchMyAppointments, payAppointment } from "../slices/appointmentSlice";
+import { fetchMyAppointments } from "../slices/appointmentSlice";
+import { initiateEsewaPayment } from "../slices/paymentSlice";
+import { redirectToEsewa } from "../../utils/esewaRedirect";
 import { fetchCaseAppointments } from "../slices/caseSlice";
 
 const ClientAppointment = () => {
@@ -31,6 +33,9 @@ const ClientAppointment = () => {
   );
   const { caseAppointments = [], caseAppointmentsLoading } = useSelector(
     (state) => state.case || {}
+  );
+  const { initiating: esewaInitiating } = useSelector(
+    (state) => state.payment || {}
   );
 
   useEffect(() => {
@@ -143,14 +148,16 @@ const ClientAppointment = () => {
     if (!appointmentToPay?.id) return;
     setPaymentLoading(true);
     setPaymentError("");
-    dispatch(payAppointment(appointmentToPay.id)).then((res) => {
+    dispatch(initiateEsewaPayment(appointmentToPay.id)).then((res) => {
       setPaymentLoading(false);
       if (!res?.error) {
+        // Redirect to eSewa payment page
+        const { esewa_url, params } = res.payload;
         setShowPaymentModal(false);
         setAppointmentToPay(null);
-        dispatch(fetchMyAppointments());
+        redirectToEsewa(esewa_url, params);
       } else {
-        setPaymentError(res?.payload || "Payment failed. Please try again.");
+        setPaymentError(res?.payload || "Payment initiation failed. Please try again.");
       }
     });
   };
@@ -527,7 +534,7 @@ const ClientAppointment = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 overflow-hidden flex flex-col">
             <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Confirm Payment</h2>
+              <h2 className="text-lg font-bold text-white">Pay with eSewa</h2>
               <button
                 type="button"
                 onClick={() => {
@@ -583,7 +590,7 @@ const ClientAppointment = () => {
                 disabled={paymentLoading}
                 className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {paymentLoading ? "Processing..." : "Confirm Payment"}
+                {paymentLoading || esewaInitiating ? "Redirecting to eSewa..." : "Pay with eSewa"}
               </button>
             </div>
           </div>

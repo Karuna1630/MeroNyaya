@@ -22,9 +22,8 @@ const Sidebar = () => {
   // Define menu items with icons, labels, and paths for navigation
   const menuItems = [
     { icon: LayoutDashboard, label: "Admin Dashboard", path: "/admindashboard" },
-
     { icon: ShieldCheck, label: "Lawyer Verification", path: "/admin/verification" },
-    
+    { icon: DollarSign, label: "Revenue", path: "/admin/revenue" },
   ];
 
   // Function to check if a menu item is active based on the current location
