@@ -5,6 +5,7 @@ import { ArrowLeft, User, Mail, Phone, MapPin, CheckCircle } from "lucide-react"
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { fetchUserProfile } from "../slices/profileSlice";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const ViewProfile = () => {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ const ViewProfile = () => {
             {/* Avatar */}
             {profile?.profile_image ? (
               <img
-                src={profile.profile_image}
+                src={getImageUrl(profile.profile_image, profile?.name)}
                 alt={profile?.name || "User"}
                 className="w-24 h-24 rounded-full object-cover flex-shrink-0 border-2 border-[#0F1A3D]"
               />

@@ -21,6 +21,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import axiosInstance from "../../axios/axiosinstance";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const ClientConsultation = () => {
   const dispatch = useDispatch();
@@ -114,10 +115,6 @@ const ClientConsultation = () => {
       default:
         return "N/A";
     }
-  };
-
-  const getProfileImageUrl = (profileImage, lawyerName = "Lawyer") => {
-    return profileImage || `https://ui-avatars.com/api/?name=${lawyerName}&background=0F1A3D&color=fff`;
   };
 
   const handleDeleteClick = (consultation) => {
@@ -219,7 +216,7 @@ const ClientConsultation = () => {
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <img 
-                              src={getProfileImageUrl(consultation.lawyer?.profile_image, consultation.lawyer?.name)} 
+                              src={getImageUrl(consultation.lawyer?.profile_image, consultation.lawyer?.name)} 
                               alt={consultation.lawyer?.name || "Lawyer"} 
                             className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm"
                             onError={(e) => {
@@ -340,7 +337,7 @@ const ClientConsultation = () => {
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Lawyer</h3>
                 <div className="flex items-center gap-3">
                   <img 
-                    src={getProfileImageUrl(selectedConsultation.lawyer?.profile_image, selectedConsultation.lawyer?.name)} 
+                    src={getImageUrl(selectedConsultation.lawyer?.profile_image, selectedConsultation.lawyer?.name)} 
                     alt={selectedConsultation.lawyer?.name || "Lawyer"} 
                     className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
                     onError={(e) => {

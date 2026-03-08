@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { User, LogOut, Bell } from "lucide-react";
 import { fetchUserProfile } from "../slices/profileSlice";
 import { logoutUser } from "../slices/auth";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const AdminDashHeader = ({ title, subtitle }) => {
   const [open, setOpen] = useState(false);
@@ -16,7 +17,7 @@ const AdminDashHeader = ({ title, subtitle }) => {
 
   // Normalize user role for consistent access
   const profile = user || userProfile;
-  const avatarSrc = profile?.profile_image;
+  const avatarSrc = getImageUrl(profile?.profile_image, profile?.name);
 
   // Fetch user profile if authenticated and not already fetched
   useEffect(() => {

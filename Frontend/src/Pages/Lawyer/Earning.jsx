@@ -18,6 +18,7 @@ import {
 import Sidebar from './Sidebar';
 import DashHeader from './LawyerDashHeader';
 import StatCard from './Statcard';
+import { getImageUrl } from '../../utils/imageUrl';
 import { fetchLawyerEarnings } from '../slices/paymentSlice';
 
 const Earning = () => {
@@ -174,9 +175,11 @@ const Earning = () => {
                           >
                             <td className="py-4 px-5">
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold shadow-sm">
-                                  {(payment.user_name || 'C').charAt(0).toUpperCase()}
-                                </div>
+                                <img
+                                  src={getImageUrl(payment.user_profile_image, payment.user_name)}
+                                  alt={payment.user_name || 'Client'}
+                                  className="w-9 h-9 rounded-full object-cover shrink-0 shadow-sm"
+                                />
                                 <span className="text-sm font-semibold text-gray-800">{payment.user_name || 'Client'}</span>
                               </div>
                             </td>

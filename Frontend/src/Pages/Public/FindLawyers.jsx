@@ -6,6 +6,7 @@ import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
 import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
 import { LAW_CATEGORIES } from "../../utils/lawCategories";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const specializations = [
 	"All Specializations",
@@ -204,7 +205,7 @@ const FindLawyers = () => {
 										<div className="flex items-start gap-4 mb-4">
 											<div className="relative">
 												<img
-													src={lawyer.profile_image || `https://ui-avatars.com/api/?name=${lawyer.name}&background=0F1A3D&color=fff`}
+													src={getImageUrl(lawyer.profile_image, lawyer.name)}
 													alt={lawyer.name}
 													className="w-20 h-20 rounded-full object-cover border border-gray-100"
 												/>

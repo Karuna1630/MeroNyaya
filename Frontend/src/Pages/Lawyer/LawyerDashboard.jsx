@@ -8,6 +8,7 @@ import StatCard from './Statcard.jsx';
 import DashHeader from './LawyerDashHeader';
 import { Briefcase, DollarSign, Calendar, MessageSquare, Star, Gavel, Trophy, GraduationCap, ArrowRight, AlertCircle, X, Clock, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
 import KYC from '../KYC/KYC';
+import { getImageUrl } from '../../utils/imageUrl';
 import { fetchUserProfile } from '../slices/profileSlice';
 import { fetchKycStatus } from '../slices/kycSlice';
 import { fetchCases } from '../slices/caseSlice';
@@ -310,6 +311,7 @@ const LawyerDashboard = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="text-sm text-slate-500 mt-2">Loading cases...</p>
                   </div>
+                
                 ) : recentCases.length > 0 ? (
                   <div className="space-y-4">
                     {recentCases.map((caseItem) => (
@@ -320,7 +322,7 @@ const LawyerDashboard = () => {
                       >
                         {caseItem.client_profile_image ? (
                           <img
-                            src={caseItem.client_profile_image}
+                            src={getImageUrl(caseItem.client_profile_image, caseItem.client_name)}
                             alt={caseItem.client_name}
                             className="w-12 h-12 rounded-full object-cover shrink-0 border-2 border-blue-200"
                           />

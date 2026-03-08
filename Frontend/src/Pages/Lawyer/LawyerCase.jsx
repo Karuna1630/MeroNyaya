@@ -7,6 +7,7 @@ import LawyerDashHeader from "./LawyerDashHeader";
 import StatCard from "./Statcard";
 import { Briefcase } from "lucide-react";
 import { fetchCases } from "../slices/caseSlice";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const LawyerCase = () => {
   const dispatch = useDispatch();
@@ -251,7 +252,7 @@ const LawyerCase = () => {
                           <div className="flex items-center gap-3">
                             {caseItem.client_profile_image ? (
                               <img 
-                                src={caseItem.client_profile_image} 
+                                src={getImageUrl(caseItem.client_profile_image, caseItem.client_name)} 
                                 alt=""
                                 className="w-8 h-8 rounded-full object-cover ring-2 ring-gray-100"
                               />

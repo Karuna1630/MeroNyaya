@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Bell, User, LogOut } from "lucide-react";
 import { fetchUserProfile } from "../slices/profileSlice";
 import { logoutUser } from "../slices/auth";
+import { getImageUrl } from '../../utils/imageUrl';
 import NotificationDropdown from "../../components/Notification.jsx";
 
 const ClientDashHeader = ({ title, subtitle }) => {
@@ -16,7 +17,7 @@ const ClientDashHeader = ({ title, subtitle }) => {
   const profileFetchedRef = useRef(false);
 
   const profile = user || userProfile;
-  const avatarSrc = profile?.profile_image;
+  const avatarSrc = getImageUrl(profile?.profile_image, profile?.name);
 
   useEffect(() => {
     if (isAuthenticated && !profileFetchedRef.current) {

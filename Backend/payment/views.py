@@ -852,7 +852,7 @@ class AdminRevenueView(APIView):
 
             # Per-lawyer breakdown with payout status
             lawyer_breakdown = (
-                completed_payments.values("lawyer__id", "lawyer__name", "lawyer__email", "lawyer__phone")
+                completed_payments.values("lawyer__id", "lawyer__name", "lawyer__email", "lawyer__phone", "lawyer__profile_image")
                 .annotate(
                     total_paid=Sum("total_amount"),
                     platform_fee=Sum("platform_fee"),

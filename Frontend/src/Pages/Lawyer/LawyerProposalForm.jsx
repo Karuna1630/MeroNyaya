@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Send, User, AlertCircle } from "lucide-react";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const LawyerProposalForm = ({ isOpen, onClose, caseData, onSubmit, isSubmitting = false, error = null }) => {
   const [proposal, setProposal] = useState("");
@@ -73,7 +74,7 @@ const LawyerProposalForm = ({ isOpen, onClose, caseData, onSubmit, isSubmitting 
           <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
             <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
               {caseData.client_profile_image ? (
-                <img src={caseData.client_profile_image} className="w-full h-full object-cover" alt="client" />
+                <img src={getImageUrl(caseData.client_profile_image, caseData.client_name)} className="w-full h-full object-cover" alt="client" />
               ) : (
                 <User size={24} className="text-gray-500" />
               )}

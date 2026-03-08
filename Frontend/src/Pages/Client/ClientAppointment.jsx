@@ -19,6 +19,7 @@ import { fetchMyAppointments } from "../slices/appointmentSlice";
 import { initiateEsewaPayment, initiateKhaltiPayment } from "../slices/paymentSlice";
 import { redirectToEsewa } from "../../utils/esewaRedirect";
 import { fetchCaseAppointments } from "../slices/caseSlice";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const ClientAppointment = () => {
   const [activeTab, setActiveTab] = useState("Upcoming");
@@ -119,10 +120,6 @@ const ClientAppointment = () => {
       default:
         return "N/A";
     }
-  };
-
-  const getProfileImageUrl = (profileImage, lawyerName = "Lawyer") => {
-    return profileImage || `https://ui-avatars.com/api/?name=${lawyerName}&background=0F1A3D&color=fff`;
   };
 
   const getStatusLabel = (status) => {
@@ -284,7 +281,7 @@ const ClientAppointment = () => {
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <img 
-                              src={getProfileImageUrl(lawyer.profile_image, lawyer.name)} 
+                              src={getImageUrl(lawyer.profile_image, lawyer.name)} 
                               alt={lawyer.name || "Lawyer"} 
                             className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm"
                           />
@@ -424,7 +421,7 @@ const ClientAppointment = () => {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">Lawyer</label>
                   <div className="flex items-center gap-3">
                     <img 
-                      src={getProfileImageUrl(selectedAppointment.consultation_details?.lawyer?.profile_image, selectedAppointment.consultation_details?.lawyer?.name)} 
+                      src={getImageUrl(selectedAppointment.consultation_details?.lawyer?.profile_image, selectedAppointment.consultation_details?.lawyer?.name)} 
                       alt={selectedAppointment.consultation_details?.lawyer?.name || "Lawyer"} 
                       className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
                     />

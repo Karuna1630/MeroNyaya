@@ -5,6 +5,7 @@ from .models import Payment, Payout
 class PaymentSerializer(serializers.ModelSerializer):
     appointment_id = serializers.IntegerField(source="appointment.id", read_only=True)
     user_name = serializers.CharField(source="user.name", read_only=True)
+    user_profile_image = serializers.ImageField(source="user.profile_image", read_only=True, default=None)
     lawyer_name = serializers.CharField(source="lawyer.name", read_only=True, default=None)
     lawyer_email = serializers.CharField(source="lawyer.email", read_only=True, default=None)
 
@@ -16,6 +17,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "appointment_id",
             "user",
             "user_name",
+            "user_profile_image",
             "lawyer",
             "lawyer_name",
             "lawyer_email",

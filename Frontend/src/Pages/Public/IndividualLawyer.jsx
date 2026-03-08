@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
+import { getImageUrl } from '../../utils/imageUrl';
 import { fetchLawyerDetails } from "../slices/lawyerSlice.js";
 import { submitReview, getLawyerReviews, clearSubmitStatus } from "../slices/reviewSlice.js";
 import Consultationrequest from "./Consultationrequest.jsx";
@@ -65,7 +66,7 @@ const IndividualLawyer = () => {
         verified: lawyerData.kyc_status === "approved",
         yearsOfExperience: lawyerData.years_of_experience || 0,
         bio: lawyerData.bio || "Experienced legal professional",
-        profileImage: lawyerData.profile_image,
+        profileImage: getImageUrl(lawyerData.profile_image, lawyerData.name),
       }
     : null;
 
@@ -346,7 +347,7 @@ const IndividualLawyer = () => {
                           <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 overflow-hidden">
                             {review.client_profile_image ? (
                               <img
-                                src={review.client_profile_image}
+                                src={getImageUrl(review.client_profile_image, review.client_name)}
                                 alt={review.client_name}
                                 className="w-full h-full object-cover"
                               />

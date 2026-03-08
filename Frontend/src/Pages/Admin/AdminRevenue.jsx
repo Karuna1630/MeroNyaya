@@ -6,7 +6,6 @@ import {
   Users,
   Loader2,
   AlertCircle,
-  User,
   Calendar,
   CheckCircle,
   Clock,
@@ -16,6 +15,7 @@ import {
 import Sidebar from './Sidebar';
 import AdminDashHeader from './AdminDashHeader';
 import Statcard from './Statcard';
+import { getImageUrl } from '../../utils/imageUrl';
 import {
   fetchAdminRevenue,
   fetchLawyerPendingPayments,
@@ -205,9 +205,11 @@ const AdminRevenue = () => {
                           <tr key={lawyer.lawyer__id || idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                             <td className="py-4 px-3">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                  <User size={14} className="text-indigo-600" />
-                                </div>
+                                <img
+                                  src={getImageUrl(lawyer.lawyer__profile_image, lawyer.lawyer__name)}
+                                  alt={lawyer.lawyer__name}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
                                 <div>
                                   <p className="text-sm font-semibold text-gray-900">{lawyer.lawyer__name || 'Unknown'}</p>
                                   <p className="text-xs text-gray-400">{lawyer.lawyer__email}</p>

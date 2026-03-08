@@ -5,6 +5,7 @@ import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
 import StatCard from "./Statcard";
 import { fetchCases, updateCaseStatus } from "../slices/caseSlice";
+import { getImageUrl } from '../../utils/imageUrl';
 import { 
   Eye, 
   Check, 
@@ -212,7 +213,7 @@ const LawyerCaseRequest = () => {
                   <div className="w-full xl:w-48 flex flex-row xl:flex-col items-center gap-4 xl:gap-3 xl:border-r border-gray-100 xl:pr-6">
                     {item.client_profile_image ? (
                       <img 
-                        src={item.client_profile_image} 
+                        src={getImageUrl(item.client_profile_image, item.client_name)} 
                         alt={item.client_name}
                         className="w-16 h-16 rounded-full object-cover ring-2 ring-gray-50"
                       />

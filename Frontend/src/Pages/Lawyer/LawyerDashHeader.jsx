@@ -5,6 +5,7 @@ import { Bell, User, LogOut } from "lucide-react";
 import { fetchUserProfile } from "../slices/profileSlice";
 import { logoutUser } from "../slices/auth";
 import NotificationDropdown from "../../components/Notification.jsx";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
   const [open, setOpen] = useState(false);
@@ -16,7 +17,7 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
   const profileFetchedRef = useRef(false);
 
   const profile = user || userProfile;
-  const avatarSrc = profile?.profile_image;
+  const avatarSrc = getImageUrl(profile?.profile_image, profile?.name);
 
   // fetch user profile to get latest user data 
   useEffect(() => {

@@ -23,6 +23,7 @@ import { fetchCaseAppointments, fetchCases } from "../slices/caseSlice";
 import axiosInstance from "../../axios/axiosinstance";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { acceptConsultationSchema } from "../utils/consultationValidation";
+import { getImageUrl } from '../../utils/imageUrl';
 
 const LawyerAppointment = () => {
   const dispatch = useDispatch();
@@ -160,9 +161,6 @@ const LawyerAppointment = () => {
   };
 
   // Handle file input changes for document uploads in case appointments
-  const getProfileImageUrl = (profileImage, clientName = "Client") => {
-    return profileImage || `https://ui-avatars.com/api/?name=${clientName}&background=0F1A3D&color=fff`;
-  };
 
   const handleAcceptClick = (consultation) => {
     setSelectedConsultation(consultation);
@@ -441,7 +439,7 @@ const LawyerAppointment = () => {
                             <td className="px-6 py-5">
                               <div className="flex items-center gap-3">
                                 <img 
-                                  src={getProfileImageUrl(consultation.client?.profile_image, consultation.client?.name)} 
+                                  src={getImageUrl(consultation.client?.profile_image, consultation.client?.name)} 
                                   alt={consultation.client?.name} 
                                   className="w-10 h-10 rounded-full object-cover border-2 border-slate-50 shadow-sm"
                                   onError={(e) => {
@@ -570,7 +568,7 @@ const LawyerAppointment = () => {
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <img
-                                  src={getProfileImageUrl(appointment.client_profile_image, appointment.client_name)}
+                                  src={getImageUrl(appointment.client_profile_image, appointment.client_name)}
                                   alt={appointment.client_name}
                                   className="w-9 h-9 rounded-full object-cover border-2 border-slate-50 shadow-sm"
                                   onError={(e) => {
@@ -721,7 +719,7 @@ const LawyerAppointment = () => {
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">Client</label>
                       <div className="flex items-center gap-3">
                         <img 
-                          src={getProfileImageUrl(selectedConsultation.client?.profile_image, selectedConsultation.client?.name)}
+                          src={getImageUrl(selectedConsultation.client?.profile_image, selectedConsultation.client?.name)}
                           alt={selectedConsultation.client?.name || "Client"}
                           className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
                         />
@@ -907,7 +905,7 @@ const LawyerAppointment = () => {
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Client</h3>
                 <div className="flex items-center gap-3">
                   <img 
-                    src={getProfileImageUrl(selectedConsultation.client?.profile_image, selectedConsultation.client?.name)} 
+                    src={getImageUrl(selectedConsultation.client?.profile_image, selectedConsultation.client?.name)} 
                     alt={selectedConsultation.client?.name || "Client"} 
                     className="w-10 h-10 rounded-full object-cover border-2 border-slate-200"
                     onError={(e) => {
@@ -1075,7 +1073,7 @@ const LawyerAppointment = () => {
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Client</h3>
                 <div className="flex items-center gap-3">
                   <img
-                    src={getProfileImageUrl(selectedCaseAppointmentView.client_profile_image, selectedCaseAppointmentView.client_name)}
+                    src={getImageUrl(selectedCaseAppointmentView.client_profile_image, selectedCaseAppointmentView.client_name)}
                     alt={selectedCaseAppointmentView.client_name || "Client"}
                     className="w-10 h-10 rounded-full object-cover border-2 border-slate-200"
                     onError={(e) => {
@@ -1235,7 +1233,7 @@ const LawyerAppointment = () => {
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">Client</label>
                       <div className="flex items-center gap-3">
                         <img
-                          src={getProfileImageUrl(selectedCaseAppointment.client_profile_image, selectedCaseAppointment.client_name)}
+                          src={getImageUrl(selectedCaseAppointment.client_profile_image, selectedCaseAppointment.client_name)}
                           alt={selectedCaseAppointment.client_name || "Client"}
                           className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
                         />
