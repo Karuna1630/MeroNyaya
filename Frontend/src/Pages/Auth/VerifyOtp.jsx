@@ -50,8 +50,6 @@ const VerifyOtp = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8">
-
-        {/* Logo */}
         <div className="flex flex-col items-center mb-6">
           <div className="bg-blue-900 text-yellow-400 p-3 rounded-xl mb-2">
             <GoLaw className="size-7" />
@@ -62,7 +60,6 @@ const VerifyOtp = () => {
           </h1>
         </div>
 
-        {/* Heading */}
         <h2 className="text-xl font-bold text-center text-gray-900 mb-2">
           Verify Email
         </h2>
@@ -70,7 +67,6 @@ const VerifyOtp = () => {
           Enter the 6-digit OTP sent to your email
         </p>
 
-        {/* Form */}
         <form onSubmit={formik.handleSubmit}>
           <div className="mb-5">
             <label className="block text-sm font-semibold text-gray-700 mb-2 text-center">
@@ -98,7 +94,6 @@ const VerifyOtp = () => {
               </p>
             )}
 
-            {/* Redux API error */}
             {verifyError && (
               <p className="text-red-500 text-sm mt-1 text-center">
                 {typeof verifyError === "string"
@@ -113,11 +108,10 @@ const VerifyOtp = () => {
             disabled={verifyLoading}
             className="w-full py-3 rounded-lg font-semibold text-white bg-blue-900 hover:bg-blue-800 disabled:opacity-60"
           >
-            {verifyLoading ? "Verifying..." : "Verify OTP →"}
+            {verifyLoading ? "Verifying..." : "Verify OTP ->"}
           </button>
         </form>
 
-        {/* Back */}
         <p className="text-center text-sm text-gray-600 mt-6">
           Wrong email?{" "}
           <span

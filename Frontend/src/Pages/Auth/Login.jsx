@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import { GoLaw } from "react-icons/go";
 import { FiEye, FiEyeOff } from "react-icons/fi";
@@ -14,6 +14,7 @@ import Footer from "../../components/Footer";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -31,6 +32,14 @@ const Login = () => {
       toast.error(error);
     }
   }, [error]);
+
+  useEffect(() => {
+    const toastMessage = location.state?.toastMessage;
+    if (toastMessage) {
+      toast.success(toastMessage);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   // Formik setup for form handling
   const formik = useFormik({

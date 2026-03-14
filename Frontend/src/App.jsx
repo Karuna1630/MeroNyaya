@@ -2,7 +2,10 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './Pages/Public/Home.jsx';
 import Login from './Pages/Auth/Login.jsx';
 import Register from './Pages/Auth/Register.jsx';
-import VerifyOtp from './Pages/auth/VerifyOtp.jsx';
+import VerifyOtp from './Pages/Auth/VerifyOtp.jsx';
+import ForgotPassword from './Pages/Auth/ForgotPassword.jsx';
+import ForgotPasswordOtp from './Pages/Auth/ForgotPasswordOtp.jsx';
+import ResetPassword from './Pages/Auth/ResetPassword.jsx';
 import { Provider } from 'react-redux';
 import {store} from './Pages/store/store.js'
 import Header from './components/Header.jsx';
@@ -62,6 +65,9 @@ function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         <Route path='/verify-otp' element={<VerifyOtp />} />
+        <Route path='/forgot-password' element={<ForgotPassword />} />
+        <Route path='/forgot-password/verify-otp' element={<ForgotPasswordOtp />} />
+        <Route path='/reset-password' element={<ResetPassword />} />
         <Route path='/header' element={<Header />} />
         <Route path='/footer' element={<Footer />} />
 

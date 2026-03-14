@@ -12,12 +12,14 @@ from django.contrib.auth import authenticate
 from django.db import transaction
 
 from meronaya.resonses import api_response
-from .otp import verify_otp, resend_otp
+from .otp import create_otp, verify_otp, resend_otp, create_password_reset_token, verify_password_reset_token
 from .serializers import (
     UserResponseSerializer,
     RegisterUserSerializer,
     VerifyOTPSerializer,
     ResendOTPSerializer,
+    ForgotPasswordRequestSerializer,
+    ForgotPasswordVerifySerializer,
     LoginUserSerializer,
     ResetPasswordSerializer,
     UserProfileSerializer,
@@ -195,9 +197,107 @@ class ResendOTPView(APIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
+class ForgotPasswordRequestOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Send OTP to email for forgot-password verification.",
+        request_body=ForgotPasswordRequestSerializer,
+        responses={
+            200: openapi.Response(description="OTP sent successfully"),
+            400: openapi.Response(description="Bad Request"),
+            500: openapi.Response(description="Internal Server Error"),
+        },
+        tags=["OTP"],
+    )
+    def post(self, request):
+        try:
+            serializer = ForgotPasswordRequestSerializer(data=request.data)
+            if not serializer.is_valid():
+                return api_response(
+                    is_success=False,
+                    error_message=serializer.errors,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            email = serializer.validated_data["email"]
+            create_otp(email)
+
+            request.session["otp_email"] = email
+            request.session.set_expiry(1800)
+
+            return api_response(
+                is_success=True,
+                status_code=status.HTTP_200_OK,
+                result={"message": "OTP has been sent to your email."},
+            )
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class ForgotPasswordVerifyOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_description="Verify forgot-password OTP and authorize password reset.",
+        request_body=ForgotPasswordVerifySerializer,
+        responses={
+            200: openapi.Response(description="OTP verified successfully"),
+            400: openapi.Response(description="Invalid or expired OTP"),
+            500: openapi.Response(description="Internal Server Error"),
+        },
+        tags=["OTP"],
+    )
+    def post(self, request):
+        try:
+            serializer = ForgotPasswordVerifySerializer(data=request.data)
+            if not serializer.is_valid():
+                return api_response(
+                    is_success=False,
+                    error_message=serializer.errors,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            email = serializer.validated_data["email"]
+            otp = serializer.validated_data["otp"]
+
+            is_valid, message = verify_otp(email, otp, mark_user_verified=False)
+            if not is_valid:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": message},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+
+            reset_token = create_password_reset_token(email)
+            request.session["reset_email"] = email
+            request.session.set_expiry(1800)
+
+            return api_response(
+                is_success=True,
+                status_code=status.HTTP_200_OK,
+                result={
+                    "message": "OTP verified. You can now reset your password.",
+                    "email": email,
+                    "reset_token": reset_token,
+                },
+            )
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
 # Creating API view for resetting password which allows users to reset their password after OTP verification.
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = ResetPasswordSerializer
 
     # Creating swagger documentation for the reset password endpoint
     @swagger_auto_schema(
@@ -223,14 +323,26 @@ class ResetPasswordView(APIView):
                     error_message=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
-            # Extracting email from the session or request data to identify the user whose password is being reset. This ensures that only the user who has verified their OTP can reset their password.
-            email = request.session.get("reset_email") or request.data.get("email")
+
+            email = request.session.get("reset_email")
             if not email:
-                return api_response(
-                    is_success=False,
-                    error_message="OTP verification required before resetting password.",
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                )
+                token = serializer.validated_data.get("reset_token")
+                token_is_valid, token_payload = verify_password_reset_token(token) if token else (False, "OTP verification required before resetting password.")
+
+                if not token_is_valid:
+                    return api_response(
+                        is_success=False,
+                        error_message=token_payload,
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                email = serializer.validated_data.get("email") or token_payload
+                if email != token_payload:
+                    return api_response(
+                        is_success=False,
+                        error_message="Invalid reset token for this email.",
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                    )
 
             # Extracting new password and confirm password from the validated data
             try:

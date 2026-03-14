@@ -94,6 +94,51 @@ export const verifyOtp = createAsyncThunk(
   }
 );
 
+export const requestPasswordResetOtp = createAsyncThunk(
+  "auth/requestPasswordResetOtp",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        "/authentications/forgot-password/request-otp/",
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const verifyPasswordResetOtp = createAsyncThunk(
+  "auth/verifyPasswordResetOtp",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        "/authentications/forgot-password/verify-otp/",
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        "/authentications/reset-password/",
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 
 
 // creating async thunk for user login which calls the login api and handles the response and errors
@@ -164,6 +209,14 @@ const getInitialState = () => {
     verifyLoading: false,
     verifyError: null,
     verifySuccess: false,
+
+    forgotPasswordLoading: false,
+    forgotPasswordError: null,
+    forgotPasswordSuccess: false,
+
+    resetPasswordLoading: false,
+    resetPasswordError: null,
+    resetPasswordSuccess: false,
   };
 };
 
@@ -177,9 +230,15 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
       state.registerError = null;
+      state.verifyError = null;
+      state.forgotPasswordError = null;
+      state.resetPasswordError = null;
     },
     clearSuccess: (state) => {
       state.success = false;
+      state.verifySuccess = false;
+      state.forgotPasswordSuccess = false;
+      state.resetPasswordSuccess = false;
     },
     // set user data in the state and localStorage
     setUser: (state, action) => {
@@ -223,7 +282,55 @@ const authSlice = createSlice({
     // on failed otp verification
     builder.addCase(verifyOtp.rejected, (state, action) => {
       state.verifyLoading = false;
-      state.verifyError = action.payload;
+      state.verifyError = extractErrorMessage(action.payload);
+    });
+
+    builder.addCase(requestPasswordResetOtp.pending, (state) => {
+      state.forgotPasswordLoading = true;
+      state.forgotPasswordError = null;
+      state.forgotPasswordSuccess = false;
+    });
+
+    builder.addCase(requestPasswordResetOtp.fulfilled, (state) => {
+      state.forgotPasswordLoading = false;
+      state.forgotPasswordSuccess = true;
+    });
+
+    builder.addCase(requestPasswordResetOtp.rejected, (state, action) => {
+      state.forgotPasswordLoading = false;
+      state.forgotPasswordError = extractErrorMessage(action.payload);
+    });
+
+    builder.addCase(verifyPasswordResetOtp.pending, (state) => {
+      state.verifyLoading = true;
+      state.verifyError = null;
+      state.verifySuccess = false;
+    });
+
+    builder.addCase(verifyPasswordResetOtp.fulfilled, (state) => {
+      state.verifyLoading = false;
+      state.verifySuccess = true;
+    });
+
+    builder.addCase(verifyPasswordResetOtp.rejected, (state, action) => {
+      state.verifyLoading = false;
+      state.verifyError = extractErrorMessage(action.payload);
+    });
+
+    builder.addCase(resetPassword.pending, (state) => {
+      state.resetPasswordLoading = true;
+      state.resetPasswordError = null;
+      state.resetPasswordSuccess = false;
+    });
+
+    builder.addCase(resetPassword.fulfilled, (state) => {
+      state.resetPasswordLoading = false;
+      state.resetPasswordSuccess = true;
+    });
+
+    builder.addCase(resetPassword.rejected, (state, action) => {
+      state.resetPasswordLoading = false;
+      state.resetPasswordError = extractErrorMessage(action.payload);
     });
 
     // Handling login user async thunk states from createAsyncThunk

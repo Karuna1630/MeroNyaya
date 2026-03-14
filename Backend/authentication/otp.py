@@ -1,6 +1,8 @@
 import random
 import string
 from datetime import timedelta
+from django.core import signing
+from django.core.signing import BadSignature, SignatureExpired
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -51,8 +53,8 @@ def create_otp(email):
     return otp_instance, email_sent  
 
 
- # Function to verify OTP using email and otp_code
-def verify_otp(email, otp_code):
+# Function to verify OTP using email and otp_code
+def verify_otp(email, otp_code, mark_user_verified=True):
     try:
         otp_instance = OTP.objects.filter(
             email=email,
@@ -77,14 +79,15 @@ def verify_otp(email, otp_code):
         otp_instance.is_used = True
         otp_instance.save()
         
-        # Mark user as verified
-        try:
-            user = User.objects.get(email=email)
-            if not user.is_verified:
-                user.is_verified = True
-                user.save()
-        except User.DoesNotExist:
-            pass
+        # Mark user as verified only for registration/email verification flow
+        if mark_user_verified:
+            try:
+                user = User.objects.get(email=email)
+                if not user.is_verified:
+                    user.is_verified = True
+                    user.save()
+            except User.DoesNotExist:
+                pass
         
         return True, "OTP verified successfully"
     
@@ -120,4 +123,20 @@ def resend_otp(email):
     
     except Exception as e:
         return False, f"Error resending OTP: {str(e)}"
+
+
+def create_password_reset_token(email):
+    signer = signing.TimestampSigner(salt="password-reset")
+    return signer.sign(email)
+
+
+def verify_password_reset_token(token, max_age=1800):
+    signer = signing.TimestampSigner(salt="password-reset")
+    try:
+        email = signer.unsign(token, max_age=max_age)
+        return True, email
+    except SignatureExpired:
+        return False, "Reset token has expired"
+    except BadSignature:
+        return False, "Invalid reset token"
     
