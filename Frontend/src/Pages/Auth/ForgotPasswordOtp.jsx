@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
-import * as Yup from "yup";
 import { GoLaw } from "react-icons/go";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,12 +9,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { clearError, verifyPasswordResetOtp } from "../slices/auth";
-
-const otpValidationSchema = Yup.object({
-  otp: Yup.string()
-    .required("OTP is required")
-    .matches(/^[0-9]{6}$/, "OTP must be 6 digits"),
-});
+import { forgotPasswordOTPSchema } from "../utils/ForgotPasswordOTPValidation";
 
 const ForgotPasswordOtp = () => {
   const navigate = useNavigate();
@@ -38,7 +32,7 @@ const ForgotPasswordOtp = () => {
 
   const formik = useFormik({
     initialValues: { otp: "" },
-    validationSchema: otpValidationSchema,
+    validationSchema: forgotPasswordOTPSchema,
     onSubmit: async (values, actions) => {
       const result = await dispatch(
         verifyPasswordResetOtp({

@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
-import * as Yup from "yup";
 import { GoLaw } from "react-icons/go";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,10 +9,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { clearError, requestPasswordResetOtp } from "../slices/auth";
-
-const forgotPasswordSchema = Yup.object({
-  email: Yup.string().email("Enter a valid email").required("Email is required"),
-});
+import { forgotPasswordSchema } from "../utils/ForgotPasswordValidation";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
