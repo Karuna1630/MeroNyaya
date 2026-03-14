@@ -92,14 +92,14 @@ const Header = () => {
               <div className="flex items-center gap-4">
                 <Link
                   to="/login"
-                  className="text-sm font-semibold text-white hover:text-yellow-400 transition"
+                  className="text-sm font-semibold text-white hover:text-yellow-300 transition"
                 >
                   Login
                 </Link>
 
                 <Link
                   to="/register"
-                  className="bg-yellow-400 text-[#0F1A3D] px-5 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition"
+                  className="bg-yellow-500 text-[#0F1A3D] px-5 py-2 rounded-lg text-sm font-semibold hover:bg-yellow-300 transition"
                 >
                   Get Started
                 </Link>
@@ -110,7 +110,7 @@ const Header = () => {
                 {/* Avatar */}
                 <button
                   onClick={() => setOpen(!open)}
-                  className="w-10 h-10 rounded-full bg-yellow-400 text-[#0F1A3D] flex items-center justify-center font-bold overflow-hidden"
+                  className="w-10 h-10 rounded-full bg-yellow-500 text-[#0F1A3D] flex items-center justify-center font-bold overflow-hidden"
                 >
                   {avatarSrc ? (
                     <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
@@ -124,7 +124,7 @@ const Header = () => {
                   <div className="absolute right-0 mt-3 w-56 bg-slate-900 rounded-lg shadow-xl overflow-hidden z-50 border border-slate-700">
                     {/* Profile Section */}
                     <div className="px-4 py-4 border-b border-slate-700 flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-yellow-400 text-slate-900 flex items-center justify-center font-bold text-lg">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-yellow-500 text-slate-900 flex items-center justify-center font-bold text-lg">
                         {avatarSrc ? (
                           <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
                         ) : (

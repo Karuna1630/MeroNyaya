@@ -26,7 +26,7 @@ const Footer = () => {
                         <GoLaw size={22} />
                       </div>
               <h2 className="text-xl font-bold text-white">
-                Mero<span className="text-yellow-400">Nyaya</span>
+                Mero<span className="text-yellow-500">Nyaya</span>
               </h2>
             </div>
 
