@@ -110,7 +110,7 @@ const Login = () => {
 
               {/* LOGO */}
               <div className="flex flex-col items-center mb-6">
-                <div className="bg-blue-900 text-yellow-400 p-4 rounded-xl mb-3">
+                <div className="bg-blue-900 text-yellow-500 p-4 rounded-xl mb-3">
                   <GoLaw className="size-8" />
                 </div>
                 <h1 className="text-2xl font-bold">

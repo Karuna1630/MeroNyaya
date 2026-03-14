@@ -94,6 +94,22 @@ export const verifyOtp = createAsyncThunk(
   }
 );
 
+// creating async thunk for resending otp during registration
+export const resendOtp = createAsyncThunk(
+  "auth/resendOtp",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.post(
+        "/authentications/resend-otp/",
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const requestPasswordResetOtp = createAsyncThunk(
   "auth/requestPasswordResetOtp",
   async (payload, { rejectWithValue }) => {
@@ -210,6 +226,11 @@ const getInitialState = () => {
     verifyError: null,
     verifySuccess: false,
 
+    // resend otp state for registration
+    resendLoading: false,
+    resendError: null,
+    resendSuccess: false,
+
     forgotPasswordLoading: false,
     forgotPasswordError: null,
     forgotPasswordSuccess: false,
@@ -231,12 +252,14 @@ const authSlice = createSlice({
       state.error = null;
       state.registerError = null;
       state.verifyError = null;
+      state.resendError = null;
       state.forgotPasswordError = null;
       state.resetPasswordError = null;
     },
     clearSuccess: (state) => {
       state.success = false;
       state.verifySuccess = false;
+      state.resendSuccess = false;
       state.forgotPasswordSuccess = false;
       state.resetPasswordSuccess = false;
     },
@@ -283,6 +306,25 @@ const authSlice = createSlice({
     builder.addCase(verifyOtp.rejected, (state, action) => {
       state.verifyLoading = false;
       state.verifyError = extractErrorMessage(action.payload);
+    });
+
+    // Handling resend otp async thunk states
+    builder.addCase(resendOtp.pending, (state) => {
+      state.resendLoading = true;
+      state.resendError = null;
+      state.resendSuccess = false;
+    });
+
+    // on successful resend otp
+    builder.addCase(resendOtp.fulfilled, (state) => {
+      state.resendLoading = false;
+      state.resendSuccess = true;
+    });
+
+    // on failed resend otp
+    builder.addCase(resendOtp.rejected, (state, action) => {
+      state.resendLoading = false;
+      state.resendError = extractErrorMessage(action.payload);
     });
 
     builder.addCase(requestPasswordResetOtp.pending, (state) => {

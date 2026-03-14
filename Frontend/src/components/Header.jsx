@@ -70,7 +70,7 @@ const Header = () => {
 
           {/* Logo */}
           <div onClick={handleHome} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
-            <div className="bg-yellow-500 text-blue-900 p-2 rounded-lg">
+            <div className="bg-yellow-400 text-blue-900 p-2 rounded-lg">
               <GoLaw size={22} />
             </div>
             <span className="text-xl font-bold text-white">

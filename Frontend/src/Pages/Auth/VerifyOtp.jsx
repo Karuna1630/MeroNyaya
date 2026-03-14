@@ -1,33 +1,39 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
-import * as Yup from "yup";
 import { GoLaw } from "react-icons/go";
+import { toast } from "react-toastify";
 
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { verifyOtp, clearError } from "../slices/auth";
-
-const otpValidationSchema = Yup.object({
-  otp: Yup.string()
-    .required("OTP is required")
-    .matches(/^[0-9]{6}$/, "OTP must be 6 digits"),
-});
+import { verifyOtp, resendOtp, clearError } from "../slices/auth";
+import { registerOTPSchema } from "../utils/RegisterOTPValidation";
 
 const VerifyOtp = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const [resendCountdown, setResendCountdown] = useState(0);
 
-  const { verifyLoading, verifyError } = useAppSelector(
-    (state) => state.auth
-  );
+  const { verifyLoading, verifyError, resendLoading, resendError } =
+    useAppSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
 
+  // Countdown timer for resend OTP
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
+
   const formik = useFormik({
     initialValues: { otp: "" },
-    validationSchema: otpValidationSchema,
+    validationSchema: registerOTPSchema,
     onSubmit: async (values, actions) => {
       const registeredData = JSON.parse(
         localStorage.getItem("registeredData") || "{}"
@@ -41,11 +47,29 @@ const VerifyOtp = () => {
       const result = await dispatch(verifyOtp(payload));
 
       if (verifyOtp.fulfilled.match(result)) {
+        toast.success("Email verified successfully!");
         actions.resetForm();
         navigate("/login");
       }
     },
   });
+
+  const handleResendOtp = async () => {
+    const registeredData = JSON.parse(
+      localStorage.getItem("registeredData") || "{}"
+    );
+
+    if (!registeredData.email) {
+      console.error("Email not found in session");
+      return;
+    }
+
+    const result = await dispatch(resendOtp({ email: registeredData.email }));
+
+    if (resendOtp.fulfilled.match(result)) {
+      setResendCountdown(120); // 2 minute cooldown
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -110,6 +134,27 @@ const VerifyOtp = () => {
           >
             {verifyLoading ? "Verifying..." : "Verify OTP ->"}
           </button>
+
+          <button
+            type="button"
+            onClick={handleResendOtp}
+            disabled={resendLoading || resendCountdown > 0}
+            className="w-full py-3 rounded-lg font-semibold text-white bg-yellow-500 hover:bg-yellow-600 disabled:opacity-60 mt-3"
+          >
+            {resendCountdown > 0
+              ? `Resend OTP in ${resendCountdown}s`
+              : resendLoading
+              ? "Sending..."
+              : "Resend OTP"}
+          </button>
+
+          {resendError && (
+            <p className="text-red-500 text-sm mt-2 text-center">
+              {typeof resendError === "string"
+                ? resendError
+                : "Failed to resend OTP"}
+            </p>
+          )}
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-6">
