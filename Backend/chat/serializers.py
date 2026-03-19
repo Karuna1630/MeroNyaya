@@ -65,10 +65,11 @@ class ConversationListSerializer(serializers.ModelSerializer):
     case_id = serializers.SerializerMethodField()
     other_user = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
+    unread_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Conversation
-        fields = ['id', 'case_id', 'other_user', 'last_message', 'updated_at']
+        fields = ['id', 'case_id', 'other_user', 'last_message', 'unread_count', 'updated_at']
         read_only_fields = ['id', 'updated_at']
     
     def get_case_id(self, obj):
@@ -95,3 +96,11 @@ class ConversationListSerializer(serializers.ModelSerializer):
                 'sender_id': last_message.sender.id
             }
         return None
+    
+    def get_unread_count(self, obj):
+        """Get count of unread messages in this conversation for current user"""
+        request = self.context.get('request')
+        if not request or not request.user:
+            return 0
+        # Count unread messages where sender is not current user
+        return obj.messages.filter(is_read=False).exclude(sender=request.user).count()

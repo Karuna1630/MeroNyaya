@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, MessageSquare } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { getCaseConversation } from '../../axios/chatAPI';
+import { getCaseConversation, markMessageRead } from '../../axios/chatAPI';
 import ChatWindow from '../../components/Chat/ChatWindow';
 import ConversationList from '../../components/Chat/ConversationList';
 import Sidebar from './sidebar';
@@ -16,6 +16,7 @@ const ClientMessage = () => {
   const [chatError, setChatError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [refreshConversations, setRefreshConversations] = useState(false);
 
   /**
    * Load current user and token on mount
@@ -51,6 +52,22 @@ const ClientMessage = () => {
     try {
       const response = await getCaseConversation(caseId);
       setConversation(response.data);
+      
+      // Mark all unread messages as read
+      if (response.data?.messages) {
+        const unreadMessages = response.data.messages.filter(msg => !msg.is_read && msg.sender !== currentUser?.id);
+        for (const message of unreadMessages) {
+          try {
+            await markMessageRead(message.id);
+          } catch (err) {
+            console.error('Error marking message as read:', err);
+          }
+        }
+        // Trigger conversation list refresh after marking messages as read
+        if (unreadMessages.length > 0) {
+          setRefreshConversations(prev => !prev);
+        }
+      }
     } catch (err) {
       console.error('Error loading conversation:', err);
       
@@ -80,6 +97,7 @@ const ClientMessage = () => {
               <ConversationList
                 onSelectConversation={setSelectedCaseId}
                 selectedCaseId={selectedCaseId}
+                refreshTrigger={refreshConversations}
               />
             </div>
 

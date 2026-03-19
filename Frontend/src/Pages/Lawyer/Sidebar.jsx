@@ -27,7 +27,7 @@ const Sidebar = () => {
     { icon: Inbox, label: "Case Requests", path: "/lawyercaserequest" },
     { icon: FolderOpen, label: "My Cases", path: "/lawyercase" },
     { icon: Calendar, label: "Appointments", path: "/lawyerappointment" },
-    { icon: MessageSquare, label: "Messages", path: "/lawyermessage", badge: 1 },
+    { icon: MessageSquare, label: "Messages", path: "/lawyermessage" },
     { icon: DollarSign, label: "Earnings", path: "/lawyerearning" },
   ];
 

@@ -7,18 +7,18 @@ import './ConversationList.css';
  * ConversationList Component
  * Displays all conversations and allows selecting one to open the chat
  */
-const ConversationList = ({ onSelectConversation, selectedCaseId }) => {
+const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger }) => {
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
 
   /**
-   * Fetch conversations on component mount
+   * Fetch conversations on component mount and when refreshTrigger changes
    */
   useEffect(() => {
     fetchConversations();
-  }, []);
+  }, [refreshTrigger]);
 
   /**
    * Fetch unread count periodically
@@ -37,8 +37,6 @@ const ConversationList = ({ onSelectConversation, selectedCaseId }) => {
 
     try {
       const response = await getMyConversations();
-      console.log('Conversations response:', response);
-      console.log('Conversations data:', response.data);
       setConversations(response.data || []);
       await fetchUnreadCount();
     } catch (err) {
@@ -117,10 +115,15 @@ const ConversationList = ({ onSelectConversation, selectedCaseId }) => {
                 <h4 className="conversation-name">
                   {conversation.other_user?.name || 'Unknown User'}
                 </h4>
-                <span className="conversation-time">
-                  {conversation.last_message &&
-                    new Date(conversation.last_message.timestamp).toLocaleDateString()}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="conversation-time">
+                    {conversation.last_message &&
+                      new Date(conversation.last_message.timestamp).toLocaleDateString()}
+                  </span>
+                  {conversation.unread_count > 0 && (
+                    <span className="unread-badge">{conversation.unread_count}</span>
+                  )}
+                </div>
               </div>
 
               <p className="conversation-preview">
@@ -130,7 +133,7 @@ const ConversationList = ({ onSelectConversation, selectedCaseId }) => {
                   : 'No messages yet'}
               </p>
 
-              {conversation.last_message?.sender_id !== conversation.other_user?.id && (
+              {conversation.unread_count > 0 && (
                 <div className="unread-indicator"></div>
               )}
             </div>
