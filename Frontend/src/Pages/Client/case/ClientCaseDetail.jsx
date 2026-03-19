@@ -178,7 +178,18 @@ const ClientCaseDetail = () => {
                       <p className="text-sm text-slate-500 font-medium">{caseData?.case_category || 'Category'}</p>
                     </div>
                   </div>
-                  <button className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0f172a] text-white rounded-lg hover:bg-slate-800 transition-all font-medium text-sm shadow-sm group">
+                  <button 
+                    onClick={() => {
+                      if (caseData?.status !== 'accepted') {
+                        toast.error('Chat is only available for accepted cases');
+                        return;
+                      }
+                      navigate('/clientmessage', { state: { caseId: caseData.id } });
+                    }}
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0f172a] text-white rounded-lg hover:bg-slate-800 transition-all font-medium text-sm shadow-sm group disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={caseData?.status !== 'accepted'}
+                    title={caseData?.status !== 'accepted' ? 'Chat available only for accepted cases' : 'Message the lawyer'}
+                  >
                     <MessageSquare size={16} className="group-hover:scale-110 transition-transform" />
                     Message Lawyer
                   </button>

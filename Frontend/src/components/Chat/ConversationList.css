@@ -1,0 +1,252 @@
+/* Conversation List Container */
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: white;
+  border-right: 1px solid #ecf0f1;
+  border-radius: 12px 0 0 12px;
+}
+
+.conversation-list.loading,
+.conversation-list.error,
+.conversation-list.empty {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.conversation-list.loading {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.conversation-list.loading .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.conversation-list.loading p,
+.conversation-list.error p {
+  color: #7f8c8d;
+  font-size: 14px;
+  margin: 0;
+}
+
+.conversation-list.empty h3 {
+  color: #34495e;
+  font-size: 16px;
+  margin: 12px 0 8px 0;
+}
+
+.conversation-list.empty p {
+  color: #95a5a6;
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Header */
+.conversation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px;
+  border-bottom: 1px solid #ecf0f1;
+  flex-shrink: 0;
+}
+
+.conversation-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.conversation-count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  background-color: #ecf0f1;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7f8c8d;
+}
+
+/* Conversations List */
+.conversations {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.conversations::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversations::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conversations::-webkit-scrollbar-thumb {
+  background: #bdc3c7;
+  border-radius: 3px;
+}
+
+.conversations::-webkit-scrollbar-thumb:hover {
+  background: #95a5a6;
+}
+
+/* Conversation Item */
+.conversation-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 12px;
+  border-bottom: 1px solid #f5f7fa;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  align-items: flex-start;
+  position: relative;
+}
+
+.conversation-item:hover {
+  background-color: #f8f9fa;
+}
+
+.conversation-item.active {
+  background-color: #ebf5fb;
+  border-left: 4px solid #3498db;
+  padding-left: 8px;
+}
+
+.conversation-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid #ecf0f1;
+}
+
+.conversation-item.active .conversation-avatar {
+  border-color: #3498db;
+}
+
+/* Conversation Info */
+.conversation-info {
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.conversation-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  gap: 8px;
+}
+
+.conversation-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.conversation-time {
+  font-size: 12px;
+  color: #95a5a6;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.conversation-preview {
+  margin: 0;
+  font-size: 13px;
+  color: #7f8c8d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Unread Indicator */
+.unread-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  background-color: #e74c3c;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Retry Button */
+.conversation-list.error button {
+  margin-top: 12px;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.conversation-list.error button:hover {
+  background-color: #2980b9;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .conversation-list {
+    border-radius: 0;
+    border-right: none;
+  }
+
+  .conversation-item {
+    padding: 10px;
+  }
+
+  .conversation-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .conversation-name {
+    font-size: 13px;
+  }
+
+  .conversation-preview {
+    font-size: 12px;
+  }
+}

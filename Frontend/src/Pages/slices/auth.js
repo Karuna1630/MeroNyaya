@@ -180,6 +180,7 @@ export const loginUser = createAsyncThunk(
       }
       if (user) {
         localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("user_id", user.id?.toString()); // Store user_id for presence tracking
       }
 
       return response.data;

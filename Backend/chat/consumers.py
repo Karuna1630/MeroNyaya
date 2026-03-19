@@ -6,6 +6,7 @@ from django.conf import settings
 from case.models import Case
 from .models import Message, Conversation
 from .serializers import MessageSerializer
+from .presence import mark_user_online, mark_user_offline, broadcast_presence_update
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -52,6 +53,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Accept the connection
         await self.accept()
         
+        # Mark user as online in the case (wrap in database_sync_to_async to avoid blocking)
+        await self._mark_user_online()
+        
         # Send conversation history on initial connection
         messages = await self.get_conversation_history()
         await self.send(text_data=json.dumps({
@@ -62,6 +66,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection"""
         if hasattr(self, 'group_name'):
+            # Mark user as offline
+            if hasattr(self, 'user'):
+                await self._mark_user_offline()
+            
             await self.channel_layer.group_discard(
                 self.group_name,
                 self.channel_name
@@ -108,6 +116,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'new_message',
             'message': event['message']
+        }))
+    
+    async def presence_update(self, event):
+        """
+        Handle presence update broadcast from group.
+        Called when group_send is triggered with type='presence_update'
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'presence_update',
+            'online_users': event['online_users']
         }))
     
     # ── Database helper methods ──────────────────────────────────────────────────
@@ -208,3 +226,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"Error saving message: {e}")
             return None
+    
+    @database_sync_to_async
+    def _mark_user_online(self):
+        """Mark user as online (async wrapper)"""
+        try:
+            mark_user_online(
+                self.user.id,
+                self.user.get_full_name() or self.user.username,
+                [self.case_id]
+            )
+            # Broadcast presence update
+            broadcast_presence_update(self.case_id)
+        except Exception as e:
+            print(f"Error marking user online: {e}")
+    
+    @database_sync_to_async
+    def _mark_user_offline(self):
+        """Mark user as offline (async wrapper)"""
+        try:
+            mark_user_offline(self.user.id)
+            # Broadcast presence update
+            broadcast_presence_update(self.case_id)
+        except Exception as e:
+            print(f"Error marking user offline: {e}")
