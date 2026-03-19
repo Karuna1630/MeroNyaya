@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, AlertCircle, Loader } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useChat } from '../../hooks/useChat';
 import './ChatWindow.css';
 
@@ -8,6 +9,7 @@ import './ChatWindow.css';
  * Displays messages and allows sending new messages in real-time
  */
 const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
+  const { t } = useTranslation();
   const { messages, isConnected, error, isLoading, sendMessage, otherUserOnline } = useChat(caseId, token);
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -58,7 +60,7 @@ const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
       <div className="chat-window loading">
         <div className="chat-loader">
           <Loader className="spin" size={32} color="#3498db" />
-          <p>Loading chat...</p>
+          <p>{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -70,9 +72,9 @@ const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
       <div className="chat-window error">
         <div className="chat-error">
           <AlertCircle size={32} color="#e74c3c" />
-          <p>{error || 'Unable to connect to chat'}</p>
+          <p>{error || t('messages.failedToLoad')}</p>
           <button onClick={() => window.location.reload()}>
-            Reload Page
+            {t('common.back')}
           </button>
         </div>
       </div>
@@ -102,7 +104,7 @@ const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
         </div>
         <div className={`chat-status ${otherUserOnline ? 'online' : 'offline'}`}>
           <span className="status-dot"></span>
-          {otherUserOnline ? 'Online' : 'Offline'}
+          {otherUserOnline ? t('messages.online') : t('messages.offline')}
         </div>
       </div>
 
@@ -110,7 +112,7 @@ const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
       <div className="messages-container">
         {messages.length === 0 ? (
           <div className="no-messages">
-            <p>No messages yet. Start the conversation!</p>
+            <p>{t('messages.chooseConversation')}</p>
           </div>
         ) : (
           <>
@@ -161,7 +163,7 @@ const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
           value={messageInput}
           onChange={(e) => setMessageInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Type your message... (Shift+Enter for new line)"
+          placeholder={t('messages.typeMessage')}
           disabled={!isConnected || isSending}
           rows="2"
         />
@@ -169,7 +171,7 @@ const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
           className="send-button"
           onClick={handleSendMessage}
           disabled={!isConnected || isSending || !messageInput.trim()}
-          title={!isConnected ? 'Reconnecting...' : 'Send message'}
+          title={!isConnected ? t('messages.failedToLoad') : t('messages.sendMessage')}
         >
           {isSending ? (
             <Loader size={20} className="spin" />

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Sidebar from "./sidebar";
 import StatCard from "./statcard";
 import DashHeader from "./ClientDashHeader";
@@ -16,6 +17,7 @@ import {
 import { fetchCases } from "../slices/caseSlice";
 
 const ClientDashboard = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
@@ -49,13 +51,13 @@ const ClientDashboard = () => {
 
   const formatStatus = (status) => {
     const map = {
-      draft: "Draft",
-      public: "Public",
-      proposals_received: "Proposals Received",
-      accepted: "Accepted",
-      in_progress: "In Progress",
-      completed: "Completed",
-      cancelled: "Cancelled",
+      draft: t('cases.draft'),
+      public: t('cases.public'),
+      proposals_received: t('cases.proposalsReceived'),
+      accepted: t('cases.accepted'),
+      in_progress: t('cases.inProgress'),
+      completed: t('cases.completed'),
+      cancelled: t('cases.cancelled'),
     };
     return map[status] || status;
   };
@@ -103,8 +105,8 @@ const ClientDashboard = () => {
         {/* TOP HEADER - STICKY */}
         <div className="sticky top-0 z-50 bg-white">
           <DashHeader
-            title={`Welcome back, ${user?.name?.split(' ')[0] || 'User'}!`}
-            subtitle="Here's an overview of your legal matters and upcoming appointments"
+            title={`${t('dashboard.welcomeBack')}, ${user?.name?.split(' ')[0] || 'User'}!`}
+            subtitle={t('dashboard.overviewSubtitle')}
           />
         </div>
 
@@ -114,30 +116,30 @@ const ClientDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
             <StatCard
               icon={<Briefcase size={24} />}
-              title="Active Cases"
+              title={t('dashboard.activeCases')}
               value={activeCases}
-              subtitle={`${newCases} New cases`}
+              subtitle={`${newCases} ${t('dashboard.newCases')}`}
               color="blue"
             />
             <StatCard
               icon={<Calendar size={24} />}
-              title="Appointments"
+              title={t('dashboard.appointments')}
               value={upcomingAppointments.length}
-              subtitle="Upcoming"
+              subtitle={t('dashboard.upcomingCount')}
               color="violet"
             />
             <StatCard
               icon={<MessageSquare size={24} />}
-              title="Messages"
+              title={t('dashboard.messagesCard')}
               value="0"
-              subtitle="Coming soon"
+              subtitle={t('dashboard.comingSoon')}
               color="cyan"
             />
             <StatCard
               icon={<CreditCard size={24} />}
-              title="Total Cases"
+              title={t('dashboard.totalCases')}
               value={cases.length}
-              subtitle="All time"
+              subtitle={t('dashboard.allTime')}
               color="emerald"
             />
           </div>
@@ -148,20 +150,20 @@ const ClientDashboard = () => {
             <div className="bg-white rounded-xl p-6 shadow-md border border-slate-200">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-semibold text-lg text-slate-900">
-                  Recent Cases
+                  {t('dashboard.recentCases')}
                 </h3>
                 <button
                   onClick={() => navigate('/clientcase')}
                   className="text-sm text-amber-500 cursor-pointer hover:text-amber-600 font-medium"
                 >
-                  View All
+                  {t('dashboard.viewAll')}
                 </button>
               </div>
 
               {casesLoading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="text-sm text-slate-500 mt-2">Loading cases...</p>
+                  <p className="text-sm text-slate-500 mt-2">{t('dashboard.loadingCases')}</p>
                 </div>
               ) : recentCases.length > 0 ? (
                 <div className="space-y-3">
@@ -177,10 +179,10 @@ const ClientDashboard = () => {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-slate-900">
-                            {caseItem.case_title || "Untitled Case"}
+                            {caseItem.case_title || t('dashboard.untitledCase')}
                           </p>
                           <p className="text-xs text-slate-500 mt-1">
-                            {caseItem.lawyer_name || "No lawyer assigned"}
+                            {caseItem.lawyer_name || t('dashboard.noLawyerAssigned')}
                           </p>
                         </div>
                       </div>
@@ -205,12 +207,12 @@ const ClientDashboard = () => {
               ) : (
                 <div className="text-center py-12">
                   <FileText size={48} className="mx-auto text-slate-300 mb-3" />
-                  <p className="text-slate-500 mb-2">No cases yet</p>
+                  <p className="text-slate-500 mb-2">{t('dashboard.noCasesYet')}</p>
                   <button
                     onClick={() => navigate('/client/create-case')}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
-                    Create your first case
+                    {t('dashboard.createFirstCase')}
                   </button>
                 </div>
               )}
@@ -221,13 +223,13 @@ const ClientDashboard = () => {
               <div className="bg-white rounded-xl p-6 shadow-md border border-slate-200">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold text-lg text-slate-900">
-                    Upcoming Appointments
+                    {t('dashboard.upcomingAppointments')}
                   </h3>
                   <button
                     onClick={() => navigate('/clientappointment')}
                     className="text-sm text-amber-500 cursor-pointer hover:text-amber-600 font-medium"
                   >
-                    View All
+                    {t('dashboard.viewAll')}
                   </button>
                 </div>
 

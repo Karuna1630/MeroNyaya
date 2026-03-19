@@ -6,6 +6,7 @@ import { fetchUserProfile } from "../slices/profileSlice";
 import { logoutUser } from "../slices/auth";
 import { getImageUrl } from '../../utils/imageUrl';
 import NotificationDropdown from "../../components/Notification.jsx";
+import LanguageToggle from "../../components/LanguageToggle";
 
 const ClientDashHeader = ({ title, subtitle }) => {
   const [open, setOpen] = useState(false);
@@ -58,6 +59,7 @@ const ClientDashHeader = ({ title, subtitle }) => {
 
         <div className="flex items-center gap-4">
           <NotificationDropdown role="client" />
+          <LanguageToggle />
 
           {/* Profile Avatar with Dropdown */}
           <div className="relative">

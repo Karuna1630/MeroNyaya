@@ -6,6 +6,7 @@ import { fetchUserProfile } from "../slices/profileSlice";
 import { logoutUser } from "../slices/auth";
 import NotificationDropdown from "../../components/Notification.jsx";
 import { getImageUrl } from '../../utils/imageUrl';
+import LanguageToggle from "../../components/LanguageToggle";
 
 const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
   const [open, setOpen] = useState(false);
@@ -61,6 +62,7 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
 
         <div className="flex items-center gap-4">
           <NotificationDropdown role="lawyer" />
+          <LanguageToggle />
 
           {/* Profile Avatar with Dropdown */}
           <div className="relative">

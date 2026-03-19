@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Loader, AlertCircle, Archive } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getMyConversations, getUnreadCount } from '../../axios/chatAPI';
 import './ConversationList.css';
 
@@ -8,6 +9,7 @@ import './ConversationList.css';
  * Displays all conversations and allows selecting one to open the chat
  */
 const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger }) => {
+  const { t } = useTranslation();
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,7 +43,7 @@ const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger
       await fetchUnreadCount();
     } catch (err) {
       console.error('Error fetching conversations:', err);
-      setError('Failed to load conversations');
+      setError(t('messages.failedToLoad'));
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +63,7 @@ const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger
     return (
       <div className="conversation-list loading">
         <Loader size={32} className="spin" />
-        <p>Loading conversations...</p>
+        <p>{t('common.loading')}</p>
       </div>
     );
   }
@@ -71,7 +73,7 @@ const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger
       <div className="conversation-list error">
         <AlertCircle size={32} color="#e74c3c" />
         <p>{error}</p>
-        <button onClick={fetchConversations}>Retry</button>
+        <button onClick={fetchConversations}>{t('common.cancel')}</button>
       </div>
     );
   }
@@ -80,8 +82,8 @@ const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger
     return (
       <div className="conversation-list empty">
         <MessageCircle size={48} color="#bdc3c7" />
-        <h3>No active conversations</h3>
-        <p>Chat will be available once a case is accepted</p>
+        <h3>{t('messages.noActiveConversations')}</h3>
+        <p>{t('messages.chatAvailableOnce')}</p>
       </div>
     );
   }
@@ -89,7 +91,7 @@ const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger
   return (
     <div className="conversation-list">
       <div className="conversation-header">
-        <h2>Messages</h2>
+        <h2>{t('messages.title')}</h2>
         <span className="conversation-count">{conversations.length}</span>
       </div>
 

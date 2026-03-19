@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Home,
   Briefcase,
@@ -13,6 +14,7 @@ import {
 import { GoLaw } from "react-icons/go";
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -21,13 +23,13 @@ const Sidebar = () => {
   };
 
   const menuItems = [
-    { icon: Home, label: "Dashboard", path: "/clientdashboard" },
-    { icon: Search, label: "Find Lawyers", path: "/client/findlawyers" },
-    { icon: Briefcase, label: "My Cases", path: "/clientcase" },
-    { icon: Clock, label: "Consultations", path: "/client/consultation" },
-    { icon: Calendar, label: "Appointments", path: "/clientappointment" },
-    { icon: MessageSquare, label: "Messages", path: "/clientmessage" },
-    { icon: CreditCard, label: "Payments", path: "/clientpayment" },
+    { icon: Home, label: t('navigation.dashboard'), path: "/clientdashboard" },
+    { icon: Search, label: t('navigation.findLawyers'), path: "/client/findlawyers" },
+    { icon: Briefcase, label: t('navigation.myCases'), path: "/clientcase" },
+    { icon: Clock, label: t('navigation.consultations'), path: "/client/consultation" },
+    { icon: Calendar, label: t('navigation.appointments'), path: "/clientappointment" },
+    { icon: MessageSquare, label: t('navigation.messages'), path: "/clientmessage" },
+    { icon: CreditCard, label: t('navigation.payments'), path: "/clientpayment" },
   ];
 
   // Function to check if a menu item is active based on the current location

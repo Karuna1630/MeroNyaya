@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, MessageSquare } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getCaseConversation, markMessageRead } from '../../axios/chatAPI';
 import ChatWindow from '../../components/Chat/ChatWindow';
 import ConversationList from '../../components/Chat/ConversationList';
@@ -9,6 +10,7 @@ import DashHeader from './ClientDashHeader';
 import './ClientMessageNew.css';
 
 const ClientMessage = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [conversation, setConversation] = useState(null);
@@ -73,11 +75,11 @@ const ClientMessage = () => {
       
       // Handle specific error messages
       if (err.response?.status === 403) {
-        setChatError('Chat only available for accepted cases');
+        setChatError(t('messages.messageNotAvailable'));
       } else if (err.response?.status === 404) {
-        setChatError('Conversation not found');
+        setChatError(t('messages.failedToLoad'));
       } else {
-        setChatError('Failed to load conversation');
+        setChatError(t('messages.failedToLoad'));
       }
     } finally {
       setIsLoadingChat(false);
