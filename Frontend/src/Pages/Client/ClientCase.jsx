@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Search,
   ChevronDown,
@@ -28,11 +29,12 @@ import DashHeader from "./ClientDashHeader";
 import { fetchCases, deleteCase, updateCase } from "../slices/caseSlice";
 
 const ClientCase = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("All Cases");
-  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [activeTab, setActiveTab] = useState(t('cases.allCases'));
+  const [categoryFilter, setCategoryFilter] = useState(t('cases.allCategories'));
   const [withdrawModal, setWithdrawModal] = useState({ isOpen: false, caseId: null, caseTitle: null });
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, caseId: null, caseTitle: null });
@@ -47,23 +49,26 @@ const ClientCase = () => {
   }, [dispatch]);
 
   // Function to format case status for display purposes
-  const formatStatus = (status) => {
-    const map = {
-      draft: "Draft",
-      public: "Public",
-      sent_to_lawyers: "Sent to Lawyers",
-      proposals_received: "Proposals",
-      accepted: "Accepted",
-      in_progress: "In Progress",
-      completed: "Completed",
-      cancelled: "Cancelled",
-      rejected: "Rejected",
-    };
-    return map[status] || status;
-  };
-
+  // Function to format case status for display purposes - moved inside useMemo to avoid dependency issues
+  
   // Memoize the cases data to avoid unnecessary re-computations when the component re-renders
   const cases = useMemo(() => {
+    // Function to format case status for display purposes
+    const formatStatusMemo = (status) => {
+      const map = {
+        draft: t('cases.draft'),
+        public: t('cases.public'),
+        sent_to_lawyers: t('cases.sentToLawyers'),
+        proposals_received: t('cases.proposalsReceived'),
+        accepted: t('cases.accepted'),
+        in_progress: t('cases.inProgress'),
+        completed: t('cases.completed'),
+        cancelled: t('cases.cancelled'),
+        rejected: t('cases.rejected'),
+      };
+      return map[status] || status;
+    };
+
     return (casesData || []).map((item) => {
       const createdDate = item.created_at
         ? new Date(item.created_at).toLocaleDateString("en-US", {
@@ -76,53 +81,60 @@ const ClientCase = () => {
         // Normalize and format the case data for easier rendering in the UI
       return {
         id: item.id,
-        title: item.case_title || "Untitled",
-        category: item.case_category || "Not specified",
-        status: formatStatus(item.status),
-        lawyer: item.lawyer_name || "Not assigned",
+        title: item.case_title || t('dashboard.untitledCase'),
+        category: item.case_category || t('cases.notSpecified'),
+        status: formatStatusMemo(item.status),
+        lawyer: item.lawyer_name || t('dashboard.noLawyerAssigned'),
         createdDate,
         proposalCount: item.proposal_count || 0,
       };
     });
-  }, [casesData]);
+  }, [casesData, t]);
 
   //generating category options for dropdown filter based on unique categories present in cases data
   const categoryOptions = useMemo(() => {
     const categories = cases.map((item) => item.category).filter(Boolean);
-    return ["All Categories", ...Array.from(new Set(categories))];
-  }, [cases]);
+    return [t('cases.allCategories'), ...Array.from(new Set(categories))];
+  }, [cases, t]);
 
   // Filter tabs (updated)
-  const filterTabs = [
-    "All Cases",
-    "Public Cases",
-    "Proposals",
-    "Sent to Lawyers",
-    "Accepted",
-    "In Progress",
-    "Completed",
-  ];
+  const filterTabs = useMemo(() => [
+    t('cases.allCases'),
+    t('cases.publicCases'),
+    t('cases.proposals'),
+    t('cases.sentToLawyers'),
+    t('cases.accepted'),
+    t('cases.inProgress'),
+    t('cases.completed'),
+  ], [t]);
 
   // Get status-specific styling
   const getStatusStyles = (status) => {
+    const inProgress = t('cases.inProgress');
+    const accepted = t('cases.accepted');
+    const proposals = t('cases.proposals');
+    const completed = t('cases.completed');
+    const sentToLawyers = t('cases.sentToLawyers');
+    const publicStatus = t('cases.public');
+    const cancelled = t('cases.cancelled');
+    const draft = t('cases.draft');
+    const rejected = t('cases.rejected');
+    
     switch (status) {
-      case "In Progress":
+      case inProgress:
+      case accepted:
         return "bg-blue-100 text-blue-700";
-      case "Accepted":
-        return "bg-blue-100 text-blue-700";
-      case "Proposals":
+      case proposals:
+      case publicStatus:
         return "bg-purple-100 text-purple-700";
-      case "Completed":
+      case completed:
         return "bg-green-100 text-green-700";
-      case "Sent to Lawyers":
+      case sentToLawyers:
         return "bg-yellow-100 text-yellow-700";
-      case "Public":
-        return "bg-purple-100 text-purple-700";
-      case "Cancelled":
+      case cancelled:
+      case draft:
         return "bg-gray-100 text-gray-700";
-      case "Draft":
-        return "bg-gray-100 text-gray-700";
-      case "Rejected":
+      case rejected:
         return "bg-red-100 text-red-700";
       default:
         return "bg-gray-100 text-gray-700";
@@ -133,86 +145,84 @@ const ClientCase = () => {
   const getActionsForCase = (caseItem) => {
     const actions = [];
 
-    if (activeTab === "All Cases") {
+    if (activeTab === t('cases.allCases')) {
       actions.push({
         icon: Eye,
-        label: "View Case",
+        label: t('cases.viewCase'),
         color: "text-blue-600",
       });
-    } else if (activeTab === "Draft") {
+    } else if (activeTab === t('cases.draft')) {
       actions.push({
         icon: Edit,
-        label: "Edit",
+        label: t('common.edit'),
         color: "text-blue-600",
       });
       actions.push({
         icon: Send,
-        label: "Submit",
+        label: t('cases.submit'),
         color: "text-green-600",
       });
       actions.push({
         icon: Trash2,
-        label: "Delete",
+        label: t('cases.deleteCase'),
         color: "text-red-600",
       });
-    } else if (activeTab === "Sent to Lawyers") {
+    } else if (activeTab === t('cases.sentToLawyers')) {
       actions.push({
         icon: Eye,
-        label: "View Case",
+        label: t('cases.viewCase'),
         color: "text-blue-600",
       });
       actions.push({
         icon: AlertCircle,
-        label: "Withdraw",
+        label: t('cases.withdraw'),
         color: "text-yellow-600",
       });
-    } else if (activeTab === "Public Cases") {
+    } else if (activeTab === t('cases.publicCases')) {
       actions.push({
         icon: Eye,
-        label: "View Case",
+        label: t('cases.viewCase'),
         color: "text-blue-600",
       });
       actions.push({
         icon: Edit,
-        label: "Edit",
+        label: t('common.edit'),
         color: "text-green-600",
       });
       actions.push({
         icon: Trash2,
-        label: "Delete",
+        label: t('cases.deleteCase'),
         color: "text-red-600",
       });
-    } else if (activeTab === "Proposals") {
+    } else if (activeTab === t('cases.proposals')) {
       actions.push({
         icon: Eye,
-        label: "View Case",
+        label: t('cases.viewCase'),
         color: "text-blue-600",
       });
       if (caseItem.proposalCount > 0) {
         actions.push({
           icon: Briefcase,
-          label: `${caseItem.proposalCount} Proposal${
-            caseItem.proposalCount > 1 ? "s" : ""
-          }`,
+          label: `${caseItem.proposalCount} ${caseItem.proposalCount > 1 ? t('cases.proposals') : t('cases.proposal')}`,
           color: "text-purple-600",
         });
       }
-    } else if (activeTab === "Accepted") {
+    } else if (activeTab === t('cases.accepted')) {
       actions.push({
         icon: Eye,
-        label: "View Case",
+        label: t('cases.viewCase'),
         color: "text-blue-600",
       });
-    } else if (activeTab === "In Progress") {
+    } else if (activeTab === t('cases.inProgress')) {
       actions.push({
         icon: Eye,
-        label: "View Case",
+        label: t('cases.viewCase'),
         color: "text-blue-600",
       });
-    } else if (activeTab === "Completed") {
+    } else if (activeTab === t('cases.completed')) {
       actions.push({
         icon: Eye,
-        label: "View Case",
+        label: t('cases.viewCase'),
         color: "text-blue-600",
       });
     }
@@ -223,47 +233,49 @@ const ClientCase = () => {
   // Calculate summary stats
   const getTotalCases = () => cases.length;
   const getActiveCases = () =>
-    cases.filter((c) => c.status === "In Progress" || c.status === "Accepted")
+    cases.filter((c) => c.status === t('cases.inProgress') || c.status === t('cases.accepted'))
       .length;
   const getPublicCases = () =>
-    cases.filter((c) => c.status === "Public").length;
+    cases.filter((c) => c.status === t('cases.public')).length;
   const getCompletedCases = () =>
-    cases.filter((c) => c.status === "Completed").length;
+    cases.filter((c) => c.status === t('cases.completed')).length;
 
-  // Filter cases based on search and tab
-  const filteredCases = cases.filter((caseItem) => {
-    const matchesSearch =
-      caseItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      caseItem.id.toString().includes(searchQuery);
+  // Filter cases based on search and tab  
+  const filteredCases = useMemo(() => {
+    return cases.filter((caseItem) => {
+      const matchesSearch =
+        caseItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        caseItem.id.toString().includes(searchQuery);
 
-    let matchesTab = false;
+      let matchesTab = false;
 
-    if (activeTab === "All Cases") {
-      matchesTab = true;
-    } else if (activeTab === "Draft") {
-      matchesTab = caseItem.status === "Draft";
-    } else if (activeTab === "Public Cases") {
-      matchesTab = caseItem.status === "Public";
-    } else if (activeTab === "Proposals") {
-      matchesTab =
-        (caseItem.status === "Public" || caseItem.status === "Proposals") &&
-        caseItem.proposalCount > 0;
-    } else if (activeTab === "Sent to Lawyers") {
-      matchesTab = caseItem.status === "Sent to Lawyers";
-    } else if (activeTab === "Accepted") {
-      matchesTab = caseItem.status === "Accepted";
-    } else if (activeTab === "In Progress") {
-      matchesTab = caseItem.status === "In Progress";
-    } else if (activeTab === "Completed") {
-      matchesTab = caseItem.status === "Completed";
-    }
+      if (activeTab === t('cases.allCases')) {
+        matchesTab = true;
+      } else if (activeTab === t('cases.draft')) {
+        matchesTab = caseItem.status === t('cases.draft');
+      } else if (activeTab === t('cases.publicCases')) {
+        matchesTab = caseItem.status === t('cases.public');
+      } else if (activeTab === t('cases.proposals')) {
+        matchesTab =
+          (caseItem.status === t('cases.public') || caseItem.status === t('cases.proposals')) &&
+          caseItem.proposalCount > 0;
+      } else if (activeTab === t('cases.sentToLawyers')) {
+        matchesTab = caseItem.status === t('cases.sentToLawyers');
+      } else if (activeTab === t('cases.accepted')) {
+        matchesTab = caseItem.status === t('cases.accepted');
+      } else if (activeTab === t('cases.inProgress')) {
+        matchesTab = caseItem.status === t('cases.inProgress');
+      } else if (activeTab === t('cases.completed')) {
+        matchesTab = caseItem.status === t('cases.completed');
+      }
 
-    const matchesCategory =
-      categoryFilter === "All Categories" ||
-      caseItem.category === categoryFilter;
+      const matchesCategory =
+        categoryFilter === t('cases.allCategories') ||
+        caseItem.category === categoryFilter;
 
-    return matchesSearch && matchesTab && matchesCategory;
-  });
+      return matchesSearch && matchesTab && matchesCategory;
+    });
+  }, [cases, searchQuery, activeTab, categoryFilter, t]);
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -274,7 +286,7 @@ const ClientCase = () => {
         {/* TOP HEADER */}
         <div className="sticky top-0 z-50 bg-white border-b border-slate-200">
           <DashHeader
-            title="My Cases"
+            title={t('cases.myCases')}
             subtitle="Manage all your legal cases"
           />
         </div>
@@ -374,7 +386,7 @@ const ClientCase = () => {
                 />
                 <input
                   type="text"
-                  placeholder="Search by case title or ID…"
+                  placeholder={t('cases.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -401,7 +413,7 @@ const ClientCase = () => {
                 onClick={() => navigate('/client/create-case')}
                 className="px-6 py-3 bg-blue-700 text-white rounded-lg font-medium hover:bg-blue-800 transition-colors"
               >
-                + Create Case
+                + {t('cases.allCases')}
               </button>
             </div>
 

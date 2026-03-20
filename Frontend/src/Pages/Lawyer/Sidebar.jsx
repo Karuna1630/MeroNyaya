@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Grid,
   Briefcase,
@@ -14,6 +15,7 @@ import {
 import { GoLaw } from "react-icons/go";
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -22,13 +24,13 @@ const Sidebar = () => {
   };
 
   const menuItems = [
-    { icon: Grid, label: "Dashboard", path: "/lawyerdashboard" },
-    { icon: Search, label: "Find Cases", path: "/lawyerfindcases" },
-    { icon: Inbox, label: "Case Requests", path: "/lawyercaserequest" },
-    { icon: FolderOpen, label: "My Cases", path: "/lawyercase" },
-    { icon: Calendar, label: "Appointments", path: "/lawyerappointment" },
-    { icon: MessageSquare, label: "Messages", path: "/lawyermessage" },
-    { icon: DollarSign, label: "Earnings", path: "/lawyerearning" },
+    { icon: Grid, label: t('navigation.dashboard'), path: "/lawyerdashboard" },
+    { icon: Search, label: t('navigation.findCases'), path: "/lawyerfindcases" },
+    { icon: Inbox, label: t('navigation.caseRequests'), path: "/lawyercaserequest" },
+    { icon: FolderOpen, label: t('navigation.myCases'), path: "/lawyercase" },
+    { icon: Calendar, label: t('navigation.appointments'), path: "/lawyerappointment" },
+    { icon: MessageSquare, label: t('navigation.messages'), path: "/lawyermessage" },
+    { icon: DollarSign, label: t('navigation.earnings'), path: "/lawyerearning" },
   ];
 
   const isActive = (path) => location.pathname === path;

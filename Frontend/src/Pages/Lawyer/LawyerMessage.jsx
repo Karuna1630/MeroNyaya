@@ -29,6 +29,17 @@ const LawyerMessage = () => {
     setCurrentUser(userData);
     setToken(accessToken);
 
+    // Support deep-linking from notifications: /lawyermessage?caseId=123
+    const params = new URLSearchParams(location.search);
+    const queryCaseId = params.get('caseId');
+    if (queryCaseId) {
+      const parsed = parseInt(queryCaseId, 10);
+      if (!Number.isNaN(parsed)) {
+        setSelectedCaseId(parsed);
+        return;
+      }
+    }
+
     // Check if caseId was passed via navigation state
     if (location.state?.caseId) {
       setSelectedCaseId(location.state.caseId);

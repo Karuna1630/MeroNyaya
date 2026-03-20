@@ -7,6 +7,7 @@ from case.models import Case
 from .models import Message, Conversation
 from .serializers import MessageSerializer
 from .presence import mark_user_online, mark_user_offline, broadcast_presence_update
+from notification.utils import send_notification
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -219,6 +220,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 sender=self.user,
                 content=content
             )
+
+            # Notify the other participant about the new message.
+            case = conversation.case
+            recipient = case.lawyer if self.user == case.client else case.client
+            if recipient and recipient != self.user:
+                sender_name = self.user.name or self.user.email
+                preview = content[:80] + ("..." if len(content) > 80 else "")
+                message_link = (
+                    f"/lawyermessage?caseId={case.id}"
+                    if recipient.role == "Lawyer"
+                    else f"/clientmessage?caseId={case.id}"
+                )
+                send_notification(
+                    user=recipient,
+                    title=f"New message from {sender_name}",
+                    message=preview,
+                    notif_type="message",
+                    link=message_link,
+                )
             
             # Serialize and return
             serializer = MessageSerializer(message)

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   DollarSign,
@@ -22,6 +23,7 @@ import { getImageUrl } from '../../utils/imageUrl';
 import { fetchLawyerEarnings } from '../slices/paymentSlice';
 
 const Earning = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { earnings, earningsLoading, earningsError } = useSelector((state) => state.payment);
 
@@ -79,13 +81,13 @@ const Earning = () => {
       <Sidebar />
 
       <main className="flex-1 ml-64 flex flex-col overflow-hidden">
-        <DashHeader title="Earnings" subtitle="Track your consultation payments" />
+        <DashHeader title={t('navigation.earnings')} subtitle={t('lawyerEarnings.subtitle')} />
 
         <div className="flex-1 p-8 overflow-y-auto">
           {earningsLoading && (
             <div className="flex flex-col items-center justify-center py-24">
               <Loader2 size={40} className="text-emerald-500 animate-spin" />
-              <p className="text-sm text-gray-400 mt-3">Loading your earnings...</p>
+              <p className="text-sm text-gray-400 mt-3">{t('lawyerEarnings.loading')}</p>
             </div>
           )}
 
@@ -102,30 +104,30 @@ const Earning = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
                 <StatCard
                   icon={<Wallet size={20} />}
-                  title="Total Earned"
+                  title={t('lawyerEarnings.totalEarned')}
                   value={`Rs. ${parseFloat(summary?.total_earned || 0).toLocaleString()}`}
-                  subtitle="Net earnings after fee"
+                  subtitle={t('lawyerEarnings.netEarnings')}
                   color="emerald"
                 />
                 <StatCard
                   icon={<TrendingUp size={20} />}
-                  title="From Clients"
+                  title={t('lawyerEarnings.fromClients')}
                   value={`Rs. ${parseFloat(summary?.total_received_from_clients || 0).toLocaleString()}`}
-                  subtitle="Gross amount received"
+                  subtitle={t('lawyerEarnings.grossAmount')}
                   color="blue"
                 />
                 <StatCard
                   icon={<Percent size={20} />}
-                  title="Platform Fee"
+                  title={t('lawyerEarnings.platformFee')}
                   value={`Rs. ${parseFloat(summary?.total_platform_fee || 0).toLocaleString()}`}
-                  subtitle={`${summary?.commission_rate || 0}% commission`}
+                  subtitle={`${summary?.commission_rate || 0}% ${t('lawyerEarnings.commission')}`}
                   color="amber"
                 />
                 <StatCard
                   icon={<Hash size={20} />}
-                  title="Total Transactions"
+                  title={t('lawyerEarnings.totalTransactions')}
                   value={summary?.total_transactions || 0}
-                  subtitle="Completed payments"
+                  subtitle={t('lawyerEarnings.completedPayments')}
                   color="violet"
                 />
               </div>
@@ -134,8 +136,8 @@ const Earning = () => {
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900">Payment History</h2>
-                    <p className="text-sm text-gray-400 mt-0.5">All payments from your consultations</p>
+                    <h2 className="text-lg font-bold text-gray-900">{t('lawyerEarnings.paymentHistory')}</h2>
+                    <p className="text-sm text-gray-400 mt-0.5">{t('lawyerEarnings.allPayments')}</p>
                   </div>
                   {payments.length > 0 && (
                     <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">

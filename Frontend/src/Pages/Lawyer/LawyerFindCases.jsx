@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { fetchPublicCases } from "../slices/caseSlice";
 import { fetchProposals, submitProposal, clearSubmitProposalStatus } from "../slices/proposalSlice";
 import Sidebar from "./Sidebar";
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 const LawyerFindCases = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { publicCases, publicCasesLoading, publicCasesError } = useSelector((state) => state.case);
@@ -201,8 +203,8 @@ const LawyerFindCases = () => {
       
       <div className="flex-1 ml-64">
         <DashHeader 
-          title="Find Cases" 
-          subtitle="Browse publicly posted cases and submit your proposals" 
+          title={t('lawyerFindCases.title')}
+          subtitle={t('lawyerFindCases.subtitle')}
         />
 
         <main className="p-8 space-y-6">
@@ -213,7 +215,7 @@ const LawyerFindCases = () => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input 
                   type="text" 
-                  placeholder="Search cases by title, description, keywords..."
+                  placeholder={t('lawyerFindCases.search')}
                   className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
@@ -227,7 +229,7 @@ const LawyerFindCases = () => {
                     value={categoryFilter}
                     onChange={(e) => handleCategoryChange(e.target.value)}
                   >
-                    <option>All Categories</option>
+                    <option>{t('lawyerFindCases.filterByCategory')}</option>
                     {LAW_CATEGORIES.map((category) => (
                       <option key={category} value={category}>
                         {category}
@@ -243,7 +245,7 @@ const LawyerFindCases = () => {
                     value={priorityFilter}
                     onChange={(e) => handlePriorityChange(e.target.value)}
                   >
-                    <option value="All">All Priorities</option>
+                    <option value="All">{t('lawyerFindCases.filterByPriority')}</option>
                     {URGENCY_LEVELS.map((level) => (
                       <option key={level} value={level}>
                         {level}
@@ -275,7 +277,7 @@ const LawyerFindCases = () => {
                     : "text-gray-500 hover:text-[#0F1A3D]"
                 }`}
               >
-                Public
+                {t('lawyerFindCases.publicTab')}
               </button>
               <button
                 onClick={() => handleTabChange("proposed")}
@@ -285,7 +287,7 @@ const LawyerFindCases = () => {
                     : "text-gray-500 hover:text-[#0F1A3D]"
                 }`}
               >
-                Proposed
+                {t('lawyerFindCases.proposedTab')}
               </button>
             </div>
           </div>
@@ -295,18 +297,18 @@ const LawyerFindCases = () => {
             {publicCasesLoading ? (
               <div className="bg-white py-24 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-gray-500 gap-4">
                 <div className="w-12 h-12 border-4 border-[#0F1A3D] border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-sm font-medium">Loading public cases...</p>
+                <p className="text-sm font-medium">{t('lawyerFindCases.loadingCases')}</p>
               </div>
             ) : publicCasesError ? (
               <div className="bg-white py-24 rounded-3xl border border-red-200 flex flex-col items-center justify-center text-red-500 gap-4">
                 <div className="text-center space-y-2">
-                  <p className="text-xl font-bold">Error Loading Cases</p>
+                  <p className="text-xl font-bold">{t('lawyerFindCases.errorLoadingCases')}</p>
                   <p className="text-sm">{publicCasesError}</p>
                   <button 
                     onClick={() => dispatch(fetchPublicCases())}
                     className="mt-4 px-6 py-2 bg-[#0F1A3D] text-white rounded-xl text-sm font-bold hover:bg-black transition-colors"
                   >
-                    Retry
+                    {t('lawyerFindCases.retry')}
                   </button>
                 </div>
               </div>
@@ -344,7 +346,7 @@ const LawyerFindCases = () => {
                         <div className="flex flex-wrap items-center gap-6 pt-2">
                           <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
                             <Calendar size={16} className="text-gray-400" />
-                            Posted: {formatDate(item.created_at)}
+                            {t('lawyerFindCases.posted')}: {formatDate(item.created_at)}
                           </div>
                           <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
                             <FileText size={16} className="text-gray-400" />

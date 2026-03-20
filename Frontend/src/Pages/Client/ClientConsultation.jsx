@@ -3,6 +3,7 @@ import Sidebar from "./sidebar";
 import DashHeader from "./ClientDashHeader";
 import StatCard from "./statcard";
 import { useDispatch, useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 import { fetchMyConsultations } from "../slices/consultationSlice";
 import { fetchMyAppointments } from "../slices/appointmentSlice";
 import { 
@@ -24,8 +25,9 @@ import axiosInstance from "../../axios/axiosinstance";
 import { getImageUrl } from '../../utils/imageUrl';
 
 const ClientConsultation = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState("Requests");
+  const [activeTab, setActiveTab] = useState(t('consultations.requests'));
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [consultationToDelete, setConsultationToDelete] = useState(null);

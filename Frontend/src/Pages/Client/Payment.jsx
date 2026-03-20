@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import {
   CreditCard,
   CheckCircle,
@@ -17,6 +18,7 @@ import Sidebar from './sidebar';
 import { fetchPaymentHistory } from '../slices/paymentSlice';
 
 const Payment = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const { payments, paymentsLoading, paymentsError } = useSelector(
     (state) => state.payment

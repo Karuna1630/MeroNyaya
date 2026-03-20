@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Sidebar from "./Sidebar";
 import DashHeader from "./LawyerDashHeader";
 import StatCard from "./Statcard";
@@ -29,16 +30,17 @@ import {
  * It features status summary cards, filterable tabs, and detailed case request cards.
  */
 const LawyerCaseRequest = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { cases, casesLoading, casesError } = useSelector((state) => state.case);
-  const [activeTab, setActiveTab] = useState("Pending");
+  const [activeTab, setActiveTab] = useState(t('lawyerCaseRequest.pending'));
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
   const statusMap = {
-    Pending: "sent_to_lawyers",
-    Accepted: "accepted",
-    Rejected: "rejected",
+    [t('lawyerCaseRequest.pending')]: "sent_to_lawyers",
+    [t('lawyerCaseRequest.accepted')]: "accepted",
+    [t('lawyerCaseRequest.rejected')]: "rejected",
   };
 
   useEffect(() => {
@@ -58,31 +60,31 @@ const LawyerCaseRequest = () => {
   // Summary statistics for the top cards
   const stats = [
     {
-      label: "Pending",
+      label: t('lawyerCaseRequest.pending'),
       count: specificCases.filter(c => c.status === "sent_to_lawyers").length,
       icon: <Clock size={20} />,
-      onClick: () => setActiveTab("Pending"),
+      onClick: () => setActiveTab(t('lawyerCaseRequest.pending')),
       color: "amber",
     },
     {
-      label: "Urgent",
+      label: t('lawyerCaseRequest.urgent'),
       count: specificCases.filter(c => c.urgency_level === "High" && c.status === "sent_to_lawyers").length,
       icon: <AlertTriangle size={20} />,
-      onClick: () => setActiveTab("Pending"),
+      onClick: () => setActiveTab(t('lawyerCaseRequest.pending')),
       color: "rose",
     },
     {
-      label: "Accepted",
+      label: t('lawyerCaseRequest.accepted'),
       count: specificCases.filter(c => c.status === "accepted").length,
       icon: <CheckCircle size={20} />,
-      onClick: () => setActiveTab("Accepted"),
+      onClick: () => setActiveTab(t('lawyerCaseRequest.accepted')),
       color: "emerald",
     },
     {
-      label: "Rejected",
+      label: t('lawyerCaseRequest.rejected'),
       count: specificCases.filter(c => c.status === "rejected").length,
       icon: <XCircle size={20} />,
-      onClick: () => setActiveTab("Rejected"),
+      onClick: () => setActiveTab(t('lawyerCaseRequest.rejected')),
       color: "slate",
     }
   ];
@@ -126,7 +128,7 @@ const LawyerCaseRequest = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return t('dashboard.notAvailable');
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
@@ -143,8 +145,8 @@ const LawyerCaseRequest = () => {
       <Sidebar />
       <div className="flex-1 ml-64">
         <DashHeader 
-          title="Case Requests" 
-          subtitle="Review and respond to client case requests" 
+          title={t('navigation.caseRequests')} 
+          subtitle={t('lawyerCaseRequest.subtitle')} 
         />
         
         <main className="p-8 space-y-8">

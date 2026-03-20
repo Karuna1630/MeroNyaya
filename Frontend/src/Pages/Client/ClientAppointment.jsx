@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from "./sidebar";
 import DashHeader from "./ClientDashHeader";
+import { useTranslation } from "react-i18next";
 import { 
   Calendar, 
   Video, 
@@ -22,7 +23,8 @@ import { fetchCaseAppointments } from "../slices/caseSlice";
 import { getImageUrl } from '../../utils/imageUrl';
 
 const ClientAppointment = () => {
-  const [activeTab, setActiveTab] = useState("Upcoming");
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState(t('appointments.upcoming'));
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [appointmentToPay, setAppointmentToPay] = useState(null);

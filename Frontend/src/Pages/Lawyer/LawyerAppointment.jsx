@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Sidebar from "./Sidebar";
 import LawyerDashHeader from "./LawyerDashHeader";
+import { useTranslation } from "react-i18next";
 import { 
   Calendar, 
   MapPin, 
@@ -26,8 +27,9 @@ import { acceptConsultationSchema } from "../utils/consultationValidation";
 import { getImageUrl } from '../../utils/imageUrl';
 
 const LawyerAppointment = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState("Pending");
+  const [activeTab, setActiveTab] = useState(t('lawyerAppointment.pending'));
   const [selectedDate, setSelectedDate] = useState(5);
   const [currentMonth, setCurrentMonth] = useState({ month: 2, year: 2026 }); // February 2026
   const [selectedConsultation, setSelectedConsultation] = useState(null);
@@ -90,23 +92,23 @@ const LawyerAppointment = () => {
     const accepted = consultations.filter(c => c.status === "accepted").length;
     const completed = consultations.filter(c => c.status === "completed").length;
     return [
-      { value: pending, label: "Pending", gradient: "from-amber-500 to-orange-500", ring: "ring-amber-500/20" },
-      { value: accepted, label: "Accepted", gradient: "from-emerald-500 to-emerald-600", ring: "ring-emerald-500/20" },
-      { value: completed, label: "Completed", gradient: "from-blue-500 to-blue-600", ring: "ring-blue-500/20" },
+      { value: pending, label: t('lawyerAppointment.pending'), gradient: "from-amber-500 to-orange-500", ring: "ring-amber-500/20" },
+      { value: accepted, label: t('lawyerAppointment.accepted'), gradient: "from-emerald-500 to-emerald-600", ring: "ring-emerald-500/20" },
+      { value: completed, label: t('lawyerAppointment.completed'), gradient: "from-blue-500 to-blue-600", ring: "ring-blue-500/20" },
     ];
-  }, [consultations]);
+  }, [consultations, t]);
 
   // Filter consultations based on active tab selection
   const filteredConsultations = useMemo(() => {
-    if (activeTab === "Pending") {
+    if (activeTab === t('lawyerAppointment.pending')) {
       return consultations.filter(c => c.status === "requested");
-    } else if (activeTab === "Accepted") {
+    } else if (activeTab === t('lawyerAppointment.accepted')) {
       return consultations.filter(c => c.status === "accepted");
-    } else if (activeTab === "Completed") {
+    } else if (activeTab === t('lawyerAppointment.completed')) {
       return consultations.filter(c => c.status === "completed");
     }
     return consultations.filter(c => c.status === "rejected");
-  }, [activeTab, consultations]);
+  }, [activeTab, consultations, t]);
   const daysInMonth = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.year, currentMonth.month, 1).getDay();
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -152,11 +154,11 @@ const LawyerAppointment = () => {
   const getModeLabel = (mode) => {
     switch (mode) {
       case "video":
-        return "Video Call";
+        return t('lawyerAppointment.videoCall');
       case "in_person":
-        return "In-Person";
+        return t('lawyerAppointment.inPerson');
       default:
-        return "N/A";
+        return t('dashboard.notAvailable');
     }
   };
 
@@ -339,8 +341,8 @@ const LawyerAppointment = () => {
 
       <main className="flex-1 ml-64 flex flex-col overflow-hidden">
         <LawyerDashHeader
-          title="Consultations & Appointments"
-          subtitle="Manage your client consultations and appointments"
+          title={t('lawyerAppointment.title')}
+          subtitle={t('lawyerAppointment.subtitle')}
           notificationCount={3}
         />
 
@@ -362,7 +364,7 @@ const LawyerAppointment = () => {
             {/* Calendar Sidebar */}
             <div className="col-span-4 space-y-6">
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                <h3 className="text-lg font-bold text-[#0F1A3D] mb-6 tracking-tight">Calendar</h3>
+                <h3 className="text-lg font-bold text-[#0F1A3D] mb-6 tracking-tight">{t('lawyerAppointment.calendar')}</h3>
                 
                 <div className="flex items-center justify-between mb-6">
                   <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 border border-slate-100 transition">
@@ -403,7 +405,7 @@ const LawyerAppointment = () => {
             <div className="col-span-8 flex flex-col gap-6">
               {/* Tabs */}
               <div className="bg-slate-100/80 p-1.5 rounded-2xl w-full flex">
-                {["Pending", "Accepted", "Rejected", "Completed"].map((tab) => (
+                {[t('lawyerAppointment.pending'), t('lawyerAppointment.accepted'), t('lawyerAppointment.rejected'), t('lawyerAppointment.completed')].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -424,12 +426,12 @@ const LawyerAppointment = () => {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-100">
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Client</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Topic</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Requested</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Mode</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.client')}</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.topic')}</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.requested')}</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.mode')}</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.status')}</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">{t('lawyerAppointment.actions')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -482,7 +484,7 @@ const LawyerAppointment = () => {
                                     : "bg-red-50 text-red-600 border border-red-100"
                                 }`}
                               >
-                                {consultation.status === "requested" ? "Pending" : consultation.status === "accepted" ? "Accepted" : consultation.status === "completed" ? "Completed" : "Rejected"}
+                                {consultation.status === "requested" ? t('lawyerAppointment.pending') : consultation.status === "accepted" ? t('lawyerAppointment.accepted') : consultation.status === "completed" ? t('lawyerAppointment.completed') : t('lawyerAppointment.rejected')}
                               </span>
                             </td>
                             <td className="px-6 py-5 text-right">
@@ -531,7 +533,7 @@ const LawyerAppointment = () => {
                           <td colSpan="6" className="px-6 py-16 text-center">
                             <div className="flex flex-col items-center gap-2 opacity-40">
                               <Clock size={40} className="text-slate-400 mb-2" />
-                              <p className="text-sm font-bold text-slate-500 tracking-tight">No {activeTab.toLowerCase()} consultations</p>
+                              <p className="text-sm font-bold text-slate-500 tracking-tight">{t('lawyerAppointment.noConsultations')} {activeTab.toLowerCase()}</p>
                             </div>
                           </td>
                         </tr>
@@ -545,20 +547,20 @@ const LawyerAppointment = () => {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-[#0F1A3D]">Case Appointments</h3>
-                    <p className="text-xs text-slate-500">Appointments scheduled from cases (no payment)</p>
+                    <h3 className="text-base font-bold text-[#0F1A3D]">{t('lawyerAppointment.caseAppointments')}</h3>
+                    <p className="text-xs text-slate-500">{t('dashboard.commissionInfo')}</p>
                   </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-100">
-                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Client</th>
-                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Case</th>
-                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Preferred</th>
-                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Mode</th>
-                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.client')}</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('navigation.cases')}</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.requested')}</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.mode')}</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.status')}</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">{t('lawyerAppointment.actions')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -666,7 +668,7 @@ const LawyerAppointment = () => {
                             <div className="flex flex-col items-center gap-2 opacity-40">
                               <Clock size={36} className="text-slate-400 mb-2" />
                               <p className="text-sm font-bold text-slate-500 tracking-tight">
-                                {caseAppointmentsLoading ? "Loading case appointments..." : "No case appointments yet"}
+                                {caseAppointmentsLoading ? t('lawyerAppointment.loadingCaseAppointments') : t('lawyerAppointment.noCaseAppointments')}
                               </p>
                             </div>
                           </td>
@@ -698,7 +700,7 @@ const LawyerAppointment = () => {
               <Form className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-100 max-h-[85vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-white">Accept Consultation</h2>
+                  <h2 className="text-lg font-bold text-white">{t('lawyerAppointment.acceptConsultation')}</h2>
                   <button
                     type="button"
                     onClick={() => {
@@ -716,7 +718,7 @@ const LawyerAppointment = () => {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Client Info - Full Width */}
                     <div className="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">Client</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">{t('lawyerAppointment.client')}</label>
                       <div className="flex items-center gap-3">
                         <img 
                           src={getImageUrl(selectedConsultation.client?.profile_image, selectedConsultation.client?.name)}
@@ -732,7 +734,7 @@ const LawyerAppointment = () => {
 
                     {/* Mode */}
                     <div className="col-span-2 bg-white rounded-xl p-4 border border-slate-200">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Mode</label>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">{t('lawyerAppointment.mode')}</label>
                       <div className="flex items-center gap-2">
                         {getModeIcon(selectedConsultation.mode)}
                         <span className="font-semibold text-sm text-slate-700">{getModeLabel(selectedConsultation.mode)}</span>
@@ -742,7 +744,7 @@ const LawyerAppointment = () => {
                     {/* Scheduled Date */}
                     <div className="bg-white rounded-xl p-4 border border-slate-200">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
-                        Date <span className="text-red-500">*</span>
+                        {t('lawyerAppointment.date')} <span className="text-red-500">*</span>
                       </label>
                       <Field
                         type="date"
@@ -763,7 +765,7 @@ const LawyerAppointment = () => {
                     {/* Scheduled Time */}
                     <div className="bg-white rounded-xl p-4 border border-slate-200">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
-                        Time <span className="text-red-500">*</span>
+                        {t('lawyerAppointment.time')} <span className="text-red-500">*</span>
                       </label>
                       <Field
                         type="time"
@@ -785,7 +787,7 @@ const LawyerAppointment = () => {
                     {selectedConsultation.mode === "video" && (
                       <div className="col-span-2 bg-green-50 rounded-xl p-4 border border-green-200">
                         <label className="text-xs font-bold text-green-700 uppercase tracking-wide block mb-2">
-                          Meeting Link <span className="text-red-500">*</span>
+                          {t('lawyerAppointment.meetingLink')} <span className="text-red-500">*</span>
                         </label>
                         <Field
                           type="url"

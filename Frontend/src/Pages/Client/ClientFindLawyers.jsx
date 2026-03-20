@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useTranslation } from "react-i18next";
 import Sidebar from "./sidebar";
 import ClientDashHeader from "./ClientDashHeader";
 import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCircle2, MessageSquare, Video, Filter } from "lucide-react";
@@ -14,6 +15,7 @@ const specializations = [
 ];
 
 const FindLawyers = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   
 
@@ -24,7 +26,7 @@ const FindLawyers = () => {
 
   // Local component state
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSpecialization, setSelectedSpecialization] = useState("All Specializations");
+  const [selectedSpecialization, setSelectedSpecialization] = useState(t('lawyers.allSpecializations'));
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isConsultOpen, setIsConsultOpen] = useState(false);
@@ -88,7 +90,7 @@ const FindLawyers = () => {
 
       // If no specialization filter is selected, match all
       const matchesSpec =
-        selectedSpecialization === "All Specializations" ||
+        selectedSpecialization === t('lawyers.allSpecializations') ||
         !selectedSpecialization ||
         (lawyer.specialization && 
          String(lawyer.specialization).toLowerCase().includes(String(selectedSpecialization).toLowerCase()));
@@ -107,7 +109,7 @@ const FindLawyers = () => {
     
     console.log("Filtered result:", filtered);
     return filtered;
-  }, [searchQuery, selectedSpecialization, lawyers]);
+  }, [searchQuery, selectedSpecialization, lawyers, t]);
 
   // Sort filtered lawyers
   const sortedLawyers = useMemo(() => {
@@ -131,8 +133,8 @@ const FindLawyers = () => {
 
       <div className="flex-1 flex flex-col">
         <ClientDashHeader
-          title="Find Lawyers"
-          subtitle="Discover and connect with legal experts"
+          title={t('lawyers.title')}
+          subtitle={t('lawyers.subtitle')}
         />
 
         <div className="flex-1 p-8">

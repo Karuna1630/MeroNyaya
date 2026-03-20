@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './Sidebar';
@@ -15,6 +16,7 @@ import { fetchCases } from '../slices/caseSlice';
 import { fetchProposals } from '../slices/proposalSlice';
 
 const LawyerDashboard = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userProfile } = useSelector((state) => state.profile);
@@ -76,10 +78,10 @@ const LawyerDashboard = () => {
   // Helper function to format case status into a more user-friendly format for display in the dashboard
   const formatStatus = (status) => {
     const map = {
-      accepted: "Accepted",
-      in_progress: "In Progress",
-      completed: "Completed",
-      public: "Public",
+      accepted: t('cases.accepted'),
+      in_progress: t('cases.inProgress'),
+      completed: t('cases.completed'),
+      public: t('cases.public'),
     };
     return map[status] || status;
   };
@@ -118,7 +120,7 @@ const LawyerDashboard = () => {
     
     if (toastShown) return;
 
-    toast.success('Your KYC has been approved.');
+    toast.success(t('lawyerDashboard.kycApproved'));
     localStorage.setItem('kycApprovedToastShown', '1');
   }, [isKycApproved]);
 
@@ -165,30 +167,30 @@ const LawyerDashboard = () => {
   const statCards = [
     {
       icon: <Briefcase size={20} />,
-      title: 'Active Cases',
+      title: t('lawyerDashboard.activeCases'),
       value: activeCases.toString(),
-      subtitle: `${acceptedProposals} accepted proposals`,
+      subtitle: `${acceptedProposals} ${t('cases.accepted')}`,
       color: 'blue',
     },
     {
       icon: <FileText size={20} />,
-      title: 'Pending Proposals',
+      title: t('cases.pending'),
       value: pendingProposals.toString(),
-      subtitle: 'Awaiting response',
+      subtitle: t('lawyerDashboard.awaiting'),
       color: 'amber',
     },
     {
       icon: <Calendar size={20} />,
-      title: 'Appointments',
+      title: t('navigation.appointments'),
       value: '0',
-      subtitle: 'Coming soon',
+      subtitle: t('dashboard.comingSoon'),
       color: 'violet',
     },
     {
       icon: <AlertCircle size={20} />,
-      title: 'Rejected Proposals',
+      title: t('cases.rejected'),
       value: rejectedProposals.toString(),
-      subtitle: 'Client declined',
+      subtitle: t('lawyerDashboard.awaiting'),
       color: 'rose',
     },
   ];
@@ -205,8 +207,8 @@ const LawyerDashboard = () => {
         <div className="ml-64 flex-1 flex flex-col">
           <div className="sticky top-0 z-30 bg-white">
             <DashHeader
-              title={profile ? `Welcome back, ${profile.name?.split(' ')[0]}` : "Welcome back"}
-              subtitle="Here's an overview of your practice today"
+              title={profile ? `${t('dashboard.welcomeBack')}, ${profile.name?.split(' ')[0]}` : t('dashboard.welcomeBack')}
+              subtitle={t('lawyerDashboard.overviewSubtitle')}
               notificationCount={0}
             />
           </div>
@@ -219,16 +221,16 @@ const LawyerDashboard = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 flex-wrap mb-1">
-                    <p className="text-sm font-semibold text-amber-900">KYC Under Review</p>
-                    <span className="inline-flex items-center rounded-full bg-amber-200 text-amber-800 px-3 py-1 text-xs font-semibold">Pending</span>
+                    <p className="text-sm font-semibold text-amber-900">{t('lawyerDashboard.kycUnderReview')}</p>
+                    <span className="inline-flex items-center rounded-full bg-amber-200 text-amber-800 px-3 py-1 text-xs font-semibold">{t('lawyerDashboard.submitted')}</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-amber-800">Your KYC is under review. Some features are temporarily limited. This typically takes 2-3 business days.</p>
+                  <p className="text-xs sm:text-sm text-amber-800">{t('lawyerDashboard.kycUnderReview')}</p>
                   <div className="mt-3">
-                    <p className="text-sm font-semibold text-amber-900">Limited access during review:</p>
+                    <p className="text-sm font-semibold text-amber-900">{t('lawyerDashboard.updateKYC')}:</p>
                     <ul className="mt-2 space-y-1.5 text-sm text-amber-800 list-disc pl-5">
-                      <li>Cannot accept case requests</li>
-                      <li>Cannot receive payments</li>
-                      <li>Profile not visible in Find Lawyers</li>
+                      <li>{t('lawyerDashboard.restrictedFeature1')}</li>
+                      <li>{t('lawyerDashboard.restrictedFeature2')}</li>
+                      <li>{t('lawyerDashboard.restrictedFeature3')}</li>
                     </ul>
                   </div>
                 </div>
@@ -244,8 +246,8 @@ const LawyerDashboard = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 flex-wrap mb-1">
-                    <p className="text-sm font-semibold text-red-900">KYC Verification Rejected</p>
-                    <span className="inline-flex items-center rounded-full bg-red-200 text-red-800 px-3 py-1 text-xs font-semibold">Rejected</span>
+                    <p className="text-sm font-semibold text-red-900">{t('lawyerDashboard.kycVerificationRejected')}</p>
+                    <span className="inline-flex items-center rounded-full bg-red-200 text-red-800 px-3 py-1 text-xs font-semibold">{t('cases.rejected')}</span>
                   </div>
                   <p className="text-xs sm:text-sm text-red-800 mb-3">Your KYC verification was not approved. Please review the feedback below and resubmit.</p>
                   
@@ -278,8 +280,8 @@ const LawyerDashboard = () => {
               >
                 <AlertCircle className="text-amber-600 shrink-0" size={20} />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-amber-900">Haven't verified your Lawyer KYC yet?</p>
-                  <p className="text-xs text-amber-700">Complete your identity verification to unlock full platform access</p>
+                  <p className="text-sm font-semibold text-amber-900">{t('lawyerDashboard.kycNotSubmitted')}</p>
+                  <p className="text-xs text-amber-700">{t('lawyerDashboard.submitKYC')}</p>
                 </div>
                 <ArrowRight className="text-amber-600 shrink-0" size={20} />
               </div>
@@ -296,12 +298,12 @@ const LawyerDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-white rounded-lg p-6 shadow">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-[#0F1A3D]">My Active Cases</h2>
+                  <h2 className="text-lg font-semibold text-[#0F1A3D]">{t('lawyerCase.title')}</h2>
                   <button
                     onClick={() => navigate('/lawyercase')}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-[#0F1A3D] text-sm font-semibold transition hover:bg-yellow-500"
                   >
-                    View All
+                    {t('dashboard.viewAll')}
                     <ArrowRight size={16} />
                   </button>
                 </div>
@@ -309,7 +311,7 @@ const LawyerDashboard = () => {
                 {casesLoading ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="text-sm text-slate-500 mt-2">Loading cases...</p>
+                    <p className="text-sm text-slate-500 mt-2">{t('common.loading')}</p>
                   </div>
                 
                 ) : recentCases.length > 0 ? (
@@ -333,11 +335,11 @@ const LawyerDashboard = () => {
                         )}
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-base font-semibold text-[#0F1A3D]">{caseItem.case_title || "Untitled Case"}</h3>
+                            <h3 className="text-base font-semibold text-[#0F1A3D]">{caseItem.case_title || t('dashboard.untitledCase')}</h3>
                           </div>
-                          <p className="text-sm text-gray-600">Client: {caseItem.client_name || "Unknown"}</p>
+                          <p className="text-sm text-gray-600">{t('lawyerCaseRequest.clientInfo')}: {caseItem.client_name || t('common.error')}</p>
                           <p className="text-xs text-gray-400 flex items-center gap-2">
-                            <span>{caseItem.case_category || "General"}</span>
+                            <span>{caseItem.case_category || t('cases.allCategories')}</span>
                             <span className="text-gray-300">•</span>
                             <span>{formatDate(caseItem.created_at)}</span>
                           </p>
@@ -353,12 +355,12 @@ const LawyerDashboard = () => {
                 ) : (
                   <div className="text-center py-12">
                     <Briefcase size={48} className="mx-auto text-slate-300 mb-3" />
-                    <p className="text-slate-500 mb-2">No active cases yet</p>
+                    <p className="text-slate-500 mb-2">{t('lawyerCase.noCases')}</p>
                     <button
                       onClick={() => navigate('/lawyerfindcases')}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
-                      Find cases to work on
+                      {t('lawyerFindCases.title')}
                     </button>
                   </div>
                 )}
@@ -367,12 +369,12 @@ const LawyerDashboard = () => {
               <div className="flex flex-col gap-6">
                 <div className="bg-white rounded-lg p-6 shadow">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-[#0F1A3D]">Upcoming Appointments</h2>
+                    <h2 className="text-lg font-semibold text-[#0F1A3D]">{t('dashboard.upcomingAppointments')}</h2>
                     <button
                       onClick={() => navigate('/lawyerappointment')}
                       className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[#0F1A3D] text-xs font-semibold transition hover:bg-yellow-500"
                     >
-                      View All
+                      {t('dashboard.viewAll')}
                       <ArrowRight size={14} />
                     </button>
                   </div>

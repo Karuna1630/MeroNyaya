@@ -15,6 +15,7 @@ from .serializers import (
     ConversationDetailSerializer,
     ConversationListSerializer
 )
+from notification.utils import send_notification
 
 
 class ConversationViewSet(viewsets.ViewSet):
@@ -130,6 +131,24 @@ class ConversationViewSet(viewsets.ViewSet):
             sender=request.user,
             content=content
         )
+
+        # Notify the other participant in the conversation.
+        recipient = case.lawyer if request.user == case.client else case.client
+        if recipient and recipient != request.user:
+            sender_name = request.user.name or request.user.email
+            preview = content[:80] + ("..." if len(content) > 80 else "")
+            message_link = (
+                f"/lawyermessage?caseId={case.id}"
+                if recipient.role == "Lawyer"
+                else f"/clientmessage?caseId={case.id}"
+            )
+            send_notification(
+                user=recipient,
+                title=f"New message from {sender_name}",
+                message=preview,
+                notif_type="message",
+                link=message_link,
+            )
         
         # Broadcast message via WebSocket
         channel_layer = get_channel_layer()

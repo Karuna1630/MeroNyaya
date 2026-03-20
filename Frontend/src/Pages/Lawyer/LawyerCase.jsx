@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Search, Filter, Eye, Calendar, FileText, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import Sidebar from "./Sidebar";
 import LawyerDashHeader from "./LawyerDashHeader";
@@ -10,6 +11,7 @@ import { fetchCases } from "../slices/caseSlice";
 import { getImageUrl } from '../../utils/imageUrl';
 
 const LawyerCase = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { cases, casesLoading, casesError } = useSelector((state) => state.case);
@@ -47,10 +49,10 @@ const LawyerCase = () => {
     const now = new Date();
     const diff = Math.floor((now - date) / 1000); // difference in seconds
 
-    if (diff < 60) return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
-    if (diff < 604800) return `${Math.floor(diff / 86400)} days ago`;
+    if (diff < 60) return t('lawyerCase.justNow');
+    if (diff < 3600) return `${Math.floor(diff / 60)} ${t('lawyerCase.minutesAgo')}`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} ${t('lawyerCase.hoursAgo')}`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)} ${t('lawyerCase.daysAgo')}`;
     return date.toLocaleDateString();
   };
 
@@ -59,14 +61,14 @@ const LawyerCase = () => {
     let filtered = myCases;
 
     // Status filter (Tabs)
-    if (activeTab === "Active") {
+    if (activeTab === t('lawyerCase.active')) {
       filtered = filtered.filter(caseItem => caseItem.status !== "completed");
-    } else if (activeTab === "Completed") {
+    } else if (activeTab === t('lawyerCase.completed')) {
       filtered = filtered.filter(caseItem => caseItem.status === "completed");
     }
 
     // Case type filter
-    if (caseTypeFilter !== "All Categories") {
+    if (caseTypeFilter !== t('cases.allCategories')) {
       filtered = filtered.filter(caseItem => caseItem.case_category === caseTypeFilter);
     }
 
@@ -92,10 +94,10 @@ const LawyerCase = () => {
     const pendingPayments = active > 1 ? 2 : 0;
 
     return [
-      { icon: <Briefcase size={20} />, title: "Active Cases", value: active, subtitle: "Assigned to you", color: "blue" },
-      { icon: <Calendar size={20} />, title: "Hearings Scheduled", value: hearings, subtitle: "Upcoming", color: "violet" },
-      { icon: <Clock size={20} />, title: "Pending Payments", value: pendingPayments, subtitle: "Awaiting", color: "amber" },
-      { icon: <CheckCircle size={20} />, title: "Completed", value: completed, subtitle: "Closed cases", color: "emerald" },
+      { icon: <Briefcase size={20} />, title: t('lawyerCase.activeCases'), value: active, subtitle: t('lawyerCase.assigned'), color: "blue" },
+      { icon: <Calendar size={20} />, title: t('lawyerCase.hearingsScheduled'), value: hearings, subtitle: t('lawyerCase.upcoming'), color: "violet" },
+      { icon: <Clock size={20} />, title: t('lawyerDashboard.pendingPayments'), value: pendingPayments, subtitle: t('lawyerDashboard.awaiting'), color: "amber" },
+      { icon: <CheckCircle size={20} />, title: t('lawyerCase.completed'), value: completed, subtitle: t('lawyerDashboard.closedCases'), color: "emerald" },
     ];
   }, [myCases]);
 
@@ -129,8 +131,8 @@ const LawyerCase = () => {
 
       <div className="flex-1 ml-64">
         <LawyerDashHeader 
-          title="Assigned Cases" 
-          subtitle="View and manage your assigned cases"
+          title={t('lawyerCase.assignedCases')} 
+          subtitle={t('lawyerCase.assignedSubtitle')}
           notificationCount={3}
         />
 
