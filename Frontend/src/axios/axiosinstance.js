@@ -68,9 +68,20 @@ axiosInstance.interceptors.response.use(
                     refresh: refreshToken,
                 });
 
-                // Store the new access token
-                const newAccessToken = response.data.access;
+                // Support both plain SimpleJWT response and wrapped API response shapes.
+                const payload = response.data?.Result || response.data || {};
+                const newAccessToken = payload.access || payload.access_token;
+                const newRefreshToken = payload.refresh || payload.refresh_token;
+
+                if (!newAccessToken) {
+                    throw new Error('Refresh endpoint did not return an access token');
+                }
+
+                // Store newly issued tokens. Refresh token may rotate on each refresh.
                 localStorage.setItem('access_token', newAccessToken);
+                if (newRefreshToken) {
+                    localStorage.setItem('refresh_token', newRefreshToken);
+                }
                 // Retry the original request with the new token
                 originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
                 return axiosInstance(originalRequest);
