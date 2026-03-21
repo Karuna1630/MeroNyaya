@@ -339,7 +339,7 @@ const LawyerAppointment = () => {
     <div className="flex min-h-screen bg-slate-50/50">
       <Sidebar />
 
-      <main className="flex-1 ml-64 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         <LawyerDashHeader
           title={t('lawyerAppointment.title')}
           subtitle={t('lawyerAppointment.subtitle')}

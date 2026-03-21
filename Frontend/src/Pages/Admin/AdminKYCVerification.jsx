@@ -145,7 +145,7 @@ const AdminKYCVerification = () => {
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 ml-64 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <AdminDashHeader
           title="Lawyer KYC Verification"
           subtitle="Review and manage lawyer identity verification requests"

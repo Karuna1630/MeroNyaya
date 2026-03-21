@@ -1,14 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Bell, User, LogOut } from "lucide-react";
+import { Bell, User, LogOut, Menu } from "lucide-react";
 import { fetchUserProfile } from "../slices/profileSlice";
 import { logoutUser } from "../slices/auth";
 import NotificationDropdown from "../../components/Notification.jsx";
 import { getImageUrl } from '../../utils/imageUrl';
-import LanguageToggle from "../../components/LanguageToggle";
+import LanguageToggle from "../../components/LanguageToggle.jsx";
+import { useSidebar } from "../../context/SidebarContext";
 
 const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
+  const { toggleSidebar } = useSidebar();
   const [open, setOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -53,11 +55,19 @@ const DashHeader = ({ title, subtitle, notificationCount = 3 }) => {
   return (
     <>
    
-      <div className="bg-white border-b-2 border-slate-300 px-8 py-4 shadow-sm">
+      <div className="bg-white border-b-2 border-slate-300 px-4 md:px-8 py-4 shadow-sm">
         <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#0F1A3D]">{title}</h2>
-          <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={toggleSidebar}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition text-[#0F1A3D]"
+          >
+            <Menu size={24} />
+          </button>
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-[#0F1A3D]">{title}</h2>
+            <p className="text-xs md:text-sm text-slate-500 mt-1">{subtitle}</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">

@@ -11,16 +11,25 @@ import {
   Inbox,
   FolderOpen,
   Search,
+  X,
 } from "lucide-react";
 import { GoLaw } from "react-icons/go";
+import { useSidebar } from "../../context/SidebarContext";
 
 const Sidebar = () => {
+  const { isOpen, closeSidebar } = useSidebar();
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleHome = () => {
     navigate("/");
+    closeSidebar();
+  };
+
+  const handleNavigation = (path) => {
+    navigate(path);
+    closeSidebar();
   };
 
   const menuItems = [
@@ -36,45 +45,60 @@ const Sidebar = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <aside className="w-64 bg-[#0F1A3D] text-white min-h-screen flex flex-col fixed left-0 top-0">
-      {/* LOGO */}
-      <div onClick={handleHome} className="flex items-center gap-2 px-6 py-5 border-b border-blue-800 cursor-pointer hover:opacity-80 transition">
-        <div className="bg-yellow-500 text-blue-900 p-2 rounded-lg">
-          <GoLaw size={22} />
-        </div>
-        <h1 className="text-lg font-bold">
-          Mero<span className="text-yellow-500">Nyaya</span>
-        </h1>
-      </div>
+    <>
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300"
+          onClick={closeSidebar}
+        />
+      )}
 
-      {/* MENU */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {menuItems.map(({ icon: Icon, label, path, badge }) => (
-          <div
-            key={label}
-            onClick={() => navigate(path)}
-            className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition relative
-              ${
-                isActive(path)
-                  ? "bg-blue-800 text-white border-l-4 border-yellow-500"
-                  : "hover:bg-blue-800/50"
-              }
-            `}
-          >
-            <Icon size={18} />
-            <span className="text-sm font-medium">{label}</span>
-
-            {badge && (
-              <span className="ml-auto bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                {badge}
-              </span>
-            )}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0F1A3D] text-white flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      }`}>
+        {/* LOGO */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-blue-800">
+          <div onClick={handleHome} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition">
+            <div className="bg-yellow-500 text-blue-900 p-2 rounded-lg">
+              <GoLaw size={22} />
+            </div>
+            <h1 className="text-lg font-bold">
+              Mero<span className="text-yellow-500">Nyaya</span>
+            </h1>
           </div>
-        ))}
-      </nav>
+          <button onClick={closeSidebar} className="md:hidden text-gray-400 hover:text-white transition">
+            <X size={24} />
+          </button>
+        </div>
 
-     
-    </aside>
+        {/* MENU */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {menuItems.map(({ icon: Icon, label, path, badge }) => (
+            <div
+              key={label}
+              onClick={() => handleNavigation(path)}
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer transition relative
+                ${
+                  isActive(path)
+                    ? "bg-blue-800 text-white border-l-4 border-yellow-500"
+                    : "hover:bg-blue-800/50"
+                }
+              `}
+            >
+              <Icon size={18} />
+              <span className="text-sm font-medium">{label}</span>
+
+              {badge && (
+                <span className="ml-auto bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  {badge}
+                </span>
+              )}
+            </div>
+          ))}
+        </nav>
+      </aside>
+    </>
   );
 };
 

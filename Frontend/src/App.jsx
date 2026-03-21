@@ -14,6 +14,7 @@ import ProtectedRoute from './Pages/utils/ProtectedRoute.jsx';
 import FindLawyers from './Pages/Public/FindLawyers.jsx';
 import IndividualLawyer from './Pages/Public/IndividualLawyer.jsx';
 import About from './Pages/Public/About.jsx';
+import { SidebarProvider } from './context/SidebarContext.jsx';
 
 import ClientDashboard from './Pages/Client/ClientDashboard.jsx';
 import ClientCase from './Pages/Client/ClientCase.jsx';
@@ -58,6 +59,7 @@ function App() {
   return (
     <>
     <Provider store={store}>
+    <SidebarProvider>
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
@@ -117,6 +119,7 @@ function App() {
         <Route path='/payment/khalti-success' element={<ProtectedRoute requiredRole="client"><KhaltiSuccess /></ProtectedRoute>} />  
       </Routes>
     </BrowserRouter>
+    </SidebarProvider>
     </Provider>
     </>
 

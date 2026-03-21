@@ -80,7 +80,7 @@ const Earning = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
 
-      <main className="flex-1 ml-64 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         <DashHeader title={t('navigation.earnings')} subtitle={t('lawyerEarnings.subtitle')} />
 
         <div className="flex-1 p-8 overflow-y-auto">

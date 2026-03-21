@@ -192,7 +192,7 @@ const LawyerCaseDetail = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
 
-      <main className="flex-1 flex flex-col overflow-hidden ml-64">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
         <LawyerDashHeader title="Dashboard" subtitle={`Welcome back, Adv. Ram Kumar`} />
 
         <div className="flex-1 overflow-y-auto p-6">

@@ -119,7 +119,7 @@ const AdminRevenue = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
 
-      <div className="flex-1 ml-64">
+      <div className="flex-1 flex flex-col min-w-0">
         <AdminDashHeader title="Platform Revenue" subtitle="Financial overview and payout management" />
 
         <div className="p-8">

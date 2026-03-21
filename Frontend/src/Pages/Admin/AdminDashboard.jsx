@@ -68,7 +68,7 @@ const AdminDashboard = () => {
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 ml-64">
+      <div className="flex-1 flex flex-col min-w-0">
         <AdminDashHeader 
           title="Admin Dashboard" 
           subtitle="System overview and quick actions"

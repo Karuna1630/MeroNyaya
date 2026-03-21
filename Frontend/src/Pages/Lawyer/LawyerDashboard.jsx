@@ -204,7 +204,7 @@ const LawyerDashboard = () => {
       <div className={`flex min-h-screen bg-gray-100 transition ${modalOpen ? 'filter blur-sm pointer-events-none' : ''}`}>
         <Sidebar />
 
-        <div className="ml-64 flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <div className="sticky top-0 z-30 bg-white">
             <DashHeader
               title={profile ? `${t('dashboard.welcomeBack')}, ${profile.name?.split(' ')[0]}` : t('dashboard.welcomeBack')}
