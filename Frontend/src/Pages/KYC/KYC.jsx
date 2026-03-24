@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { Formik, Form } from "formik";
 import { Shield, User2, Briefcase, FileText, CheckCircle2 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -112,6 +113,7 @@ const stepFields = {
 // Main KYC Component
 const KYC = ({ onClose }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { submitLoading, submitError, status, myKyc } = useSelector((state) => state.kyc || {});
   const { userProfile } = useSelector((state) => state.profile);
   const [activeTab, setActiveTab] = useState("personal");
@@ -237,6 +239,7 @@ const KYC = ({ onClose }) => {
         setTimeout(() => {
           onClose?.();
           dispatch(clearKycState());
+          navigate('/lawyerdashboard');
         }, 1500);
       } else {
         const errorMessage = submitError || action.payload?.message || "Submission failed";

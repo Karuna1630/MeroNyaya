@@ -1,6 +1,8 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 import {
   Grid,
   Briefcase,
@@ -16,11 +18,19 @@ import {
 import { GoLaw } from "react-icons/go";
 import { useSidebar } from "../../context/SidebarContext";
 
+const RESTRICTED_PATHS = ['/lawyerfindcases', '/lawyercaserequest', '/lawyercase', '/lawyerappointment', '/lawyermessage', '/lawyerearning'];
+
 const Sidebar = () => {
   const { isOpen, closeSidebar } = useSidebar();
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { status } = useSelector((state) => state.kyc || {});
+  const { userProfile } = useSelector((state) => state.profile || {});
+
+  // Check KYC verification
+  const kycStatus = (status?.status || status?.kyc_status || status?.state || '').toLowerCase();
+  const isKycVerified = userProfile?.is_kyc_verified === true || kycStatus === 'approved';
 
   const handleHome = () => {
     navigate("/");
@@ -28,6 +38,11 @@ const Sidebar = () => {
   };
 
   const handleNavigation = (path) => {
+    // Block navigation if KYC not verified and path is restricted
+    if (!isKycVerified && RESTRICTED_PATHS.includes(path)) {
+      toast.warning('Your KYC is not verified. You can only navigate once KYC is verified.');
+      return;
+    }
     navigate(path);
     closeSidebar();
   };

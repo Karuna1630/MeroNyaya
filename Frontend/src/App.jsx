@@ -11,6 +11,9 @@ import {store} from './Pages/store/store.js'
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import ProtectedRoute from './Pages/utils/ProtectedRoute.jsx';
+import LawyerReviewGuard from './Pages/utils/LawyerReviewGuard.jsx';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import FindLawyers from './Pages/Public/FindLawyers.jsx';
 import IndividualLawyer from './Pages/Public/IndividualLawyer.jsx';
 import About from './Pages/Public/About.jsx';
@@ -61,6 +64,7 @@ function App() {
     <Provider store={store}>
     <SidebarProvider>
     <BrowserRouter>
+      <ToastContainer position="top-center" autoClose={4000} />
       <Routes>
         {/* Public Routes */}
         <Route path='/' element={<Home />} />
@@ -92,14 +96,14 @@ function App() {
         <Route path='/clientpayment' element={<ProtectedRoute requiredRole="client"><Payment /></ProtectedRoute>} />
 
         {/* Lawyer Routes - Protected */}
-        <Route path='/lawyerdashboard' element={<ProtectedRoute requiredRole="lawyer"><LawyerDashboard /></ProtectedRoute>} />
-        <Route path='/lawyerfindcases' element={<ProtectedRoute requiredRole="lawyer"><LawyerFindCases /></ProtectedRoute>} />
-        <Route path='/lawyercaserequest' element={<ProtectedRoute requiredRole="lawyer"><LawyerCaseRequest /></ProtectedRoute>} />
-        <Route path='/lawyercase' element={<ProtectedRoute requiredRole="lawyer"><LawyerCase /></ProtectedRoute>} />
-        <Route path='/lawyercase/:id' element={<ProtectedRoute requiredRole="lawyer"><LawyerCaseDetail /></ProtectedRoute>} />
-        <Route path='/lawyerappointment' element={<ProtectedRoute requiredRole="lawyer"><LawyerAppointment /></ProtectedRoute>} />
-        <Route path='/lawyermessage' element={<ProtectedRoute requiredRole="lawyer"><LawyerMessage /></ProtectedRoute>} />
-        <Route path='/lawyerearning' element={<ProtectedRoute requiredRole="lawyer"><Earning /></ProtectedRoute>} />
+        <Route path='/lawyerdashboard' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><LawyerDashboard /></LawyerReviewGuard></ProtectedRoute>} />
+        <Route path='/lawyerfindcases' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><LawyerFindCases /></LawyerReviewGuard></ProtectedRoute>} />
+        <Route path='/lawyercaserequest' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><LawyerCaseRequest /></LawyerReviewGuard></ProtectedRoute>} />
+        <Route path='/lawyercase' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><LawyerCase /></LawyerReviewGuard></ProtectedRoute>} />
+        <Route path='/lawyercase/:id' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><LawyerCaseDetail /></LawyerReviewGuard></ProtectedRoute>} />
+        <Route path='/lawyerappointment' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><LawyerAppointment /></LawyerReviewGuard></ProtectedRoute>} />
+        <Route path='/lawyermessage' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><LawyerMessage /></LawyerReviewGuard></ProtectedRoute>} />
+        <Route path='/lawyerearning' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><Earning /></LawyerReviewGuard></ProtectedRoute>} />
 
         {/* Profile Routes - Protected */}
         <Route path='/viewprofile' element={<ProtectedRoute><ViewProfile /></ProtectedRoute>} />
@@ -111,7 +115,7 @@ function App() {
         <Route path='/admin/revenue' element={<ProtectedRoute requiredRole="admin"><AdminRevenue /></ProtectedRoute>} />
 
         {/* KYC - Protected */}
-        <Route path='/kyc' element={<ProtectedRoute requiredRole="lawyer"><KYC /></ProtectedRoute>} />
+        <Route path='/kyc' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><KYC /></LawyerReviewGuard></ProtectedRoute>} />
 
         {/* Payment callback routes */}
         <Route path='/payment/esewa-success' element={<ProtectedRoute requiredRole="client"><EsewaSuccess /></ProtectedRoute>} />

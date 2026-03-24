@@ -113,6 +113,10 @@ export const fetchMyKyc = createAsyncThunk(
 			const response = await axiosInstance.get('/kyc/my-kyc/');
 			return response.data;
 		} catch (error) {
+			// Treat 404 as "no KYC yet" instead of a hard failure
+			if (error?.response?.status === 404) {
+				return null;
+			}
 			return rejectWithValue(error.response?.data || error.message);
 		}
 	}
@@ -212,7 +216,7 @@ const kycSlice = createSlice({
 
 		builder.addCase(fetchMyKyc.fulfilled, (state, action) => {
 			state.fetchLoading = false;
-			state.myKyc = action.payload.Result ?? action.payload;
+			state.myKyc = action.payload?.Result ?? action.payload;
 			state.fetchSuccess = true;
 		});
 
