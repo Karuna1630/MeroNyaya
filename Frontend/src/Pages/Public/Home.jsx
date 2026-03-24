@@ -1,5 +1,6 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { GoLaw } from "react-icons/go";
 import {
   Search,
@@ -9,12 +10,53 @@ import {
   CheckCircle,
   Clock,
   Globe,
+  Star,
+  MapPin,
+  Briefcase,
 } from "lucide-react";
 import two from "../../assets/5.jpg";
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
+import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
+import { getImageUrl } from "../../utils/imageUrl";
 
 const Home = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { verifiedLawyers = [] } = useSelector((state) => state.lawyer || {});
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    dispatch(fetchVerifiedLawyers());
+  }, [dispatch]);
+
+  const suggestions = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return [];
+    return verifiedLawyers
+      .filter((l) => (l.name || "").toLowerCase().includes(term))
+      .slice(0, 6);
+  }, [searchTerm, verifiedLawyers]);
+
+  const featuredLawyers = useMemo(() => {
+    const sorted = [...verifiedLawyers].sort((a, b) => (b.average_rating || b.rating || 0) - (a.average_rating || a.rating || 0));
+    return sorted.slice(0, 4);
+  }, [verifiedLawyers]);
+
+  const handleSearchSelect = (lawyer) => {
+    if (!lawyer?.id) return;
+    navigate(`/lawyer/${lawyer.id}`);
+  };
+
+  const handleFindClick = () => {
+    if (suggestions.length) {
+      handleSearchSelect(suggestions[0]);
+      return;
+    }
+    navigate("/findlawyers");
+  };
+
   return (
     <>
       <div className="bg-[#F9FAFB] text-gray-900">
@@ -40,24 +82,47 @@ const Home = () => {
 
               {/* Search Bar */}
               <div className="flex gap-2 mb-12">
-               <div className="relative flex-1">
-    {/* Glow layer */}
-    <div className="absolute inset-0 rounded-lg bg-blue-400 blur-lg opacity-50"></div>
-
-    {/* Input container */}
-    <div className="relative flex items-center bg-white rounded-lg px-4 py-3 border border-blue-200 shadow-md">
-      <Search size={20} className="text-gray-400" />
-      <input
-        type="text"
-        placeholder="Search by lawyer name or location..."
-        className="w-full ml-2 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
-      />
-    </div>
-  </div>
-                <button className="relative px-8 py-3 rounded-lg font-bold text-white bg-[#0F1A3D] ">
-                  {/* Glow Layer */}
+                <div className="relative flex-1">
+                  <div className="absolute inset-0 rounded-lg bg-blue-400 blur-lg opacity-50"></div>
+                  <div className="relative flex items-center bg-white rounded-lg px-4 py-3 border border-blue-200 shadow-md">
+                    <Search size={20} className="text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Search by lawyer name or location..."
+                      className="w-full ml-2 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+                    />
+                  </div>
+                  {suggestions.length > 0 && (
+                    <div className="absolute mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-20">
+                      {suggestions.map((lawyer) => (
+                        <button
+                          key={lawyer.id}
+                          type="button"
+                          onClick={() => handleSearchSelect(lawyer)}
+                          className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 text-left"
+                        >
+                          <img
+                            src={getImageUrl(lawyer.profile_image, lawyer.name)}
+                            alt={lawyer.name}
+                            className="w-8 h-8 rounded-full object-cover border"
+                          />
+                          <div className="flex flex-col text-sm">
+                            <span className="font-semibold text-slate-900">{lawyer.name}</span>
+                            <span className="text-xs text-slate-500">{lawyer.city || lawyer.district || "Nepal"}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleFindClick}
+                  className="relative px-8 py-3 rounded-lg font-bold text-white bg-[#0F1A3D] "
+                >
                   <div className="absolute inset-0 rounded-lg bg-blue-100 blur-lg opacity-70 -z-10"></div>
-                  {/* Button Text */}
                   <span className="relative z-10">Find a Lawyer</span>
                 </button>
               </div>
@@ -170,54 +235,51 @@ const Home = () => {
         <section className="w-full px-12 py-16">
           <h2 className="text-2xl font-bold mb-12">Featured Lawyers</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                name: "Advocate Pukar Bohara",
-                exp: "12 yrs exp.",
-                rating: "4.8",
-                cases: "156",
-              },
-              {
-                name: "Advocate Pukar Bohara",
-                exp: "12 yrs exp.",
-                rating: "4.8",
-                cases: "156",
-              },
-              {
-                name: "Advocate Pukar Bohara",
-                exp: "12 yrs exp.",
-                rating: "4.8",
-                cases: "156",
-              },
-              {
-                name: "Advocate Pukar Bohara",
-                exp: "12 yrs exp.",
-                rating: "4.8",
-                cases: "156",
-              },
-            ].map((lawyer, idx) => (
+            {featuredLawyers.map((lawyer) => (
               <div
-                key={idx}
-                className="bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden"
+                key={lawyer.id}
+                className="bg-white rounded-xl shadow hover:shadow-lg transition border border-slate-100 overflow-hidden flex flex-col"
               >
-                <div className="relative pb-full">
-                  <div className="bg-linear-to-r from-gray-400 to-gray-300 h-32"></div>
-                  <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-20 h-20 bg-gray-500 rounded-full border-4 border-white"></div>
+                <div className="relative h-36 w-full bg-slate-100">
+                  <img
+                    src={getImageUrl(lawyer.profile_image, lawyer.name)}
+                    alt={lawyer.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-lg bg-white">
+                    <img
+                      src={getImageUrl(lawyer.profile_image, lawyer.name)}
+                      alt={lawyer.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
-                <div className="pt-12 px-4 pb-4 text-center">
-                  <h3 className="font-semibold mb-1">{lawyer.name}</h3>
-                  <p className="text-xs text-gray-600 mb-3">Kathmandu</p>
-                  <div className="flex justify-center items-center gap-4 text-xs mb-4">
-                    <span>
-                      ⭐ {lawyer.rating}({lawyer.cases})
+                <div className="pt-12 px-4 pb-5 text-center space-y-2">
+                  <h3 className="font-semibold text-slate-900">{lawyer.name}</h3>
+                  <p className="text-xs text-gray-600">{lawyer.city || lawyer.district || "Nepal"}</p>
+                  <div className="flex justify-center items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1 text-yellow-600 font-semibold">
+                      <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                      {(lawyer.average_rating || lawyer.rating || 0).toFixed(1)}
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-600">
+                      <Briefcase size={14} />
+                      {lawyer.years_of_experience || lawyer.experience || 0} yrs
                     </span>
                   </div>
-                  <button className="bg-[#0F1A3D] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#0D172F] transition">
+                  <div className="text-sm text-slate-700 font-semibold">Rs. {(lawyer.consultation_fee || lawyer.fee || 0).toLocaleString()}</div>
+                  <button
+                    onClick={() => navigate(`/lawyer/${lawyer.id}`)}
+                    className="bg-[#0F1A3D] text-white px-4 py-2 rounded text-xs font-semibold hover:bg-[#0D172F] transition w-full"
+                  >
                     Book Now
                   </button>
                 </div>
               </div>
             ))}
+            {featuredLawyers.length === 0 && (
+              <div className="col-span-4 text-center text-slate-500">No featured lawyers yet. Check back soon.</div>
+            )}
           </div>
         </section>
 
