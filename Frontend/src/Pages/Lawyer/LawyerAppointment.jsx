@@ -688,8 +688,8 @@ const LawyerAppointment = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <Formik
             initialValues={{
-              scheduled_date: "",
-              scheduled_time: "",
+              scheduled_date: selectedConsultation.requested_day || "",
+              scheduled_time: selectedConsultation.requested_time || "",
               meeting_link: ""
             }}
             validationSchema={acceptConsultationSchema}
@@ -741,46 +741,24 @@ const LawyerAppointment = () => {
                       </div>
                     </div>
 
-                    {/* Scheduled Date */}
-                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                    {/* Scheduled Date - Read Only */}
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
-                        {t('lawyerAppointment.date')} <span className="text-red-500">*</span>
+                        {t('lawyerAppointment.date')}
                       </label>
-                      <Field
-                        type="date"
-                        name="scheduled_date"
-                        className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                          errors.scheduled_date && touched.scheduled_date
-                            ? "border-red-500"
-                            : "border-slate-200"
-                        }`}
-                      />
-                      <ErrorMessage
-                        name="scheduled_date"
-                        component="div"
-                        className="text-red-500 text-xs mt-1 font-medium"
-                      />
+                      <div className="w-full px-3 py-2 border rounded-lg text-sm font-semibold text-slate-900 bg-white border-slate-300">
+                        {selectedConsultation.requested_day || "Not specified"}
+                      </div>
                     </div>
 
-                    {/* Scheduled Time */}
-                    <div className="bg-white rounded-xl p-4 border border-slate-200">
+                    {/* Scheduled Time - Read Only */}
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
-                        {t('lawyerAppointment.time')} <span className="text-red-500">*</span>
+                        {t('lawyerAppointment.time')}
                       </label>
-                      <Field
-                        type="time"
-                        name="scheduled_time"
-                        className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                          errors.scheduled_time && touched.scheduled_time
-                            ? "border-red-500"
-                            : "border-slate-200"
-                        }`}
-                      />
-                      <ErrorMessage
-                        name="scheduled_time"
-                        component="div"
-                        className="text-red-500 text-xs mt-1 font-medium"
-                      />
+                      <div className="w-full px-3 py-2 border rounded-lg text-sm font-semibold text-slate-900 bg-white border-slate-300">
+                        {selectedConsultation.requested_time || "Not specified"}
+                      </div>
                     </div>
 
                     {/* Meeting Link - Only for Video */}
