@@ -67,6 +67,11 @@ const IndividualLawyer = () => {
         yearsOfExperience: lawyerData.years_of_experience || 0,
         bio: lawyerData.bio || "Experienced legal professional",
         profileImage: getImageUrl(lawyerData.profile_image, lawyerData.name),
+        availabilityDays: Array.isArray(lawyerData.availability_days)
+          ? lawyerData.availability_days
+          : [],
+        availableFrom: lawyerData.available_from || "",
+        availableUntil: lawyerData.available_until || "",
       }
     : null;
 

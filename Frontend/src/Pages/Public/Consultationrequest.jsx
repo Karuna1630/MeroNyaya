@@ -14,8 +14,8 @@ const Consultationrequest = ({ lawyer, user }) => {
 
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedConsultationType, setSelectedConsultationType] = useState("Video");
-  const [selectedDay, setSelectedDay] = useState("Mon");
-  const [selectedTime, setSelectedTime] = useState("10:00 AM");
+  const [selectedDay, setSelectedDay] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
   const [bookingError, setBookingError] = useState("");
 
   const currentMode = selectedConsultationType === "In-Person" ? "in_person" : "video";
@@ -41,8 +41,8 @@ const Consultationrequest = ({ lawyer, user }) => {
       const payload = {
         lawyer_id: lawyer.id,
         mode: modeMap[selectedConsultationType] || "video",
-        requested_day: selectedDay,
-        requested_time: selectedTime,
+        requested_day: selectedDayEffective,
+        requested_time: selectedTimeEffective,
         title: values.title,
         meeting_location: values.meetingLocation,
         phone_number: values.phoneNumber,
@@ -67,10 +67,13 @@ const Consultationrequest = ({ lawyer, user }) => {
   });
 
   useEffect(() => {
+    // Clear in-person fields when switching consultation type to avoid stale data
     formik.setFieldValue("meetingLocation", "");
     formik.setFieldValue("phoneNumber", "");
     formik.setFieldTouched("meetingLocation", false);
     formik.setFieldTouched("phoneNumber", false);
+    // We intentionally depend only on selectedConsultationType to avoid re-running on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConsultationType]);
 
   const consultationTypes = [
@@ -78,8 +81,50 @@ const Consultationrequest = ({ lawyer, user }) => {
     { icon: MapPin, label: "In-Person", value: "In-Person" },
   ];
 
-  const availableDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-  const timeSlots = ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
+  // Normalize availability from KYC: days may be full names; map to abbreviations for UI and payload
+  const daysFromKyc = Array.isArray(lawyer?.availabilityDays) ? lawyer.availabilityDays : [];
+  const availableDays = daysFromKyc.length
+    ? daysFromKyc
+        .map((d) => (typeof d === "string" && d.length > 2 ? d.slice(0, 3) : d || ""))
+        .filter(Boolean)
+    : ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+  const toMinutes = (timeStr) => {
+    if (!timeStr) return null;
+    const [h, m] = timeStr.split(":").map((v) => parseInt(v, 10));
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  };
+
+  const to12Hour = (minutes) => {
+    if (minutes == null) return null;
+    const h24 = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    const suffix = h24 >= 12 ? "PM" : "AM";
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    const mm = m.toString().padStart(2, "0");
+    return `${h12}:${mm} ${suffix}`;
+  };
+
+  const buildTimeSlots = () => {
+    const startMin = toMinutes(lawyer?.availableFrom);
+    const endMin = toMinutes(lawyer?.availableUntil);
+    if (startMin == null || endMin == null || endMin <= startMin) {
+      return ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
+    }
+    const slots = [];
+    // Use 2-hour slots per request
+    for (let t = startMin; t <= endMin; t += 120) {
+      const label = to12Hour(t);
+      if (label) slots.push(label);
+    }
+    return slots.length ? slots : ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
+  };
+
+  const timeSlots = buildTimeSlots();
+
+  const selectedDayEffective = selectedDay || (availableDays[0] || "");
+  const selectedTimeEffective = selectedTime || (timeSlots[0] || "");
 
   if (!lawyer) return null;
 
@@ -138,7 +183,7 @@ const Consultationrequest = ({ lawyer, user }) => {
                     type="button"
                     onClick={() => setSelectedDay(day)}
                     className={`px-2 py-2 rounded-lg text-xs font-semibold transition ${
-                      selectedDay === day
+                      selectedDayEffective === day
                         ? "bg-slate-900 text-white"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
@@ -152,14 +197,14 @@ const Consultationrequest = ({ lawyer, user }) => {
             {/* Time Slot Selection */}
             <div className="mb-6">
               <p className="text-sm font-semibold text-slate-900 mb-3">Available Times</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1">
                 {timeSlots.map((time) => (
                   <button
                     key={time}
                     type="button"
                     onClick={() => setSelectedTime(time)}
-                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition border ${
-                      selectedTime === time
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition border text-center ${
+                      selectedTimeEffective === time
                         ? "bg-slate-900 text-white border-slate-900"
                         : "border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
                     }`}
@@ -239,7 +284,7 @@ const Consultationrequest = ({ lawyer, user }) => {
             <div className="p-6 overflow-y-auto flex-1">
               {bookingError && (
                 <div className="mb-4 flex items-start gap-3 rounded-lg bg-red-50 p-4 border border-red-200">
-                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+                  <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={18} />
                   <p className="text-sm text-red-700">{bookingError}</p>
                 </div>
               )}
@@ -333,7 +378,7 @@ const Consultationrequest = ({ lawyer, user }) => {
                 <div className="bg-white rounded-xl p-4 border border-slate-200">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Date & Time</p>
                   <p className="text-base font-semibold text-slate-900 mt-1">
-                    {selectedDay}, {selectedTime}
+                    {selectedDayEffective}, {selectedTimeEffective}
                   </p>
                 </div>
                 <div className="bg-white rounded-xl p-4 border border-slate-200">

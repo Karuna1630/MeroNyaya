@@ -8,7 +8,7 @@ import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
 import Declaration from "./Declaration";
-import { submitKyc, updateKyc, clearKycState, fetchKycStatus, fetchMyKyc } from "../slices/kycSlice";
+import { submitKyc, updateKyc, clearKycState, fetchMyKyc } from "../slices/kycSlice";
 import { PersonalValidationSchema } from "../utils/kyc/PersonalSchema";
 import { ProfessionalValidationSchema } from "../utils/kyc/ProfessionalSchema";
 import { IdentityValidationSchema } from "../utils/kyc/IdentitySchema";
@@ -22,6 +22,13 @@ const tabs = [
 ];
 
 const KYC_DRAFT_KEY = "lawyer_kyc_draft";
+
+// Format a backend time value (e.g., "09:00:00") to HH:MM for HTML time inputs
+const toTimeInputValue = (value) => {
+  if (!value || typeof value !== "string") return "";
+  // Accepts "HH:MM" or "HH:MM:SS"; truncates seconds if present
+  return value.slice(0, 5);
+};
 
 // converting backend KYC data to form values for easier handling in the form and to ensure that the form is pre-filled correctly 
 const convertBackendToFormValues = (kycData) => {
@@ -40,8 +47,8 @@ const convertBackendToFormValues = (kycData) => {
     consultationFee: kycData.consultation_fee || "",
     specializations: Array.isArray(kycData.specializations) ? kycData.specializations : [],
     availabilityDays: Array.isArray(kycData.availability_days) ? kycData.availability_days : [],
-    availableFrom: kycData.available_from || "",
-    availableUntil: kycData.available_until || "",
+    availableFrom: toTimeInputValue(kycData.available_from),
+    availableUntil: toTimeInputValue(kycData.available_until),
     esewaNumber: kycData.esewa_number || "",
     khaltiNumber: kycData.khalti_number || "",
     citizenshipFront: kycData.citizenship_front || null,
