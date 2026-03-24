@@ -105,6 +105,25 @@ class ConsultationSerializer(serializers.ModelSerializer):
 			raise serializers.ValidationError(
 				{"title": "Consultation title is required."}
 			)
+
+		# Prevent double-booking the same time slot for a lawyer while a consultation is pending or accepted
+		lawyer = data.get("lawyer") or getattr(self.instance, "lawyer", None)
+		requested_day = data.get("requested_day") or getattr(self.instance, "requested_day", None)
+		requested_time = data.get("requested_time") or getattr(self.instance, "requested_time", None)
+		if lawyer and requested_day and requested_time:
+			existing = Consultation.objects.filter(
+				lawyer=lawyer,
+				requested_day=requested_day,
+				requested_time=requested_time,
+			).exclude(status__in=[Consultation.STATUS_REJECTED, Consultation.STATUS_COMPLETED])
+			# If updating, ignore the current record
+			if self.instance:
+				existing = existing.exclude(pk=self.instance.pk)
+			if existing.exists():
+				raise serializers.ValidationError(
+					{"requested_time": "This time slot is already booked. Choose another time."}
+				)
+
 		mode = data.get("mode")
 		if mode == Consultation.MODE_IN_PERSON:
 			if not data.get("meeting_location") or not data.get("meeting_location").strip():

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useFormik } from "formik";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, CheckCircle, MapPin, Video, X } from "lucide-react";
+import { toast } from "react-toastify";
 import AuthGate from "../utils/AuthGate.jsx";
 import { createConsultation } from "../slices/consultationSlice.js";
 import { getConsultationValidationSchema } from "../utils/consultationValidation.js";
@@ -20,6 +21,21 @@ const Consultationrequest = ({ lawyer, user }) => {
 
   const currentMode = selectedConsultationType === "In-Person" ? "in_person" : "video";
   const validationSchema = getConsultationValidationSchema(currentMode);
+
+  // Convert various backend error shapes into a friendly string
+  const normalizeErrorMessage = (payloadErr) => {
+    if (!payloadErr) return null;
+    if (typeof payloadErr === "string") return payloadErr;
+    const rt = payloadErr.requested_time;
+    if (Array.isArray(rt) && rt.length) return rt[0];
+    if (typeof rt === "string") return rt;
+    if (payloadErr.detail) return payloadErr.detail;
+    if (payloadErr.ErrorMessage) {
+      if (typeof payloadErr.ErrorMessage === "string") return payloadErr.ErrorMessage;
+      if (Array.isArray(payloadErr.ErrorMessage) && payloadErr.ErrorMessage.length) return payloadErr.ErrorMessage[0];
+    }
+    return null;
+  };
 
   const formik = useFormik({
     initialValues: {
@@ -50,21 +66,31 @@ const Consultationrequest = ({ lawyer, user }) => {
 
       dispatch(createConsultation(payload)).then((res) => {
         if (!res?.error) {
-          setShowBookingModal(false);
-          setBookingError("");
-          formik.resetForm();
+          closeBookingModal();
           const role = (user?.user_type || user?.role || "").toLowerCase();
           if (role === "client") {
             navigate("/client/consultation");
           }
         } else {
-          setBookingError(res?.error?.message || "Failed to create consultation. Please try again.");
+          const payloadErr = res?.payload;
+          const message = normalizeErrorMessage(payloadErr) || "This time is already requested. Try another slot.";
+          setBookingError(message);
+          toast.error(message);
         }
       });
     },
     validateOnChange: true,
     validateOnBlur: true,
   });
+
+  const closeBookingModal = () => {
+    setShowBookingModal(false);
+    setSelectedDay("");
+    setSelectedTime("");
+    setSelectedConsultationType("Video");
+    setBookingError("");
+    formik.resetForm();
+  };
 
   useEffect(() => {
     // Clear in-person fields when switching consultation type to avoid stale data
@@ -274,7 +300,7 @@ const Consultationrequest = ({ lawyer, user }) => {
               <h3 className="text-lg font-bold text-white">Confirm Your Booking</h3>
               <button
                 type="button"
-                onClick={() => setShowBookingModal(false)}
+                onClick={closeBookingModal}
                 className="p-1 hover:bg-white/10 rounded-full text-white transition"
               >
                 <X size={20} />
@@ -393,11 +419,7 @@ const Consultationrequest = ({ lawyer, user }) => {
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex gap-2 justify-end">
               <button
                 type="button"
-                onClick={() => {
-                  setShowBookingModal(false);
-                  formik.resetForm();
-                  setBookingError("");
-                }}
+                  onClick={closeBookingModal}
                 className="px-6 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-100 transition"
               >
                 Cancel
