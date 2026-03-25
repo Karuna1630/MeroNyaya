@@ -65,10 +65,19 @@ const LawyerCaseDetail = () => {
 
   const handleSave = async () => {
     try {
+      // Map camelCase frontend keys to snake_case backend field names
+      const payload = {
+        case_number: formData.caseNumber,
+        court_name: formData.courtName,
+        opposing_party: formData.opposingParty,
+        next_hearing_date: formData.nextHearingDate || null,
+        status: formData.status,
+      };
+
       await dispatch(
         updateCaseDetails({
           caseId: id,
-          data: formData,
+          data: payload,
         })
       ).unwrap();
       

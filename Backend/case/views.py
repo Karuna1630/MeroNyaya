@@ -390,9 +390,34 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         for field in updatable_fields:
             if field in request.data:
-                setattr(case, field, request.data[field])
+                value = request.data[field]
+                # Convert empty strings to None for date fields
+                if field == 'next_hearing_date' and value == '':
+                    value = None
+                setattr(case, field, value)
         
         case.save()
+        
+        # Create timeline event for case status update
+        status_display = case.status.replace('_', ' ').title()
+        CaseTimeline.objects.create(
+            case=case,
+            event_type='status_changed',
+            title=f'Status Changed to {status_display}',
+            description=f'Case status changed to {status_display}',
+            created_by=request.user
+        )
+
+        # Notify the client about the status update
+        if case.client:
+            send_notification(
+                user=case.client,
+                title='Case Status Updated',
+                message=f'Your case "{case.case_title}" is now {status_display}',
+                notif_type='case',
+                link=f'/client/case/{case.id}'
+            )
+
         serializer = self.get_serializer(case)
         return Response(serializer.data)
     
@@ -435,6 +460,17 @@ class CaseViewSet(viewsets.ModelViewSet):
             created_by=request.user
         )
         
+        # Notify the other party about the new timeline update
+        notify_user = case.client if request.user == case.lawyer else case.lawyer
+        if notify_user:
+            send_notification(
+                user=notify_user,
+                title='Case Timeline Updated',
+                message=f'A new update was added to your case "{case.case_title}": {title}',
+                notif_type='case',
+                link=f'/client/case/{case.id}' if notify_user == case.client else f'/lawyercase/{case.id}'
+            )
+
         from .serializers import CaseTimelineSerializer
         serializer = CaseTimelineSerializer(timeline_event)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
