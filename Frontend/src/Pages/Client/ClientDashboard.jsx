@@ -15,6 +15,7 @@ import {
   Clock,
 } from "lucide-react";
 import { fetchCases } from "../slices/caseSlice";
+import { fetchMyConsultations } from "../slices/consultationSlice";
 
 const ClientDashboard = () => {
   const { t } = useTranslation();
@@ -23,9 +24,11 @@ const ClientDashboard = () => {
   
   const { user } = useSelector((state) => state.auth);
   const { cases = [], casesLoading } = useSelector((state) => state.case || {});
+  const { consultations = [] } = useSelector((state) => state.consultation || {});
   
   useEffect(() => {
     dispatch(fetchCases());
+    dispatch(fetchMyConsultations());
   }, [dispatch]);
 
   // Calculate statistics
@@ -46,8 +49,20 @@ const ClientDashboard = () => {
       .slice(0, 4);
   }, [cases]);
 
-  // Upcoming appointments - placeholder for now
-  const upcomingAppointments = [];
+  // Upcoming appointments
+  const upcomingAppointments = useMemo(() => {
+    return consultations
+      .filter((apt) => apt.status === "requested" || apt.status === "accepted")
+      .slice(0, 4)
+      .map((apt) => ({
+        id: apt.id,
+        lawyer: apt.lawyer?.name || "Lawyer",
+        type: apt.mode === "in_person" ? "In-Person API" : "Video Call",
+        date: apt.status === "accepted" && apt.scheduled_date ? apt.scheduled_date : apt.requested_day,
+        time: apt.status === "accepted" && apt.scheduled_time ? apt.scheduled_time : apt.requested_time,
+        status: apt.status,
+      }));
+  }, [consultations]);
 
   const formatStatus = (status) => {
     const map = {
@@ -237,18 +252,24 @@ const ClientDashboard = () => {
                   <div className="space-y-3">
                     {upcomingAppointments.map((apt, i) => (
                       <div
-                        key={i}
+                        key={apt.id || i}
+                        onClick={() => navigate('/clientappointment')}
                         className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 hover:shadow-md cursor-pointer transition"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="p-3 bg-blue-100 rounded-lg">
-                            <Clock size={20} className="text-blue-600" />
+                          <div className={`p-3 rounded-lg ${apt.status === 'accepted' ? 'bg-green-100' : 'bg-blue-100'}`}>
+                            <Clock size={20} className={apt.status === 'accepted' ? 'text-green-600' : 'text-blue-600'} />
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-slate-900">
                               {apt.lawyer}
                             </p>
-                            <p className="text-xs text-slate-500">{apt.type}</p>
+                            <p className="text-xs text-slate-500">
+                              {apt.type === 'In-Person API' ? 'In-Person' : apt.type} 
+                              <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase ${apt.status === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                {apt.status}
+                              </span>
+                            </p>
                             <p className="text-xs text-slate-500 mt-1">
                               {apt.date} at {apt.time}
                             </p>

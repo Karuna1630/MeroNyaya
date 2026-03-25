@@ -14,6 +14,7 @@ import { fetchUserProfile } from '../slices/profileSlice';
 import { fetchKycStatus } from '../slices/kycSlice';
 import { fetchCases } from '../slices/caseSlice';
 import { fetchProposals } from '../slices/proposalSlice';
+import { fetchMyConsultations } from '../slices/consultationSlice';
 
 const LawyerDashboard = () => {
   const { t } = useTranslation();
@@ -24,6 +25,7 @@ const LawyerDashboard = () => {
   const { status } = useSelector((state) => state.kyc);
   const { cases = [], casesLoading } = useSelector((state) => state.case || {});
   const { proposals = [] } = useSelector((state) => state.proposal || {});
+  const { consultations = [] } = useSelector((state) => state.consultation || {});
   const [showKycModal, setShowKycModal] = useState(false);
   const initialFetchDoneRef = useRef(false);
 
@@ -37,6 +39,7 @@ const LawyerDashboard = () => {
       dispatch(fetchKycStatus());
       dispatch(fetchCases());
       dispatch(fetchProposals());
+      dispatch(fetchMyConsultations());
     }
   }, [dispatch]);
 
@@ -195,8 +198,20 @@ const LawyerDashboard = () => {
     },
   ];
 
-  // Remove static data arrays
-  const todaySchedule = [];
+  // Upcoming appointments from real data
+  const todaySchedule = useMemo(() => {
+    return consultations
+      .filter((apt) => apt.status === "requested" || apt.status === "accepted")
+      .slice(0, 4)
+      .map((apt) => ({
+        id: apt.id,
+        name: apt.client?.name || "Client",
+        avatar: apt.client?.name?.charAt(0) || "C",
+        type: apt.mode === "in_person" ? "In-Person Consultation" : "Video Consultation",
+        time: apt.status === "accepted" && apt.scheduled_time ? apt.scheduled_time : apt.requested_time,
+        status: apt.status === "accepted" ? "Confirmed" : "Pending",
+      }));
+  }, [consultations]);
 
   return (
     <div className="relative">
@@ -382,7 +397,11 @@ const LawyerDashboard = () => {
                   {todaySchedule.length > 0 ? (
                     <div className="space-y-4">
                       {todaySchedule.map((appointment) => (
-                        <div key={appointment.id} className="flex gap-3 items-center">
+                        <div 
+                           key={appointment.id} 
+                           onClick={() => navigate('/lawyerappointment')}
+                           className="flex gap-3 items-center cursor-pointer hover:bg-slate-50 p-2 -mx-2 rounded-lg transition"
+                        >
                           <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
                             {appointment.avatar}
                           </div>
@@ -392,7 +411,7 @@ const LawyerDashboard = () => {
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <p className="text-xs font-semibold text-[#0F1A3D]">{appointment.time}</p>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getScheduleStatusClasses(appointment.status)}`}>
+                            <span className={`px-2 py-1 rounded text-[10px] font-medium uppercase tracking-wide ${getScheduleStatusClasses(appointment.status)}`}>
                               {appointment.status}
                             </span>
                           </div>
