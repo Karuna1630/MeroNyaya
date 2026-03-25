@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, MessageSquare } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getCaseConversation, markMessageRead } from '../../axios/chatAPI';
+import { getMessages } from '../../axios/chatAPI';
 import ChatWindow from '../../components/Chat/ChatWindow';
 import ConversationList from '../../components/Chat/ConversationList';
 import Sidebar from './sidebar';
@@ -11,8 +10,7 @@ import './ClientMessageNew.css';
 
 const ClientMessage = () => {
   const { t } = useTranslation();
-  const location = useLocation();
-  const [selectedCaseId, setSelectedCaseId] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [conversation, setConversation] = useState(null);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [chatError, setChatError] = useState(null);
@@ -28,67 +26,32 @@ const ClientMessage = () => {
     const accessToken = localStorage.getItem('access_token');
     setCurrentUser(userData);
     setToken(accessToken);
-
-    // Support deep-linking from notifications: /clientmessage?caseId=123
-    const params = new URLSearchParams(location.search);
-    const queryCaseId = params.get('caseId');
-    if (queryCaseId) {
-      const parsed = parseInt(queryCaseId, 10);
-      if (!Number.isNaN(parsed)) {
-        setSelectedCaseId(parsed);
-        return;
-      }
-    }
-
-    // Check if caseId was passed via navigation state
-    if (location.state?.caseId) {
-      setSelectedCaseId(location.state.caseId);
-    }
-  }, [location]);
+  }, []);
 
   /**
-   * Load conversation when case is selected
+   * Load conversation when a user is selected
    */
   useEffect(() => {
-    if (!selectedCaseId) {
+    if (!selectedUserId) {
       setConversation(null);
       return;
     }
 
-    loadConversation(selectedCaseId);
-  }, [selectedCaseId]);
+    loadConversation(selectedUserId);
+  }, [selectedUserId]);
 
-  const loadConversation = async (caseId) => {
+  const loadConversation = async (userId) => {
     setIsLoadingChat(true);
     setChatError(null);
 
     try {
-      const response = await getCaseConversation(caseId);
+      const response = await getMessages(userId);
       setConversation(response.data);
-      
-      // Mark all unread messages as read
-      if (response.data?.messages) {
-        const unreadMessages = response.data.messages.filter(msg => !msg.is_read && msg.sender !== currentUser?.id);
-        for (const message of unreadMessages) {
-          try {
-            await markMessageRead(message.id);
-          } catch (err) {
-            console.error('Error marking message as read:', err);
-          }
-        }
-        // Trigger conversation list refresh after marking messages as read
-        if (unreadMessages.length > 0) {
-          setRefreshConversations(prev => !prev);
-        }
-      }
     } catch (err) {
       console.error('Error loading conversation:', err);
-      
-      // Handle specific error messages
+
       if (err.response?.status === 403) {
         setChatError(t('messages.messageNotAvailable'));
-      } else if (err.response?.status === 404) {
-        setChatError(t('messages.failedToLoad'));
       } else {
         setChatError(t('messages.failedToLoad'));
       }
@@ -108,15 +71,15 @@ const ClientMessage = () => {
             {/* Conversation List */}
             <div className="conversation-list-wrapper">
               <ConversationList
-                onSelectConversation={setSelectedCaseId}
-                selectedCaseId={selectedCaseId}
+                onSelectConversation={setSelectedUserId}
+                selectedUserId={selectedUserId}
                 refreshTrigger={refreshConversations}
               />
             </div>
 
             {/* Chat Window or Empty State */}
             <div className="chat-window-wrapper">
-              {!selectedCaseId ? (
+              {!selectedUserId ? (
                 <div className="empty-chat-state">
                   <MessageSquare size={64} color="#bdc3c7" />
                   <h2>Select a conversation</h2>
@@ -130,10 +93,10 @@ const ClientMessage = () => {
                 </div>
               ) : conversation && currentUser && token ? (
                 <ChatWindow
-                  caseId={selectedCaseId}
+                  userId={selectedUserId}
                   currentUser={currentUser}
                   token={token}
-                  otherUser={conversation.other_user}
+                  otherUser={conversation.user}
                 />
               ) : null}
             </div>

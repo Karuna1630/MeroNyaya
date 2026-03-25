@@ -6,11 +6,12 @@ import './ChatWindow.css';
 
 /**
  * ChatWindow Component
- * Displays messages and allows sending new messages in real-time
+ * Displays messages and allows sending new messages in real-time.
+ * Connects via WebSocket using userId (not caseId).
  */
-const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
+const ChatWindow = ({ userId, currentUser, token, otherUser }) => {
   const { t } = useTranslation();
-  const { messages, isConnected, error, isLoading, sendMessage, otherUserOnline } = useChat(caseId, token);
+  const { messages, isConnected, error, isLoading, sendMessage, otherUserOnline } = useChat(userId, token);
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
@@ -38,7 +39,7 @@ const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
       sendMessage(messageContent);
     } catch (err) {
       console.error('Error sending message:', err);
-      setMessageInput(messageContent); // Restore message if failed
+      setMessageInput(messageContent);
     } finally {
       setIsSending(false);
     }
@@ -120,11 +121,11 @@ const ChatWindow = ({ caseId, currentUser, token, otherUser }) => {
               <div
                 key={msg.id}
                 className={`message-wrapper ${
-                  msg.sender === currentUser?.id ? 'sent' : 'received'
+                  parseInt(msg.sender) === parseInt(currentUser?.id) ? 'sent' : 'received'
                 }`}
               >
                 <div className="message-bubble">
-                  {msg.sender !== currentUser?.id && otherUser?.profile_image && (
+                  {parseInt(msg.sender) !== parseInt(currentUser?.id) && otherUser?.profile_image && (
                     <img
                       src={otherUser.profile_image}
                       alt="sender"

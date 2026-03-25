@@ -1,10 +1,10 @@
 from django.urls import path
-from rest_framework.routers import DefaultRouter
-from .views import ConversationViewSet
+from . import views
 
-# Create router for ViewSet
-router = DefaultRouter()
-router.register('conversations', ConversationViewSet, basename='conversation')
+urlpatterns = [
+    # List all conversations (grouped by user)
+    path('conversations/', views.conversation_list, name='conversation-list'),
 
-# URL patterns
-urlpatterns = router.urls
+    # GET: Get messages with user | POST: Send message to user
+    path('conversations/<int:user_id>/messages/', views.messages, name='messages'),
+]

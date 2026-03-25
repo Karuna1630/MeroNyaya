@@ -225,9 +225,9 @@ const IndividualLawyer = () => {
                         </p>
                       </div>
                       {lawyer?.verified && (
-                        <div className="flex items-center gap-2 px-3 py-1 bg-yellow-50 border border-yellow-300 rounded-full">
-                          <CheckCircle size={16} className="text-yellow-600 fill-yellow-600" />
-                          <span className="text-xs font-semibold text-yellow-700">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#0F1A3D] rounded-full text-white">
+                          <CheckCircle size={14} className="text-white fill-[#0F1A3D]" />
+                          <span className="text-xs font-semibold tracking-wide uppercase">
                             Verified
                           </span>
                         </div>

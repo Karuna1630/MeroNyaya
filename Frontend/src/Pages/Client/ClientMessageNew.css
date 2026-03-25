@@ -5,22 +5,21 @@
   background-color: #f5f7fa;
 }
 
-/* Lawyer Message Page - has fixed sidebar */
-.lawyer-message-page {
-  margin-left: 256px;
-}
+/* Lawyer Message Page - now uses Tailwind classes instead of margin-left */
+/* No special styling needed as it uses flex layout from Tailwind */
 
 .client-message-content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* Message Container */
 .message-container {
   flex: 1;
-  padding: 24px;
-  overflow-y: auto;
+  padding: 0;
+  overflow: hidden;
 }
 
 .message-layout {
@@ -32,6 +31,7 @@
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  margin: 24px;
 }
 
 /* Conversation List Wrapper */

@@ -28,7 +28,6 @@ export const fetchVerifiedLawyers = createAsyncThunk(
       if (filters.max_fee) params.append('max_fee', filters.max_fee);
 
       const response = await axiosInstance.get(`/kyc/verified-lawyers/?${params}`);
-      console.log('Fetch verified lawyers response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fetch verified lawyers error:', error.response?.data || error.message);

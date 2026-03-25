@@ -219,15 +219,15 @@ const LawyerCaseDetail = () => {
               <div className="flex gap-2">
                 <button 
                   onClick={() => {
-                    if (caseData?.status !== 'accepted') {
-                      toast.error('Chat is only available for accepted cases');
+                    if (caseData?.status === 'pending') {
+                      toast.error('Chat is available once you accept this case');
                       return;
                     }
                     navigate('/lawyermessage', { state: { caseId: caseData.id } });
                   }}
-                  disabled={caseData?.status !== 'accepted'}
+                  disabled={caseData?.status === 'pending'}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={caseData?.status !== 'accepted' ? 'Chat available only for accepted cases' : 'Message the client'}
+                  title={caseData?.status === 'pending' ? 'Chat available once you accept the case' : 'Message the client'}
                 >
                   <MessageSquare size={16} />
                   Message Client

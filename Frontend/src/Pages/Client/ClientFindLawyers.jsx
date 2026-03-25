@@ -30,6 +30,10 @@ const FindLawyers = () => {
   const [selectedSpecialization, setSelectedSpecialization] = useState(t('lawyers.allSpecializations'));
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Fetch verified lawyers on component mount
   useEffect(() => {
@@ -83,7 +87,6 @@ const FindLawyers = () => {
 
   // Filter lawyers based on search and specialization
   const filteredLawyers = useMemo(() => {
-    console.log("Filtering with searchQuery:", searchQuery, "selectedSpec:", selectedSpecialization);
     
     const filtered = lawyers.filter((lawyer) => {
       if (!lawyer) return false;
@@ -107,15 +110,34 @@ const FindLawyers = () => {
       return matchesSpec && matchesSearch;
     });
     
-    console.log("Filtered result:", filtered);
+    
     return filtered;
   }, [searchQuery, selectedSpecialization, lawyers, t]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedSpecialization]);
 
   // Sort filtered lawyers
   const sortedLawyers = useMemo(() => {
     // Default: sort by rating (Top Rated)
     return [...filteredLawyers].sort((a, b) => b.rating - a.rating);
   }, [filteredLawyers]);
+
+  // Paginate sorted lawyers
+  const totalPages = Math.ceil(sortedLawyers.length / itemsPerPage);
+  const paginatedLawyers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedLawyers.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedLawyers, currentPage, itemsPerPage]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const handleOpenProfile = (lawyer) => {
     setSelectedLawyer(lawyer);
@@ -207,7 +229,7 @@ const FindLawyers = () => {
           {/* Lawyers Grid */}
           {!loading && !error && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedLawyers.map((lawyer) => (
+            {paginatedLawyers.map((lawyer) => (
               <div
                 key={lawyer.id}
                 className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100 flex flex-col"
@@ -220,14 +242,16 @@ const FindLawyers = () => {
                       alt={lawyer.name}
                       className="w-20 h-20 rounded-full object-cover border border-gray-100"
                     />
-                    <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
                   </div>
                   
                   <div className="flex-1">
-                    <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className="flex items-center gap-2 mb-1.5">
                       <h3 className="font-bold text-[#0F1A3D] text-lg">{lawyer.name}</h3>
                       {lawyer.verified && (
-                        <CheckCircle2 size={18} className="text-gray-400" />
+                        <div className="flex items-center gap-1 px-2.5 py-0.5 bg-[#0F1A3D] rounded-full text-white">
+                          <CheckCircle2 size={12} />
+                          <span className="text-[10px] font-medium tracking-wide uppercase">Verified</span>
+                        </div>
                       )}
                     </div>
                     
@@ -301,6 +325,49 @@ const FindLawyers = () => {
               </div>
             ))}
           </div>
+          )}
+
+          {/* Pagination Controls */}
+          {!loading && !error && totalPages > 1 && (
+            <div className="mt-10 flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => handlePageChange(i + 1)}
+                      className={`w-10 h-10 rounded-lg text-sm font-medium transition ${
+                        currentPage === i + 1
+                          ? "bg-[#0F1A3D] text-white"
+                          : "text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-200"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next
+                </button>
+              </div>
+              
+              <p className="text-sm text-gray-500">
+                Page <span className="font-semibold text-gray-900">{currentPage}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
+              </p>
+            </div>
           )}
 
           {/* No Results Message */}

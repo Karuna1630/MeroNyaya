@@ -185,7 +185,7 @@ const LawyerCaseDetail = () => {
                   {caseData.urgency_level} priority
                 </span>
                 <button
-                  onClick={() => navigate(`/lawyermessage`)}
+                  onClick={() => navigate(`/lawyermessage`, { state: { caseId: caseData.id } })}
                   className="flex items-center gap-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition text-sm font-medium"
                 >
                   <MessageSquare size={16} />
@@ -517,7 +517,10 @@ const LawyerCaseDetail = () => {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                  <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
+                  <button
+                    onClick={() => navigate(`/lawyermessage`, { state: { caseId: caseData.id } })}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                  >
                     <MessageSquare size={16} />
                     Message
                   </button>

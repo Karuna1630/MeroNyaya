@@ -165,12 +165,6 @@ const Consultationrequest = ({ lawyer, user }) => {
               <p className="text-3xl font-bold text-slate-900">
                 Rs. {lawyer?.fee?.toLocaleString()}
               </p>
-              <div className="flex items-center gap-2 mt-3">
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                  <CheckCircle size={12} />
-                  Available
-                </span>
-              </div>
             </div>
 
             {/* Consultation Type Selection */}

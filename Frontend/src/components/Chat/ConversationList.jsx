@@ -1,61 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Loader, AlertCircle, Archive } from 'lucide-react';
+import { MessageCircle, Loader, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getMyConversations, getUnreadCount } from '../../axios/chatAPI';
+import { getConversations } from '../../axios/chatAPI';
 import './ConversationList.css';
 
 /**
  * ConversationList Component
- * Displays all conversations and allows selecting one to open the chat
+ * Displays all conversations grouped by user (handled by backend).
+ * Passes userId on selection.
  */
-const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger }) => {
+const ConversationList = ({ onSelectConversation, selectedUserId, refreshTrigger }) => {
   const { t } = useTranslation();
   const [conversations, setConversations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [unreadCounts, setUnreadCounts] = useState({});
 
   /**
-   * Fetch conversations on component mount and when refreshTrigger changes
+   * Fetch conversations on mount and when refreshTrigger changes
    */
   useEffect(() => {
     fetchConversations();
   }, [refreshTrigger]);
-
-  /**
-   * Fetch unread count periodically
-   */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-    }, 30000); // Update every 30 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   const fetchConversations = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await getMyConversations();
+      const response = await getConversations();
       setConversations(response.data || []);
-      await fetchUnreadCount();
     } catch (err) {
       console.error('Error fetching conversations:', err);
       setError(t('messages.failedToLoad'));
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await getUnreadCount();
-      // You can update state with global unread count if needed
-      console.log('Total unread:', response.data.unread_count);
-    } catch (err) {
-      console.error('Error fetching unread count:', err);
     }
   };
 
@@ -98,16 +76,16 @@ const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger
       <div className="conversations">
         {conversations.map((conversation) => (
           <div
-            key={conversation.id}
+            key={conversation.user?.id}
             className={`conversation-item ${
-              selectedCaseId === conversation.case_id ? 'active' : ''
+              selectedUserId === conversation.user?.id ? 'active' : ''
             }`}
-            onClick={() => onSelectConversation(conversation.case_id)}
+            onClick={() => onSelectConversation(conversation.user?.id)}
           >
-            {conversation.other_user?.profile_image && (
+            {conversation.user?.profile_image && (
               <img
-                src={conversation.other_user.profile_image}
-                alt={conversation.other_user.name}
+                src={conversation.user.profile_image}
+                alt={conversation.user.name}
                 className="conversation-avatar"
               />
             )}
@@ -115,7 +93,17 @@ const ConversationList = ({ onSelectConversation, selectedCaseId, refreshTrigger
             <div className="conversation-info">
               <div className="conversation-header-row">
                 <h4 className="conversation-name">
-                  {conversation.other_user?.name || 'Unknown User'}
+                  {conversation.user?.name || 'Unknown User'}
+                  {conversation.case_count > 1 && (
+                    <span style={{
+                      marginLeft: '8px',
+                      fontSize: '12px',
+                      color: '#999',
+                      fontWeight: 'normal'
+                    }}>
+                      ({conversation.case_count} cases)
+                    </span>
+                  )}
                 </h4>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span className="conversation-time">

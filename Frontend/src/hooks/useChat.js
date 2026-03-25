@@ -2,13 +2,13 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 
 /**
  * Custom hook for WebSocket chat functionality
- * Handles connection, message sending/receiving, and connection status
- * 
- * @param {number} caseId - The case ID for the chat
+ * Connects per user-pair for unified messaging
+ *
+ * @param {number} userId - The other user's ID
  * @param {string} token - JWT token for authentication
  * @returns {Object} Chat state and methods
  */
-export const useChat = (caseId, token) => {
+export const useChat = (userId, token) => {
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
@@ -19,24 +19,23 @@ export const useChat = (caseId, token) => {
   const reconnectTimeoutRef = useRef(null);
   const messageIdsRef = useRef(new Set());
   const maxReconnectAttempts = 5;
-  const reconnectDelay = 3000; // 3 seconds
+  const reconnectDelay = 3000;
 
   /**
    * Connect to WebSocket
    */
   useEffect(() => {
-    if (!caseId || !token) {
+    if (!userId || !token) {
       setIsLoading(false);
       return;
     }
 
     const connectWebSocket = () => {
       try {
-        // Use same backend URL as API
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         const wsProtocol = apiUrl.includes('https') ? 'wss:' : 'ws:';
         const wsHost = apiUrl.replace(/^https?:\/\//, '').replace(/\/api$/, '');
-        const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/${caseId}/?token=${token}`;
+        const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/user/${userId}/?token=${token}`;
 
         const websocket = new WebSocket(wsUrl);
 
@@ -53,20 +52,17 @@ export const useChat = (caseId, token) => {
             const data = JSON.parse(event.data);
 
             if (data.type === 'initial_messages') {
-              // Load initial messages from history
               const msgs = data.messages || [];
               messageIdsRef.current.clear();
               msgs.forEach((msg) => messageIdsRef.current.add(msg.id));
               setMessages(msgs);
             } else if (data.type === 'new_message') {
-              // Add new message only if we haven't seen it before
               const messageId = data.message?.id;
               if (messageId && !messageIdsRef.current.has(messageId)) {
                 messageIdsRef.current.add(messageId);
                 setMessages((prev) => [...prev, data.message]);
               }
             } else if (data.type === 'presence_update') {
-              // Update online status of other user
               const onlineUsers = data.online_users || [];
               const currentUserId = parseInt(localStorage.getItem('user_id') || '0');
               const otherUserIsOnline = onlineUsers.some((u) => u.user_id !== currentUserId);
@@ -90,13 +86,11 @@ export const useChat = (caseId, token) => {
           console.log('Chat WebSocket disconnected');
           setIsConnected(false);
 
-          // Attempt to reconnect
           if (reconnectAttemptsRef.current < maxReconnectAttempts) {
             reconnectAttemptsRef.current += 1;
             console.log(
               `Reconnecting (${reconnectAttemptsRef.current}/${maxReconnectAttempts})...`
             );
-            // Clear any existing timeout
             if (reconnectTimeoutRef.current) {
               clearTimeout(reconnectTimeoutRef.current);
             }
@@ -116,20 +110,34 @@ export const useChat = (caseId, token) => {
 
     connectWebSocket();
 
-    // Cleanup on unmount
     return () => {
       // Clear any pending reconnect timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
+      
+      // If WebSocket is still active, clean it up without triggering reconnect
       if (wsRef.current) {
+        /**
+         * Remove the onclose handler before closing intentionally on unmount.
+         * Otherwise, React 18 Strict Mode's intentional unmount will trigger
+         * the reconnect logic and cause duplicate connections in development.
+         */
+        wsRef.current.onclose = null;
+        wsRef.current.onerror = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onopen = null;
+        
+        // This line causes the browser console warning: 
+        // "WebSocket is closed before the connection is established"
+        // This is a native harmless browser warning when closing during CONNECTING state.
         wsRef.current.close();
       }
     };
-  }, [caseId, token]);
+  }, [userId, token]);
 
   /**
-   * Send message to WebSocket
+   * Send message via WebSocket
    */
   const sendMessage = useCallback((messageContent) => {
     if (!messageContent.trim()) {
