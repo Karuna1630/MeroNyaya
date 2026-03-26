@@ -109,10 +109,7 @@ class ConsultationViewSet(viewsets.ModelViewSet):
 			for key, value in appointment_defaults.items():
 				setattr(appointment, key, value)
 
-		if consultation.mode == "in_person":
-			appointment.status = Appointment.STATUS_CONFIRMED
-		else:
-			appointment.status = Appointment.STATUS_PENDING
+		appointment.status = Appointment.STATUS_CONFIRMED
 		appointment.save(update_fields=["scheduled_date", "scheduled_time", "payment_status", "status", "updated_at"])
 
 		# Notify client that consultation was accepted

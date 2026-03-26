@@ -124,21 +124,25 @@ const ClientAppointment = () => {
     }
   };
 
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case "pending":
-        return "Upcoming";
-      case "confirmed":
-        return "Confirmed";
-      case "rescheduled":
-        return "Rescheduled";
-      case "completed":
-        return "Completed";
-      case "cancelled":
-        return "Cancelled";
-      default:
-        return "Upcoming";
+  const getStatusLabel = (item) => {
+    if (item.status === "completed" || item.status === "cancelled") {
+      return item.status.charAt(0).toUpperCase() + item.status.slice(1);
     }
+    
+    const dateStr = item.scheduled_date || item.consultation_details?.requested_day;
+    const timeStr = item.scheduled_time || item.consultation_details?.requested_time;
+    
+    if (dateStr) {
+      const apptDate = new Date(`${dateStr}T${timeStr || '00:00:00'}`);
+      if (apptDate > new Date()) {
+        return "Upcoming";
+      }
+    }
+    
+    if (item.status === "pending" || item.status === "confirmed") return "Confirmed";
+    if (item.status === "rescheduled") return "Rescheduled";
+    
+    return "Confirmed";
   };
 
   const handleOpenPayment = (appointment) => {
@@ -298,20 +302,18 @@ const ClientAppointment = () => {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col">
-                          <div className="flex items-center gap-2 text-slate-700">
-                            <Calendar size={14} className="text-slate-400" />
-                              <span className="text-sm font-medium">{dateValue || "N/A"}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-slate-500 mt-1">
-                            <Clock size={14} className="text-slate-400" />
-                              <span className="text-xs">{timeValue || "N/A"}</span>
-                          </div>
+                          <span className="text-sm font-bold text-slate-700">
+                            {dateValue ? new Date(dateValue).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}
+                          </span>
+                          <span className="text-xs font-medium text-slate-500 mt-0.5">
+                            {timeValue || "N/A"}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full w-fit border border-slate-100 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-center gap-2">
                             {getModeIcon(modeValue)}
-                            <span className="text-xs font-semibold text-slate-700">{getModeLabel(modeValue)}</span>
+                            <span className="text-sm font-bold text-slate-700">{getModeLabel(modeValue)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
@@ -322,7 +324,7 @@ const ClientAppointment = () => {
                               : "bg-slate-100 text-slate-600 border-slate-200"
                           }`}
                         >
-                            {getStatusLabel(item.status)}
+                            {getStatusLabel(item)}
                         </span>
                       </td>
                       <td className="px-6 py-5">
@@ -344,30 +346,27 @@ const ClientAppointment = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button 
                             onClick={() => setSelectedAppointment(item)}
-                            className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition-all duration-200"
-                            title="View Details"
+                            className="px-4 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-200 transition shadow-sm whitespace-nowrap"
                           >
-                            <Eye size={18} />
+                            View
                           </button>
                             {modeValue === "video" && meetingLink && activeTab === "Upcoming" && isConfirmed && item.payment_status === "paid" && (
                               <a
                                 href={meetingLink}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-2 bg-[#0F1A3D] text-white rounded-full hover:bg-blue-950 transition-all duration-200 shadow-md"
-                                title="Join meeting"
+                                className="px-4 py-1.5 bg-[#0F1A3D] text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition shadow-sm whitespace-nowrap flex items-center gap-1.5"
                               >
-                                <Play size={16} fill="white" />
+                                <Video size={14} /> Join Call
                               </a>
                             )}
                             {modeValue === "video" && activeTab === "Upcoming" && !isCaseAppointment && item.payment_status !== "paid" && (
                               <button
                                 type="button"
                                 onClick={() => handleOpenPayment(item)}
-                                className="p-2 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition-all duration-200 shadow-md"
-                                title="Pay now"
+                                className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition shadow-sm whitespace-nowrap flex items-center gap-1"
                               >
-                                <DollarSign size={16} />
+                                <DollarSign size={14} /> Pay
                               </button>
                             )}
                         </div>

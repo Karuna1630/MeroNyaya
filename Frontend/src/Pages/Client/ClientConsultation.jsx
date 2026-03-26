@@ -19,7 +19,8 @@ import {
   MoreVertical,
   ChevronRight,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from "lucide-react";
 import axiosInstance from "../../axios/axiosinstance";
 import { getImageUrl } from '../../utils/imageUrl';
@@ -283,17 +284,18 @@ const ClientConsultation = () => {
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <button 
-                              onClick={() => setSelectedConsultation(consultation)}
-                            className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition-all duration-200 border border-transparent hover:border-slate-200"
+                            onClick={() => setSelectedConsultation(consultation)}
+                            className="px-4 py-1.5 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition shadow-sm whitespace-nowrap"
                           >
-                            <Eye size={18} />
+                            View
                           </button>
                             {!isAppointment && consultation.status !== "rejected" && (
                             <button 
-                                onClick={() => handleDeleteClick(consultation)}
-                              className="p-2 hover:bg-red-50 rounded-full text-red-300 hover:text-red-500 transition-all duration-200 border border-transparent hover:border-red-100"
+                              onClick={() => handleDeleteClick(consultation)}
+                              className="p-2 hover:bg-red-50 rounded-full text-red-500 hover:text-red-600 transition-all duration-200"
+                              title="Delete Consultation"
                             >
-                              <X size={18} />
+                              <Trash2 size={18} />
                             </button>
                           )}
                         </div>

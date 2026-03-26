@@ -169,7 +169,7 @@ const LawyerCaseRequest = () => {
           {/* Section 2: Filter Tabs & Category Filter */}
           <div className="flex items-center justify-between">
             <div className="flex p-1 bg-gray-100 rounded-xl w-fit">
-              {["Pending", "Accepted", "Rejected"].map((tab) => (
+              {["Pending", "Rejected"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -183,12 +183,6 @@ const LawyerCaseRequest = () => {
                 </button>
               ))}
             </div>
-            
-            <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold bg-white hover:bg-gray-50 transition-colors">
-              <Filter size={18} />
-              All Categories
-              <span className="border-l border-gray-200 ml-2 pl-2">▼</span>
-            </button>
           </div>
 
           {/* Section 3: Case Request List */}

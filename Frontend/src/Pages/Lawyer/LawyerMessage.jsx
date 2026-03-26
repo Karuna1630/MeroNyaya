@@ -6,7 +6,6 @@ import ChatWindow from '../../components/Chat/ChatWindow';
 import ConversationList from '../../components/Chat/ConversationList';
 import Sidebar from './Sidebar';
 import LawyerDashHeader from './LawyerDashHeader';
-import '../Client/ClientMessageNew.css';
 
 const LawyerMessage = () => {
   const { t } = useTranslation();
@@ -61,15 +60,15 @@ const LawyerMessage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-slate-100">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
         <LawyerDashHeader />
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="message-layout">
+        <div className="flex-1 p-0 overflow-hidden">
+          <div className="grid grid-cols-[360px_1fr] gap-6 h-full bg-white rounded-2xl shadow-lg overflow-hidden m-6">
             {/* Conversation List */}
-            <div className="conversation-list-wrapper">
+            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 border-r border-slate-200">
               <ConversationList
                 onSelectConversation={setSelectedUserId}
                 selectedUserId={selectedUserId}
@@ -78,18 +77,18 @@ const LawyerMessage = () => {
             </div>
 
             {/* Chat Window or Empty State */}
-            <div className="chat-window-wrapper">
+            <div className="flex flex-col bg-linear-to-br from-slate-50 to-slate-100 overflow-hidden">
               {!selectedUserId ? (
-                <div className="empty-chat-state">
-                  <MessageSquare size={64} color="#bdc3c7" />
-                  <h2>Select a conversation</h2>
-                  <p>Choose a conversation from the list to start chatting</p>
+                <div className="flex flex-col items-center justify-center h-full text-center p-10 text-slate-500">
+                  <MessageSquare size={64} color="#cbd5e1" />
+                  <h2 className="my-5 text-slate-900 text-2xl font-bold">Select a conversation</h2>
+                  <p className="text-sm text-slate-400">Choose a conversation from the list to start chatting</p>
                 </div>
               ) : chatError ? (
-                <div className="chat-error-state">
-                  <AlertCircle size={48} color="#e74c3c" />
-                  <h3>{chatError}</h3>
-                  <p>This case may not be accepted yet</p>
+                <div className="flex flex-col items-center justify-center h-full text-center p-10">
+                  <AlertCircle size={48} color="#ef4444" />
+                  <h3 className="my-4 text-red-500 text-lg font-bold">{chatError}</h3>
+                  <p className="text-sm text-slate-400">This case may not be accepted yet</p>
                 </div>
               ) : conversation && currentUser && token ? (
                 <ChatWindow

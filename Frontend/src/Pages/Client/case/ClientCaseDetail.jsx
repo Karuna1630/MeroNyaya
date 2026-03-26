@@ -178,21 +178,6 @@ const ClientCaseDetail = () => {
                       <p className="text-sm text-slate-500 font-medium">{caseData?.case_category || 'Category'}</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => {
-                      if (caseData?.status === 'pending') {
-                        toast.error('Chat is available once the lawyer accepts your case');
-                        return;
-                      }
-                      navigate('/clientmessage', { state: { caseId: caseData.id } });
-                    }}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0f172a] text-white rounded-lg hover:bg-slate-800 transition-all font-medium text-sm shadow-sm group disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={caseData?.status === 'pending'}
-                    title={caseData?.status === 'pending' ? 'Chat available once lawyer accepts the case' : 'Message the lawyer'}
-                  >
-                    <MessageSquare size={16} className="group-hover:scale-110 transition-transform" />
-                    Message Lawyer
-                  </button>
                 </div>
               </div>
 
@@ -312,7 +297,18 @@ const ClientCaseDetail = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-md transition-all text-sm font-semibold text-slate-700">
+                  <button 
+                    onClick={() => {
+                      if (caseData?.status === 'pending') {
+                        toast.error('Chat is available once the lawyer accepts your case');
+                        return;
+                      }
+                      navigate('/clientmessage', { state: { caseId: caseData.id } });
+                    }}
+                    disabled={caseData?.status === 'pending'}
+                    title={caseData?.status === 'pending' ? 'Chat available once lawyer accepts the case' : 'Message the lawyer'}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-xl hover:bg-slate-800 hover:shadow-md transition-all text-sm font-semibold bg-[#0F1A3D] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <MessageSquare size={16} />
                     Send Message
                   </button>
@@ -326,10 +322,10 @@ const ClientCaseDetail = () => {
                       setShowScheduleModal(true);
                       setScheduleError("");
                     }}
-                    className={`w-full flex items-center justify-center gap-2 py-3 px-4 border rounded-xl transition-all text-sm font-semibold ${
+                    className={`w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-xl transition-all text-sm font-semibold ${
                       canScheduleCaseMeeting
-                        ? "border-slate-200 text-slate-700 hover:bg-slate-50 hover:shadow-md"
-                        : "border-slate-200 text-slate-400 cursor-not-allowed bg-slate-50"
+                        ? "bg-[#0F1A3D] text-white hover:bg-slate-800 hover:shadow-md"
+                        : "bg-slate-100 text-slate-400 cursor-not-allowed"
                     }`}
                     disabled={!canScheduleCaseMeeting}
                   >

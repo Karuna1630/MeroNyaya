@@ -12,7 +12,8 @@ import {
   DollarSign, 
   CheckCircle, 
   XCircle,
-  Briefcase
+  Briefcase,
+  ChevronRight
 } from 'lucide-react';
 import { fetchProposals, acceptProposal, rejectProposal } from '../../slices/proposalSlice';
 import { fetchCases } from '../../slices/caseSlice';
@@ -66,6 +67,20 @@ const LawyerProposal = () => {
     return proposals.filter((p) => String(p.case) === String(id));
   }, [proposals, id]);
 
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const proposalsPerPage = 5;
+
+  const paginatedProposals = useMemo(() => {
+    const startIndex = (currentPage - 1) * proposalsPerPage;
+    return caseProposals.slice(startIndex, startIndex + proposalsPerPage);
+  }, [caseProposals, currentPage]);
+
+  const totalPages = Math.ceil(caseProposals.length / proposalsPerPage);
+
+  const pendingCount = useMemo(() => {
+    return caseProposals.filter((p) => p.status === 'pending').length;
+  }, [caseProposals]);
+
   const formatDate = (value) => {
     if (!value) return "-";
     const date = new Date(value);
@@ -111,19 +126,12 @@ const LawyerProposal = () => {
                   </div>
                   <div className="px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold rounded-full border border-amber-100 flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
-                    {caseData.pending_proposals} Pending Proposals
+                    {pendingCount} Pending Proposals
                   </div>
                 </div>
 
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900 mb-4">{caseData.title}</h1>
-                  
-                  <div className="space-y-3">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Case Description</p>
-                    <p className="text-slate-600 leading-relaxed text-sm bg-slate-50/50 p-4 rounded-xl border border-slate-50">
-                      {caseData.description}
-                    </p>
-                  </div>
+                  <h1 className="text-2xl font-bold text-slate-900 mb-2">{caseData.title}</h1>
                 </div>
 
                 <div className="flex items-center gap-2 text-slate-400 text-xs mt-2">
@@ -157,7 +165,7 @@ const LawyerProposal = () => {
                 No proposals found for this case.
               </div>
             ) : (
-              caseProposals.map((proposal) => (
+              paginatedProposals.map((proposal) => (
                 <div key={proposal.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:border-blue-200 transition-all group">
                 <div className="flex flex-col lg:row-span-1 gap-6">
                   
@@ -231,6 +239,31 @@ const LawyerProposal = () => {
                 </div>
               </div>
               ))
+            )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl shadow-sm border border-slate-100 mt-6">
+                <span className="text-sm text-slate-600">
+                  Page <span className="font-semibold text-slate-900">{currentPage}</span> of{" "}
+                  <span className="font-semibold text-slate-900">{totalPages}</span>
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
             )}
             {(acceptProposalError || rejectProposalError) && (
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-red-100 text-red-600 text-sm">

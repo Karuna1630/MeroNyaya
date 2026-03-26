@@ -83,6 +83,7 @@ const LawyerFindCases = () => {
       dispatch(fetchPublicCases());
       dispatch(fetchProposals());
       dispatch(clearSubmitProposalStatus());
+      setShowProposalModal(false);
     }
   }, [submitProposalSuccess, dispatch]);
 
@@ -489,7 +490,6 @@ const LawyerFindCases = () => {
         caseData={selectedCase}
         onSubmit={(data) => {
           dispatch(submitProposal(data));
-          setShowProposalModal(false);
         }}
         isSubmitting={submitProposalLoading}
         error={submitProposalError}

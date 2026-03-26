@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 import {
   Search,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   Edit,
   Send,
@@ -33,12 +35,27 @@ const ClientCase = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState(t('cases.allCases'));
+  const [activeTab, setActiveTab] = useState(() => {
+    return sessionStorage.getItem('clientCaseActiveTab') || t('cases.allCases');
+  });
   const [categoryFilter, setCategoryFilter] = useState(t('cases.allCategories'));
   const [withdrawModal, setWithdrawModal] = useState({ isOpen: false, caseId: null, caseTitle: null });
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, caseId: null, caseTitle: null });
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const casesPerPage = 5;
+
+  // Save active tab to session storage so we can navigate 'Back' properly
+  useEffect(() => {
+    sessionStorage.setItem('clientCaseActiveTab', activeTab);
+  }, [activeTab]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab, categoryFilter]);
 
   const casesData = useSelector((state) => state.case?.cases || []);
   const casesLoading = useSelector((state) => state.case?.casesLoading);
@@ -112,7 +129,7 @@ const ClientCase = () => {
   const getStatusStyles = (status) => {
     const inProgress = t('cases.inProgress');
     const accepted = t('cases.accepted');
-    const proposals = t('cases.proposals');
+    const proposalsReceived = t('cases.proposalsReceived');
     const completed = t('cases.completed');
     const sentToLawyers = t('cases.sentToLawyers');
     const publicStatus = t('cases.public');
@@ -124,7 +141,7 @@ const ClientCase = () => {
       case inProgress:
       case accepted:
         return "bg-blue-100 text-blue-700";
-      case proposals:
+      case proposalsReceived:
       case publicStatus:
         return "bg-purple-100 text-purple-700";
       case completed:
@@ -257,7 +274,7 @@ const ClientCase = () => {
         matchesTab = caseItem.status === t('cases.public');
       } else if (activeTab === t('cases.proposals')) {
         matchesTab =
-          (caseItem.status === t('cases.public') || caseItem.status === t('cases.proposals')) &&
+          (caseItem.status === t('cases.public') || caseItem.status === t('cases.proposalsReceived')) &&
           caseItem.proposalCount > 0;
       } else if (activeTab === t('cases.sentToLawyers')) {
         matchesTab = caseItem.status === t('cases.sentToLawyers');
@@ -276,6 +293,12 @@ const ClientCase = () => {
       return matchesSearch && matchesTab && matchesCategory;
     });
   }, [cases, searchQuery, activeTab, categoryFilter, t]);
+
+  const totalPages = Math.ceil(filteredCases.length / casesPerPage);
+  const paginatedCases = filteredCases.slice(
+    (currentPage - 1) * casesPerPage,
+    currentPage * casesPerPage
+  );
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -366,7 +389,7 @@ const ClientCase = () => {
                     onClick={() => setActiveTab(tab)}
                     className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                       activeTab === tab
-                        ? "border-blue-700 text-blue-700 bg-blue-50"
+                        ? "border-[#0F1A3D] text-[#0F1A3D] bg-[#0F1A3D]/5"
                         : "border-transparent text-slate-600 hover:text-slate-900"
                     }`}
                   >
@@ -389,31 +412,56 @@ const ClientCase = () => {
                   placeholder={t('cases.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 hover:border-[#0F1A3D] focus:outline-none focus:ring-2 focus:ring-[#0F1A3D]/20 focus:border-[#0F1A3D] transition-colors"
                 />
               </div>
 
               {/* Category Dropdown */}
-              <div className="relative">
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="flex items-center gap-2 px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50"
+              <div className="relative min-w-[200px]">
+                <div
+                  onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                  className={`flex items-center justify-between gap-2 px-4 py-3 bg-white border rounded-lg text-slate-700 hover:border-[#0F1A3D] focus:outline-none transition-colors cursor-pointer ${
+                    isCategoryOpen ? 'border-[#0F1A3D] ring-2 ring-[#0F1A3D]/20' : 'border-slate-300'
+                  }`}
                 >
-                  {categoryOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  <span className="truncate">{categoryFilter}</span>
+                  <ChevronDown size={18} className={`text-slate-500 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`} />
+                </div>
+                
+                {isCategoryOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setIsCategoryOpen(false)}
+                    />
+                    <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 max-h-60 overflow-y-auto">
+                      {categoryOptions.map((option) => (
+                        <div
+                          key={option}
+                          onClick={() => {
+                            setCategoryFilter(option);
+                            setIsCategoryOpen(false);
+                          }}
+                          className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                            categoryFilter === option
+                              ? 'bg-[#0F1A3D] text-white font-medium'
+                              : 'text-slate-700 hover:bg-[#0F1A3D] hover:text-white'
+                          }`}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Create Case Button */}
               <button 
                 onClick={() => navigate('/client/create-case')}
-                className="px-6 py-3 bg-blue-700 text-white rounded-lg font-medium hover:bg-blue-800 transition-colors"
+                className="px-6 py-3 bg-[#0F1A3D] text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
               >
-                + {t('cases.allCases')}
+                + Create Case
               </button>
             </div>
 
@@ -459,8 +507,8 @@ const ClientCase = () => {
                           <p className="text-red-600">{casesError}</p>
                         </td>
                       </tr>
-                    ) : filteredCases.length > 0 ? (
-                      filteredCases.map((caseItem, index) => (
+                    ) : paginatedCases.length > 0 ? (
+                      paginatedCases.map((caseItem, index) => (
                         <tr
                           key={index}
                           className="border-b border-slate-200 hover:bg-slate-50 transition-colors"
@@ -502,22 +550,34 @@ const ClientCase = () => {
                                   <button
                                     key={actionIdx}
                                     onClick={() => {
-                                      if (action.label === "View Case") {
+                                      if (action.label === t('cases.viewCase') || action.label === "View Case") {
                                         navigate(`/client/case/${caseItem.id}`);
-                                      } else if (action.label.includes("Proposal")) {
+                                      } else if (action.label.includes(t('cases.proposals')) || action.label.includes(t('cases.proposal')) || action.label.includes("Proposal")) {
                                         navigate(`/client/case/${caseItem.id}/proposals`);
-                                      } else if (action.label === "Withdraw") {
+                                      } else if (action.label === t('cases.withdraw') || action.label === "Withdraw") {
                                         setWithdrawModal({ isOpen: true, caseId: caseItem.id, caseTitle: caseItem.title });
-                                      } else if (action.label === "Edit") {
+                                      } else if (action.label === t('common.edit') || action.label === "Edit") {
                                         navigate(`/client/edit-case/${caseItem.id}`);
-                                      } else if (action.label === "Delete") {
+                                      } else if (action.label === t('cases.deleteCase') || action.label === "Delete") {
                                         setDeleteConfirm({ isOpen: true, caseId: caseItem.id, caseTitle: caseItem.title });
                                       }
                                     }}
-                                    className={`p-2 rounded-lg hover:bg-slate-100 transition-colors ${action.color}`}
+                                    className={
+                                      action.icon === Eye 
+                                        ? "px-4 py-1.5 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition shadow-sm whitespace-nowrap" 
+                                        : action.icon === Briefcase
+                                        ? "px-4 py-1.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition shadow-sm whitespace-nowrap"
+                                        : `p-2 rounded-lg hover:bg-slate-100 transition-colors ${action.color}`
+                                    }
                                     title={action.label}
                                   >
-                                    <action.icon size={20} strokeWidth={1.5} />
+                                    {action.icon === Eye ? (
+                                      "View Case"
+                                    ) : action.icon === Briefcase ? (
+                                      `View Proposal (${caseItem.proposalCount})`
+                                    ) : (
+                                      <action.icon size={20} strokeWidth={1.5} />
+                                    )}
                                   </button>
                                 )
                               )}
@@ -537,6 +597,34 @@ const ClientCase = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-200">
+                  <span className="text-sm text-slate-700">
+                    Showing {((currentPage - 1) * casesPerPage) + 1} to {Math.min(currentPage * casesPerPage, filteredCases.length)} of {filteredCases.length} cases
+                  </span>
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="p-1 rounded-md hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft size={20} className="text-slate-600" />
+                    </button>
+                    <span className="text-sm font-medium text-slate-700 mx-2">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="p-1 rounded-md hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight size={20} className="text-slate-600" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
