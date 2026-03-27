@@ -58,13 +58,27 @@ def conversation_list(request):
             is_read=False
         ).exclude(sender=user).count()
 
-        result.append({
-            'user': UserMinimalSerializer(other_user, context={'request': request}).data,
-            'last_message': {
-                'content': last_message.content,
+        # Serialize last message properly (handles both text and voice)
+        last_message_data = None
+        if last_message:
+            last_message_data = {
+                'id': last_message.id,
+                'message_type': last_message.message_type,
+                'content': last_message.content or '',
                 'timestamp': last_message.timestamp,
                 'sender_id': last_message.sender.id,
-            } if last_message else None,
+            }
+            # For voice messages, include audio URL
+            if last_message.message_type == 'voice' and last_message.audio:
+                request_obj = request
+                if request_obj:
+                    last_message_data['audio_url'] = request_obj.build_absolute_uri(last_message.audio.url)
+                else:
+                    last_message_data['audio_url'] = last_message.audio.url
+
+        result.append({
+            'user': UserMinimalSerializer(other_user, context={'request': request}).data,
+            'last_message': last_message_data,
             'unread_count': unread_count,
             'case_count': len(convs),
             'updated_at': max(c.updated_at for c in convs),
@@ -122,12 +136,22 @@ def _get_messages(request, other_user, cases):
 
 
 def _send_message(request, other_user, cases):
-    """Send a message to a specific user."""
+    """Send a message to a specific user (text or voice)."""
+    # Check if audio file is being sent
+    audio_file = request.FILES.get('audio')
     content = request.data.get('content', '').strip()
 
-    if not content:
+    if audio_file:
+        # Voice message
+        message_type = 'voice'
+        notification_preview = "🎤 Voice message"
+    elif content:
+        # Text message
+        message_type = 'text'
+        notification_preview = content[:80] + ("..." if len(content) > 80 else "")
+    else:
         return Response(
-            {'error': 'Message content cannot be empty'},
+            {'error': 'Please provide either content or an audio file'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -141,12 +165,13 @@ def _send_message(request, other_user, cases):
     message = Message.objects.create(
         conversation=conversation,
         sender=request.user,
-        content=content
+        message_type=message_type,
+        content=content if message_type == 'text' else None,
+        audio=audio_file if message_type == 'voice' else None
     )
 
     # Send notification to the other user
     sender_name = request.user.name or request.user.email
-    preview = content[:80] + ("..." if len(content) > 80 else "")
     message_link = (
         "/lawyermessage"
         if other_user.role == "Lawyer"
@@ -155,7 +180,7 @@ def _send_message(request, other_user, cases):
     send_notification(
         user=other_user,
         title=f"New message from {sender_name}",
-        message=preview,
+        message=notification_preview,
         notif_type="message",
         link=message_link,
     )
@@ -174,3 +199,41 @@ def _send_message(request, other_user, cases):
     )
 
     return Response(message_data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_messages_as_read(request, user_id):
+    """
+    POST /api/chat/conversations/<user_id>/mark-read/
+    Mark all messages from a specific user as read for the current user.
+    """
+    other_user = get_object_or_404(User, id=user_id)
+
+    # Find all non-pending cases between the two users
+    cases = Case.objects.filter(
+        Q(client=request.user, lawyer=other_user) |
+        Q(lawyer=request.user, client=other_user)
+    ).exclude(status='pending')
+
+    if not cases.exists():
+        return Response(
+            {'error': 'No active cases with this user'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Get all conversations for these cases
+    conversations = Conversation.objects.filter(case__in=cases)
+
+    # Mark all unread messages from the other user as read
+    updated_count = Message.objects.filter(
+        conversation__in=conversations,
+        sender=other_user,
+        is_read=False
+    ).update(is_read=True)
+
+    return Response({
+        'success': True,
+        'marked_as_read': updated_count,
+        'message': f'{updated_count} messages marked as read'
+    }, status=status.HTTP_200_OK)

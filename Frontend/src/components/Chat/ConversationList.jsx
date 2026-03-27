@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Loader, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { getConversations } from '../../axios/chatAPI';
+import { getConversations, markConversationAsRead } from '../../axios/chatAPI';
 import './ConversationList.css';
 
 /**
@@ -34,6 +34,31 @@ const ConversationList = ({ onSelectConversation, selectedUserId, refreshTrigger
       setError(t('messages.failedToLoad'));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * Handle conversation selection and mark as read
+   */
+  const handleSelectConversation = async (userId) => {
+    // Call parent handler
+    onSelectConversation(userId);
+
+    // Mark conversation as read
+    try {
+      await markConversationAsRead(userId);
+      
+      // Update local state to clear unread count
+      setConversations(prevConversations =>
+        prevConversations.map(conv =>
+          conv.user?.id === userId
+            ? { ...conv, unread_count: 0 }
+            : conv
+        )
+      );
+    } catch (err) {
+      console.error('Error marking conversation as read:', err);
+      // Don't block UI if this fails
     }
   };
 
@@ -80,7 +105,7 @@ const ConversationList = ({ onSelectConversation, selectedUserId, refreshTrigger
             className={`conversation-item ${
               selectedUserId === conversation.user?.id ? 'active' : ''
             }`}
-            onClick={() => onSelectConversation(conversation.user?.id)}
+            onClick={() => handleSelectConversation(conversation.user?.id)}
           >
             {conversation.user?.profile_image && (
               <img

@@ -7,4 +7,7 @@ urlpatterns = [
 
     # GET: Get messages with user | POST: Send message to user
     path('conversations/<int:user_id>/messages/', views.messages, name='messages'),
+    
+    # POST: Mark all messages from a user as read
+    path('conversations/<int:user_id>/mark-read/', views.mark_messages_as_read, name='mark-read'),
 ]

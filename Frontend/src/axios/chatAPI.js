@@ -48,4 +48,25 @@ export const getMessages = (userId) =>
 export const sendMessage = (userId, content) =>
   chatAPI.post(`/conversations/${userId}/messages/`, { content });
 
+/**
+ * Send a voice message to a specific user
+ * @param {number} userId - The other user's ID
+ * @param {FormData} formData - FormData containing audio file
+ * @returns {Promise} Created voice message object
+ */
+export const sendVoiceMessage = (userId, formData) =>
+  chatAPI.post(`/conversations/${userId}/messages/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+/**
+ * Mark all messages from a specific user as read
+ * @param {number} userId - The other user's ID
+ * @returns {Promise} Response with marked count
+ */
+export const markConversationAsRead = (userId) =>
+  chatAPI.post(`/conversations/${userId}/mark-read/`);
+
 export default chatAPI;

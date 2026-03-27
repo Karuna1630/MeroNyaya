@@ -40,6 +40,11 @@
     "typeMessage": "Type your message...",
     "pressEnter": "Press Enter to send, Shift+Enter for new line",
     "sendMessage": "Send message",
+    "recordVoiceMessage": "Record voice message",
+    "stopRecording": "Stop recording",
+    "cancelRecording": "Cancel recording",
+    "recording": "Recording...",
+    "voiceMessage": "Voice message",
     "online": "Online",
     "offline": "Offline"
   },

@@ -29,7 +29,13 @@ class Message(models.Model):
     """
     Individual messages in a conversation.
     Linked to a conversation and sender user.
+    Supports text and voice messages.
     """
+    MESSAGE_TYPE_CHOICES = [
+        ('text', 'Text Message'),
+        ('voice', 'Voice Message'),
+    ]
+    
     conversation = models.ForeignKey(
         Conversation, 
         on_delete=models.CASCADE, 
@@ -41,8 +47,22 @@ class Message(models.Model):
         on_delete=models.CASCADE,
         help_text="User who sent the message"
     )
+    message_type = models.CharField(
+        max_length=10,
+        choices=MESSAGE_TYPE_CHOICES,
+        default='text',
+        help_text="Type of message: text or voice"
+    )
     content = models.TextField(
-        help_text="Message content"
+        help_text="Message content",
+        blank=True,
+        null=True
+    )
+    audio = models.FileField(
+        upload_to='chat_audio/%Y/%m/%d/',
+        blank=True,
+        null=True,
+        help_text="Audio file for voice messages"
     )
     timestamp = models.DateTimeField(
         auto_now_add=True

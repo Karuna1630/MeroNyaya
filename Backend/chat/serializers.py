@@ -23,10 +23,20 @@ class UserMinimalSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    """Serializer for individual messages"""
+    """Serializer for individual messages (text and voice)"""
     sender_details = UserMinimalSerializer(source='sender', read_only=True)
+    audio_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'sender_details', 'content', 'timestamp', 'is_read']
-        read_only_fields = ['id', 'timestamp', 'sender', 'sender_details']
+        fields = ['id', 'sender', 'sender_details', 'message_type', 'content', 'audio', 'audio_url', 'timestamp', 'is_read']
+        read_only_fields = ['id', 'timestamp', 'sender', 'sender_details', 'message_type', 'audio_url']
+
+    def get_audio_url(self, obj):
+        """Get full URL for audio file"""
+        if obj.audio:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.audio.url)
+            return obj.audio.url
+        return None

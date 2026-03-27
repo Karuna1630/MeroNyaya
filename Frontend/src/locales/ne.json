@@ -40,6 +40,11 @@
     "typeMessage": "आफ्नो सन्देश टाइप गर्नुहोस्...",
     "pressEnter": "पठाउन एन्टर थिच्नुहोस्, नयाँ लाइनको लागि Shift+Enter",
     "sendMessage": "सन्देश पठाउनुहोस्",
+    "recordVoiceMessage": "भ्वाइस सन्देश रेकर्ड गर्नुहोस्",
+    "stopRecording": "रेकर्डिङ रोक्नुहोस्",
+    "cancelRecording": "रेकर्डिङ रद्द गर्नुहोस्",
+    "recording": "रेकर्ड गरिंदैछ...",
+    "voiceMessage": "भ्वाइस सन्देश",
     "online": "अनलाइन",
     "offline": "अफलाइन"
   },
