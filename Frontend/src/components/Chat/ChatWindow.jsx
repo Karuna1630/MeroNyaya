@@ -166,7 +166,6 @@ const ChatWindow = ({ userId, currentUser, token, otherUser }) => {
           onKeyPress={handleKeyPress}
           placeholder={t('messages.typeMessage')}
           disabled={!isConnected || isSending}
-          rows="2"
         />
         <button
           className="send-button"

@@ -15,7 +15,7 @@ const specializations = [
 ];
 
 const FindLawyers = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(); // Translation hook for internationalization
   const dispatch = useDispatch();
   const navigate = useNavigate();
   

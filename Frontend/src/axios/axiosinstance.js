@@ -3,6 +3,20 @@ import axios from 'axios';
 // Base URL for the API, can be set via environment variable or defaults to localhost
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
+// Flag to prevent multiple concurrent refresh attempts
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+// Callback function for when token refresh completes
+const onRefreshed = (token) => {
+  refreshSubscribers.forEach(callback => callback(token));
+  refreshSubscribers = [];
+};
+
+// Add subscriber for token refresh
+const addRefreshSubscriber = (callback) => {
+  refreshSubscribers.push(callback);
+};
 
 // creating fucntion to get access token from local storage
 const getAccessToken = () => {
@@ -54,8 +68,27 @@ axiosInstance.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;  
 
+        // Check for 401 Unauthorized and prevent infinite retry loops
         if (error.response?.status === 401 && !originalRequest._retry) {
+            // Don't retry refresh token endpoint itself
+            if (originalRequest.url?.includes('/authentications/token/refresh/')) {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                window.location.href = '/login';
+                return Promise.reject(error);
+            }
+
             originalRequest._retry = true;
+
+            // If already refreshing, queue this request
+            if (isRefreshing) {
+                return new Promise((resolve) => {
+                    addRefreshSubscriber((token) => {
+                        originalRequest.headers['Authorization'] = `Bearer ${token}`;
+                        resolve(axiosInstance(originalRequest));
+                    });
+                });
+            }
 
             try {
                 const refreshToken = getRefreshToken();
@@ -63,12 +96,19 @@ axiosInstance.interceptors.response.use(
                     throw new Error('No refresh token available');
                 }
 
-                // Attempt to refresh the access token
+                // Set refreshing flag to prevent concurrent refresh attempts
+                isRefreshing = true;
+
+                // Attempt to refresh the access token using axios directly to avoid infinite loops
                 const response = await axios.post(`${API_URL}/authentications/token/refresh/`, {
                     refresh: refreshToken,
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                // Support both plain SimpleJWT response and wrapped API response shapes.
+                // Support both plain SimpleJWT response and wrapped API response shapes
                 const payload = response.data?.Result || response.data || {};
                 const newAccessToken = payload.access || payload.access_token;
                 const newRefreshToken = payload.refresh || payload.refresh_token;
@@ -82,13 +122,21 @@ axiosInstance.interceptors.response.use(
                 if (newRefreshToken) {
                     localStorage.setItem('refresh_token', newRefreshToken);
                 }
+
+                // Flag refresh as complete and notify all queued requests
+                isRefreshing = false;
+                onRefreshed(newAccessToken);
+
                 // Retry the original request with the new token
                 originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
                 return axiosInstance(originalRequest);
             } catch (refreshError) {
-                // If refresh fails, redirect to login
-               localStorage.removeItem('access_token');
-               localStorage.removeItem('refresh_token');
+                // If refresh fails, clear tokens and redirect to login
+                isRefreshing = false;
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                
+                console.error('Token refresh failed:', refreshError.response?.status, refreshError.response?.data);
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             }

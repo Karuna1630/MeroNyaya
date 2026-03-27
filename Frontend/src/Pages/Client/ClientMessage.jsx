@@ -60,15 +60,15 @@ const ClientMessage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
+    <div className="flex h-screen bg-slate-100 overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <DashHeader />
 
         <div className="flex-1 p-0 overflow-hidden">
-          <div className="grid grid-cols-[360px_1fr] gap-6 h-full bg-white rounded-2xl shadow-lg overflow-hidden m-6">
+          <div className="grid grid-cols-[360px_1fr] h-full bg-white shadow-lg overflow-hidden">
             {/* Conversation List */}
-            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 border-r border-slate-200">
+            <div className="h-full overflow-y-auto border-r border-slate-200">
               <ConversationList
                 onSelectConversation={setSelectedUserId}
                 selectedUserId={selectedUserId}
@@ -77,7 +77,7 @@ const ClientMessage = () => {
             </div>
 
             {/* Chat Window or Empty State */}
-            <div className="flex flex-col bg-linear-to-br from-slate-50 to-slate-100 overflow-hidden">
+            <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
               {!selectedUserId ? (
                 <div className="flex flex-col items-center justify-center h-full text-center p-10 text-slate-500">
                   <MessageSquare size={64} color="#cbd5e1" />

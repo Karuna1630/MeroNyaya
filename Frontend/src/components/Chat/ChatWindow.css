@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
   background: linear-gradient(135deg, #f5f7fa 0%, #eef2f7 100%);
   border-radius: 12px;
   overflow: hidden;
@@ -164,10 +165,13 @@
 .messages-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  word-break: break-word;
 }
 
 .messages-container::-webkit-scrollbar {
@@ -295,6 +299,7 @@
   background-color: white;
   border-top: 1px solid #ecf0f1;
   flex-shrink: 0;
+  align-items: flex-end;
 }
 
 .message-input {
@@ -305,8 +310,11 @@
   font-family: inherit;
   font-size: 14px;
   resize: none;
-  max-height: 100px;
+  min-height: 40px;
+  max-height: 120px;
+  line-height: 1.5;
   transition: border-color 0.2s, box-shadow 0.2s;
+  overflow-y: auto;
 }
 
 .message-input:focus {
