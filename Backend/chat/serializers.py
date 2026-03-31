@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import Message, Conversation
 from authentication.models import User
 
@@ -22,6 +23,7 @@ class UserMinimalSerializer(serializers.ModelSerializer):
         return None
 
 
+
 class MessageSerializer(serializers.ModelSerializer):
     """Serializer for individual messages (text and voice)"""
     sender_details = UserMinimalSerializer(source='sender', read_only=True)
@@ -38,5 +40,7 @@ class MessageSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             if request:
                 return request.build_absolute_uri(obj.audio.url)
-            return obj.audio.url
+            # Fallback for WebSocket context
+            backend_url = getattr(settings, 'BACKEND_URL', 'http://127.0.0.1:8000')
+            return f"{backend_url}{obj.audio.url}"
         return None

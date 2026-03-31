@@ -79,10 +79,17 @@ const LawyerMessage = () => {
             {/* Chat Window or Empty State */}
             <div className="flex-1 flex flex-col bg-slate-50 overflow-hidden">
               {!selectedUserId ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-10 text-slate-500">
-                  <MessageSquare size={64} color="#cbd5e1" />
-                  <h2 className="my-5 text-slate-900 text-2xl font-bold">Select a conversation</h2>
-                  <p className="text-sm text-slate-400">Choose a conversation from the list to start chatting</p>
+                <div className="flex flex-col items-center justify-center h-full text-center p-12 bg-white">
+                  <div className="w-24 h-24 mb-8 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-500 shadow-sm transition-transform hover:scale-110 duration-300">
+                    <MessageSquare size={48} />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-3 tracking-tight">Your Messages</h2>
+                  <p className="text-slate-500 max-w-xs mx-auto leading-relaxed">
+                    Select a conversation from the sidebar to start chatting with your legal assistant or client.
+                  </p>
+                  <div className="mt-10 px-6 py-2 bg-slate-50 rounded-full text-xs font-semibold text-slate-400 uppercase tracking-widest border border-slate-100">
+                    Secure & Encrypted
+                  </div>
                 </div>
               ) : chatError ? (
                 <div className="flex flex-col items-center justify-center h-full text-center p-10">

@@ -15,7 +15,9 @@ import {
   RotateCcw,
   Wallet,
   ArrowUpRight,
+  Briefcase,
 } from 'lucide-react';
+import { useMemo } from 'react';
 import Sidebar from './Sidebar';
 import DashHeader from './LawyerDashHeader';
 import StatCard from './Statcard';
@@ -33,6 +35,39 @@ const Earning = () => {
 
   const summary = earnings?.summary;
   const payments = earnings?.payments || [];
+  const caseRequests = earnings?.case_payment_requests || [];
+
+  const allHistory = useMemo(() => {
+    const historicalPayments = payments.map(p => ({
+      ...p,
+      type: 'appointment',
+      display_amount: p.total_amount,
+      display_earning: p.lawyer_earning,
+      display_fee: p.platform_fee,
+      display_status: p.status,
+      display_client: p.user_name,
+      display_image: p.user_profile_image,
+      date: p.created_at,
+      title: `Appt #${p.appointment_id}`
+    }));
+
+    const historicalCaseRequests = caseRequests.map(r => ({
+      ...r,
+      type: 'case',
+      display_amount: r.current_agreed_amount || r.proposed_amount,
+      display_earning: r.status === 'paid' ? (parseFloat(r.current_agreed_amount || r.proposed_amount) * 0.9).toFixed(2) : '—',
+      display_fee: r.status === 'paid' ? (parseFloat(r.current_agreed_amount || r.proposed_amount) * 0.1).toFixed(2) : '—',
+      display_status: r.status,
+      display_client: r.client_name,
+      display_image: r.client_profile_image,
+      date: r.created_at,
+      title: `Case: ${r.case_title}`
+    }));
+
+    return [...historicalPayments, ...historicalCaseRequests].sort((a, b) => 
+      new Date(b.date) - new Date(a.date)
+    );
+  }, [payments, caseRequests]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -49,20 +84,50 @@ const Earning = () => {
       icon: <CheckCircle size={12} />,
       classes: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20',
     },
+    paid: {
+      label: 'Paid',
+      icon: <CheckCircle size={12} />,
+      classes: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20',
+    },
     initiated: {
       label: 'Initiated',
       icon: <Clock size={12} />,
       classes: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20',
+    },
+    pending: {
+      label: 'Requested',
+      icon: <Clock size={12} />,
+      classes: 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20',
+    },
+    negotiating: {
+      label: 'Negotiating',
+      icon: <Clock size={12} />,
+      classes: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20',
+    },
+    agreed: {
+      label: 'Agreed',
+      icon: <DollarSign size={12} />,
+      classes: 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/20',
     },
     failed: {
       label: 'Failed',
       icon: <XCircle size={12} />,
       classes: 'bg-red-50 text-red-700 ring-1 ring-red-600/20',
     },
+    rejected: {
+      label: 'Rejected',
+      icon: <XCircle size={12} />,
+      classes: 'bg-red-50 text-red-700 ring-1 ring-red-600/20',
+    },
+    expired: {
+      label: 'Expired',
+      icon: <XCircle size={12} />,
+      classes: 'bg-gray-100 text-gray-600 ring-1 ring-gray-400/20',
+    },
     refunded: {
       label: 'Refunded',
       icon: <RotateCcw size={12} />,
-      classes: 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/20',
+      classes: 'bg-purple-50 text-purple-700 ring-1 ring-purple-600/20',
     },
   };
 
@@ -139,9 +204,9 @@ const Earning = () => {
                     <h2 className="text-lg font-bold text-gray-900">{t('lawyerEarnings.paymentHistory')}</h2>
                     <p className="text-sm text-gray-400 mt-0.5">{t('lawyerEarnings.allPayments')}</p>
                   </div>
-                  {payments.length > 0 && (
+                  {allHistory.length > 0 && (
                     <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">
-                      {payments.length} payment{payments.length !== 1 ? 's' : ''}
+                      {allHistory.length} transaction{allHistory.length !== 1 ? 's' : ''}
                     </span>
                   )}
                 </div>
@@ -151,8 +216,8 @@ const Earning = () => {
                     <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                       <DollarSign size={28} className="text-gray-300" />
                     </div>
-                    <p className="text-gray-500 font-semibold">No payments yet</p>
-                    <p className="text-sm text-gray-400 mt-1">Complete consultations to start earning</p>
+                    <p className="text-gray-500 font-semibold">No transactions yet</p>
+                    <p className="text-sm text-gray-400 mt-1">Payments and requests will appear here</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -168,45 +233,56 @@ const Earning = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {payments.map((payment, idx) => (
+                        {allHistory.map((item, idx) => (
                           <tr
-                            key={payment.id}
+                            key={`${item.type}-${item.id}`}
                             className={`group transition-colors hover:bg-emerald-50/40 ${
-                              idx !== payments.length - 1 ? 'border-b border-gray-100' : ''
+                              idx !== allHistory.length - 1 ? 'border-b border-gray-100' : ''
                             }`}
                           >
                             <td className="py-4 px-5">
                               <div className="flex items-center gap-3">
                                 <img
-                                  src={getImageUrl(payment.user_profile_image, payment.user_name)}
-                                  alt={payment.user_name || 'Client'}
+                                  src={getImageUrl(item.display_image, item.display_client)}
+                                  alt={item.display_client || 'Client'}
                                   className="w-9 h-9 rounded-full object-cover shrink-0 shadow-sm"
                                 />
-                                <span className="text-sm font-semibold text-gray-800">{payment.user_name || 'Client'}</span>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-semibold text-gray-800">{item.display_client || 'Client'}</span>
+                                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-tight">{item.title}</span>
+                                </div>
                               </div>
                             </td>
                             <td className="py-4 px-5">
                               <span className="flex items-center gap-1.5 text-sm text-gray-500">
                                 <Calendar size={13} className="text-gray-400" />
-                                {formatDate(payment.created_at)}
+                                {formatDate(item.date)}
                               </span>
                             </td>
                             <td className="py-4 px-5 text-right text-sm font-medium text-gray-700">
-                              Rs. {parseFloat(payment.total_amount).toLocaleString()}
+                              Rs. {parseFloat(item.display_amount).toLocaleString()}
                             </td>
                             <td className="py-4 px-5 text-right">
-                              <span className="text-sm font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded-md">
-                                -Rs. {parseFloat(payment.platform_fee).toLocaleString()}
-                              </span>
+                              {item.display_fee !== '—' ? (
+                                <span className="text-sm font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded-md">
+                                  -Rs. {parseFloat(item.display_fee).toLocaleString()}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-gray-300 italic">Pending</span>
+                              )}
                             </td>
                             <td className="py-4 px-5 text-right">
-                              <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-600">
-                                <ArrowUpRight size={14} className="text-emerald-500" />
-                                Rs. {parseFloat(payment.lawyer_earning).toLocaleString()}
-                              </span>
+                              {item.display_earning !== '—' ? (
+                                <span className="inline-flex items-center gap-1 text-sm font-bold text-emerald-600">
+                                  <ArrowUpRight size={14} className="text-emerald-500" />
+                                  Rs. {parseFloat(item.display_earning).toLocaleString()}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-gray-300 italic">Pending</span>
+                              )}
                             </td>
                             <td className="py-4 px-5 text-center">
-                              {getStatusBadge(payment.status)}
+                              {getStatusBadge(item.display_status)}
                             </td>
                           </tr>
                         ))}

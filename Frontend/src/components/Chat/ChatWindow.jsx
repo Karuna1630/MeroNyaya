@@ -14,6 +14,16 @@ const VoiceMessage = ({ audioUrl }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef(null);
 
+  // Ensure absolute URL if relative
+  const getAbsoluteUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace('/api', '');
+    return `${baseUrl}${url}`;
+  };
+
+  const finalAudioUrl = getAbsoluteUrl(audioUrl);
+
   const togglePlay = () => {
     if (!audioRef.current) return;
     if (isPlaying) {
@@ -55,7 +65,7 @@ const VoiceMessage = ({ audioUrl }) => {
     <div className="custom-voice-player">
       <audio
         ref={audioRef}
-        src={audioUrl}
+        src={finalAudioUrl}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}

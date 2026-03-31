@@ -107,50 +107,49 @@ const ConversationList = ({ onSelectConversation, selectedUserId, refreshTrigger
             }`}
             onClick={() => handleSelectConversation(conversation.user?.id)}
           >
-            {conversation.user?.profile_image && (
-              <img
-                src={conversation.user.profile_image}
-                alt={conversation.user.name}
-                className="conversation-avatar"
-              />
-            )}
+            <div className="avatar-wrapper">
+              {conversation.user?.profile_image ? (
+                <img
+                  src={conversation.user.profile_image}
+                  alt={conversation.user.name}
+                  className="conversation-avatar"
+                />
+              ) : (
+                <div className="avatar-placeholder">
+                  {conversation.user?.name?.charAt(0) || '?'}
+                </div>
+              )}
+            </div>
 
-            <div className="conversation-info">
-              <div className="conversation-header-row">
+            <div className="conversation-content">
+              <div className="conversation-top-row">
                 <h4 className="conversation-name">
                   {conversation.user?.name || 'Unknown User'}
                   {conversation.case_count > 1 && (
-                    <span style={{
-                      marginLeft: '8px',
-                      fontSize: '12px',
-                      color: '#999',
-                      fontWeight: 'normal'
-                    }}>
-                      ({conversation.case_count} cases)
+                    <span className="case-count-tag">
+                      {conversation.case_count} cases
                     </span>
                   )}
                 </h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className="conversation-time">
-                    {conversation.last_message &&
-                      new Date(conversation.last_message.timestamp).toLocaleDateString()}
-                  </span>
-                  {conversation.unread_count > 0 && (
-                    <span className="unread-badge">{conversation.unread_count}</span>
-                  )}
-                </div>
+                <span className="conversation-time">
+                  {conversation.last_message &&
+                    new Date(conversation.last_message.timestamp).toLocaleDateString([], {
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                </span>
               </div>
 
-              <p className="conversation-preview">
-                {conversation.last_message
-                  ? conversation.last_message.content.substring(0, 40) +
-                    (conversation.last_message.content.length > 40 ? '...' : '')
-                  : 'No messages yet'}
-              </p>
-
-              {conversation.unread_count > 0 && (
-                <div className="unread-indicator"></div>
-              )}
+              <div className="conversation-bottom-row">
+                <p className="conversation-preview">
+                  {conversation.last_message
+                    ? (conversation.last_message.message_type === 'voice' ? '🎤 Voice message' : conversation.last_message.content)
+                    : 'No messages yet'}
+                </p>
+                {conversation.unread_count > 0 && (
+                  <span className="unread-badge">{conversation.unread_count}</span>
+                )}
+              </div>
             </div>
           </div>
         ))}

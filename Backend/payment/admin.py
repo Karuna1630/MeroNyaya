@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Payment, Payout
+from .models import Payment, Payout, CasePaymentRequest
 
 
 @admin.register(Payment)
@@ -20,3 +20,30 @@ class PayoutAdmin(admin.ModelAdmin):
     list_filter = ["payment_method", "created_at"]
     search_fields = ["lawyer__name", "lawyer__email", "reference_number"]
     readonly_fields = ["created_at"]
+
+
+@admin.register(CasePaymentRequest)
+class CasePaymentRequestAdmin(admin.ModelAdmin):
+    list_display = [
+        "id", "case", "lawyer", "proposed_amount", "current_agreed_amount",
+        "status", "rejection_count", "created_at", "expires_at"
+    ]
+    list_filter = ["status", "rejection_count", "created_at", "expires_at"]
+    search_fields = ["case__title", "lawyer__name", "lawyer__email"]
+    readonly_fields = [
+        "id", "created_at", "expires_at", "responded_at", "agreed_at", "paid_at"
+    ]
+    fieldsets = (
+        ("Case Information", {
+            "fields": ("id", "case", "lawyer")
+        }),
+        ("Amount Negotiation", {
+            "fields": ("proposed_amount", "current_agreed_amount", "client_counter_offer")
+        }),
+        ("Status & Tracking", {
+            "fields": ("status", "rejection_count", "description")
+        }),
+        ("Timeline", {
+            "fields": ("created_at", "expires_at", "responded_at", "agreed_at", "paid_at")
+        }),
+    )

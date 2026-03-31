@@ -5,6 +5,8 @@ import Sidebar from "../sidebar";
 import DashHeader from "../ClientDashHeader";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import PaymentRequestCard from "../../../components/CasePayment/PaymentRequestCard";
+import { getCasePaymentRequests } from "../../../axios/casePaymentAPI";
 import {
   FileText,
   MessageSquare,
@@ -16,6 +18,7 @@ import {
   Video,
   X,
   AlertCircle,
+  DollarSign,
 } from "lucide-react";
 import { fetchCases, scheduleCaseAppointment } from "../../slices/caseSlice";
 import ClientCaseTimelineCard from "./ClientCaseTimelineCard";
@@ -32,6 +35,9 @@ const ClientCaseDetail = () => {
   const [selectedDay, setSelectedDay] = useState("Mon");
   const [selectedTime, setSelectedTime] = useState("10:00 AM");
   const [scheduleError, setScheduleError] = useState("");
+  const [paymentRequests, setPaymentRequests] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [currentUser] = useState(JSON.parse(localStorage.getItem("user") || "{}"));
   const [meetingForm, setMeetingForm] = useState({
     title: "",
     meetingLocation: "",
@@ -49,6 +55,33 @@ const ClientCaseDetail = () => {
   useEffect(() => {
     dispatch(fetchCases());
   }, [dispatch]);
+
+  // Load payment requests for this case
+  useEffect(() => {
+    if (caseData?.id) {
+      loadPaymentRequests();
+    }
+  }, [caseData?.id]);
+
+  const loadPaymentRequests = async () => {
+    if (!id) return;
+    setLoadingPayments(true);
+    try {
+      const response = await getCasePaymentRequests(parseInt(id));
+      if (response.data.IsSuccess) {
+        setPaymentRequests(response.data.Result.payment_requests);
+      }
+    } catch (error) {
+      console.log("No payment requests yet");
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  const handlePaymentResponseSuccess = async () => {
+    // Reload payment requests after response
+    await loadPaymentRequests();
+  };
 
   // Reset schedule form when case data changes (e.g., when loading new case details)
   const availableDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -227,13 +260,28 @@ const ClientCaseDetail = () => {
 
               {/* Tabs & Content */}
               <div className="space-y-6">
-                <div className="bg-slate-100/50 p-1 rounded-xl flex gap-1 w-fit">
-                  {["Timeline", `Documents (${caseData?.documents?.length || 0})`, "Details"].map((tab) => (
+                <div className="bg-slate-100/50 p-1 rounded-xl flex gap-1 w-fit flex-wrap">
+                  {[
+                    "Timeline",
+                    `Documents (${caseData?.documents?.length || 0})`,
+                    "Details",
+                    ...(caseData?.status?.toLowerCase() === "in_progress" || caseData?.status?.toLowerCase() === "completed" || (paymentRequests && paymentRequests.length > 0) ? ["Payment"] : []),
+                  ].map((tab) => (
                     <button 
                       key={tab}
-                      onClick={() => setActiveTab(tab.includes('Documents') ? 'Documents' : tab)}
+                      onClick={() => {
+                        if (tab.includes('Documents')) {
+                          setActiveTab('Documents');
+                        } else if (tab === 'Payment') {
+                          setActiveTab('Payment');
+                        } else {
+                          setActiveTab(tab);
+                        }
+                      }}
                       className={`px-8 py-2 text-sm font-semibold rounded-lg transition-all ${
-                        (activeTab === 'Documents' && tab.includes('Documents')) || activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        (activeTab === 'Documents' && tab.includes('Documents')) || 
+                        (activeTab === 'Payment' && tab === 'Payment') ||
+                        activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
                       }`}
                     >
                       {tab}
@@ -257,6 +305,34 @@ const ClientCaseDetail = () => {
                 {/* Details Tab */}
                 {activeTab === "Details" && (
                   <ClientCaseDetailCard caseData={caseData} />
+                )}
+
+                {/* Payment Tab */}
+                {activeTab === "Payment" && (
+                  <div className="space-y-6">
+                    {loadingPayments ? (
+                      <div className="text-center py-12">
+                        <div className="inline-block">
+                          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        </div>
+                      </div>
+                    ) : paymentRequests && paymentRequests.length > 0 ? (
+                      paymentRequests.map((payment) => (
+                        <PaymentRequestCard
+                          key={payment.id}
+                          paymentRequest={payment}
+                          currentUser={currentUser}
+                          onResponseSuccess={handlePaymentResponseSuccess}
+                        />
+                      ))
+                    ) : (
+                      <div className="bg-slate-50 rounded-xl border border-slate-200 p-8 text-center">
+                        <DollarSign className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                        <p className="text-slate-600 font-medium">No payment request yet</p>
+                        <p className="text-slate-500 text-sm mt-2">Lawyer will request payment once the case is completed</p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

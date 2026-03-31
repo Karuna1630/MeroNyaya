@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "./../Sidebar";
@@ -18,13 +19,18 @@ import {
   Phone,
   Building2,
   Edit2,
+  CheckCircle,
 } from "lucide-react";
-import { fetchCases, updateCaseDetails } from "../../slices/caseSlice.js";
+import { fetchCases, updateCaseDetails, updateCaseStatus } from "../../slices/caseSlice.js";
+import { getCasePaymentRequests } from "../../../axios/casePaymentAPI";
 import LawyerCaseTimlineCard from "./LawyerCaseTimelineCard.jsx";
 import LawyerCaseDocumentCard from "./LawyerCaseDocumentCard.jsx";
 import LawyerCaseDetailCard from "./LawyerCaseDetailCard.jsx";
+import CreatePaymentRequestForm from "../../../components/CasePayment/CreatePaymentRequestForm.jsx";
+import PaymentRequestCard from "../../../components/CasePayment/PaymentRequestCard.jsx";
 
 const LawyerCaseDetail = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
@@ -38,6 +44,8 @@ const LawyerCaseDetail = () => {
     next_hearing_date: "",
     status: "",
   });
+  const [paymentRequests, setPaymentRequests] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   // Select necessary state from Redux store
   const { cases, casesLoading } = useSelector((state) => state.case);
@@ -54,6 +62,61 @@ const LawyerCaseDetail = () => {
   useEffect(() => {
     dispatch(fetchCases());
   }, [dispatch]);
+
+  // Fetch payment requests
+  const fetchPayments = async () => {
+    if (!id) {
+      console.log("No case ID, skipping payment fetch");
+      return;
+    }
+    try {
+      console.log("Fetching payment requests for case ID:", parseInt(id));
+      setLoadingPayments(true);
+      const response = await getCasePaymentRequests(parseInt(id));
+      console.log("Full payment response:", response.data);
+      
+      if (response.data.IsSuccess) {
+        const payments = response.data.Result.payment_requests || [];
+        console.log("Extracted payment requests:", payments);
+        setPaymentRequests(payments);
+      } else {
+        console.warn("API returned IsSuccess: false");
+        console.warn("Error message:", response.data.ErrorMessage);
+        console.warn("Status code:", response.data["Status Code"] || response.status);
+      }
+    } catch (error) {
+      console.error("Error fetching payment requests:", error);
+      console.error("Error response data:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error message:", error.response?.data?.ErrorMessage || error.message);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  // Handle marking case as complete after payment
+  const handleMarkCaseComplete = async () => {
+    try {
+      const resultAction = await dispatch(
+        updateCaseStatus({ caseId: parseInt(id), status: 'completed' })
+      );
+      if (updateCaseStatus.fulfilled.match(resultAction)) {
+        await dispatch(fetchCases());
+        toast.success(t('casePayment.caseMarkedComplete') || 'Case marked as completed successfully');
+      } else {
+        toast.error(t('casePayment.failedToComplete') || 'Failed to complete case');
+      }
+    } catch (error) {
+      console.error('Error marking case as complete:', error);
+      toast.error('Error marking case as complete');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "Payment") {
+      fetchPayments();
+    }
+  }, [activeTab, id]);
 
   // Initialize edit form data when caseData changes
   useEffect(() => {
@@ -293,10 +356,13 @@ const LawyerCaseDetail = () => {
               <div className="bg-white rounded-lg shadow-sm mb-6">
                 <div className="border-b border-gray-200">
                   <nav className="flex">
-                    {["Timeline", `Documents (${caseData?.documents?.length || 0})`, "Details"].map((tab) => (
+                    {["Timeline", `Documents (${caseData?.documents?.length || 0})`, "Details", ...(caseData?.status === 'in_progress' || caseData?.status === 'completed' || paymentRequests.length > 0 ? ["Payment"] : [])].map((tab) => (
                       <button
                         key={tab}
-                        onClick={() => setActiveTab(tab.includes('Documents') ? 'Documents' : tab)}
+                        onClick={() => {
+                          if (tab.includes('Documents')) setActiveTab('Documents');
+                          else setActiveTab(tab);
+                        }}
                         className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                           (activeTab === 'Documents' && tab.includes('Documents')) || activeTab === tab
                             ? "border-[#0F1A3D] text-[#0F1A3D]"
@@ -342,7 +408,54 @@ const LawyerCaseDetail = () => {
                       onSave={handleSaveChanges}
                       onCancel={handleCancelEdit}
                       isSaving={isSaving}
+                      paymentRequest={paymentRequests[0]}
                     />
+                  )}
+
+                  {/* Payment Tab */}
+                  {activeTab === "Payment" && (
+                    <div className="space-y-6">
+                      {console.log("Payment tab - Loading:", loadingPayments, "Requests count:", paymentRequests?.length, "Requests:", paymentRequests)}
+                      {loadingPayments ? (
+                        <div className="flex justify-center py-12">
+                          <div className="w-8 h-8 border-4 border-[#0F1A3D] border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      ) : paymentRequests && paymentRequests.length > 0 ? (
+                        <>
+                          {console.log("Rendering payment request card with:", paymentRequests[0])}
+                          <PaymentRequestCard
+                            paymentRequest={paymentRequests[0]}
+                            currentUser={user}
+                            onResponseSuccess={fetchPayments}
+                          />
+
+                          {/* Mark Case as Complete button - shown when payment is paid */}
+                          {isAssignedLawyer && paymentRequests.some(p => p.status === 'paid') && caseData?.status !== 'completed' && (
+                            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                              <p className="text-green-800 mb-4 font-medium">
+                                {t('casePayment.paymentReceivedMarkComplete') || 'Payment received! You can now mark this case as completed.'}
+                              </p>
+                              <button
+                                onClick={handleMarkCaseComplete}
+                                className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+                              >
+                                <CheckCircle size={18} />
+                                {t('casePayment.markCaseComplete') || 'Mark Case as Complete'}
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      ) : isAssignedLawyer && caseData?.status === 'in_progress' ? (
+                        <CreatePaymentRequestForm
+                          caseId={parseInt(id)}
+                          onSuccess={fetchPayments}
+                        />
+                      ) : (
+                        <div className="text-center py-12 bg-gray-50 rounded-lg">
+                          <p className="text-gray-600">No payment requests found for this case.</p>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

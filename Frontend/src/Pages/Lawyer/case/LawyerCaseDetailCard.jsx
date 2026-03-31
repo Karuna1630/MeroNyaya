@@ -12,7 +12,9 @@ const LawyerCaseDetailCard = ({
   onSave,
   onCancel,
   isSaving,
+  paymentRequest,
 }) => {
+  const isPaymentPaid = paymentRequest?.status === "paid";
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -32,17 +34,26 @@ const LawyerCaseDetailCard = ({
           <div>
             <h4 className="text-sm font-medium text-gray-700 mb-2">Status</h4>
             {isEditing ? (
-              <select
-                name="status"
-                value={editFormData.status}
-                onChange={onEditChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="accepted">Accepted</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-              </select>
+              <>
+                <select
+                  name="status"
+                  value={editFormData.status}
+                  onChange={onEditChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="accepted">Accepted</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed" disabled={!isPaymentPaid}>
+                    Completed {!isPaymentPaid && "(Requires Paid Payment)"}
+                  </option>
+                  <option value="pending">Pending</option>
+                </select>
+                {!isPaymentPaid && (
+                  <p className="text-[10px] text-red-500 mt-1">
+                    * Case cannot be marked as completed until payment is confirmed.
+                  </p>
+                )}
+              </>
             ) : (
               <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusBadge.bg} ${statusBadge.text}`}>
                 {statusBadge.label}

@@ -20,7 +20,7 @@ import { fetchPaymentHistory } from '../slices/paymentSlice';
 const Payment = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const { payments, paymentsLoading, paymentsError } = useSelector(
+  const { payments, casePaymentRequests, paymentsLoading, paymentsError } = useSelector(
     (state) => state.payment
   );
 
@@ -32,33 +32,72 @@ const Payment = () => {
     dispatch(fetchPaymentHistory());
   }, [dispatch]);
 
+  // Combine into a single history
+  const allTransactions = useMemo(() => {
+    const normalizedPayments = payments.map(p => ({
+      ...p,
+      type: 'appointment',
+      display_amount: p.total_amount,
+      display_status: p.status,
+      display_title: `Appointment #${p.appointment_id || '—'}`,
+      date: p.created_at
+    }));
+
+    const normalizedCaseRequests = casePaymentRequests.map(r => ({
+      ...r,
+      type: 'case',
+      display_amount: r.current_agreed_amount || r.proposed_amount,
+      display_status: r.status,
+      display_title: `Case: ${r.case_title}`,
+      date: r.created_at,
+      lawyer_name: r.lawyer_name,
+      lawyer_email: r.lawyer_email
+    }));
+
+    return [...normalizedPayments, ...normalizedCaseRequests].sort((a, b) => 
+      new Date(b.date) - new Date(a.date)
+    );
+  }, [payments, casePaymentRequests]);
+
   // Compute stats
   const stats = useMemo(() => {
-    const total = payments.length;
-    const completed = payments.filter((p) => p.status === 'completed').length;
-    const pending = payments.filter((p) => p.status === 'initiated').length;
-    const failed = payments.filter((p) => p.status === 'failed').length;
-    const totalAmount = payments
-      .filter((p) => p.status === 'completed')
-      .reduce((sum, p) => sum + parseFloat(p.total_amount || 0), 0);
+    const total = allTransactions.length;
+    const completed = allTransactions.filter((p) => 
+      p.display_status === 'completed' || p.display_status === 'paid'
+    ).length;
+    const pending = allTransactions.filter((p) => 
+      ['initiated', 'pending', 'negotiating', 'agreed'].includes(p.display_status)
+    ).length;
+    const failed = allTransactions.filter((p) => 
+      p.display_status === 'failed' || p.display_status === 'rejected' || p.display_status === 'expired'
+    ).length;
+    const totalAmount = allTransactions
+      .filter((p) => p.display_status === 'completed' || p.display_status === 'paid')
+      .reduce((sum, p) => sum + parseFloat(p.display_amount || 0), 0);
     return { total, completed, pending, failed, totalAmount };
-  }, [payments]);
+  }, [allTransactions]);
 
   // Filter payments
   const filteredPayments = useMemo(() => {
-    return payments.filter((p) => {
-      const statusMapping = { completed: 'completed', pending: 'initiated', failed: 'failed' };
+    return allTransactions.filter((p) => {
+      const statusMapping = { 
+        completed: ['completed', 'paid'], 
+        pending: ['initiated', 'pending', 'negotiating', 'agreed'], 
+        failed: ['failed', 'rejected', 'expired'] 
+      };
+      
       const matchesStatus =
         filterStatus === 'all' ||
-        p.status === (statusMapping[filterStatus] || filterStatus);
+        (statusMapping[filterStatus] ? statusMapping[filterStatus].includes(p.display_status) : p.display_status === filterStatus);
+      
       const matchesSearch =
         !searchQuery ||
         (p.lawyer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.transaction_uuid || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.esewa_ref_id || '').toLowerCase().includes(searchQuery.toLowerCase());
+        (p.display_title || '').toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
-  }, [payments, filterStatus, searchQuery]);
+  }, [allTransactions, filterStatus, searchQuery]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—';
@@ -88,12 +127,40 @@ const Payment = () => {
         ring: 'ring-emerald-200',
         label: 'Completed',
       },
+      paid: {
+        icon: <CheckCircle size={14} />,
+        bg: 'bg-emerald-50',
+        text: 'text-emerald-700',
+        ring: 'ring-emerald-200',
+        label: 'Paid',
+      },
       initiated: {
+        icon: <Clock size={14} />,
+        bg: 'bg-blue-50',
+        text: 'text-blue-700',
+        ring: 'ring-blue-200',
+        label: 'Initiated',
+      },
+      pending: {
         icon: <Clock size={14} />,
         bg: 'bg-amber-50',
         text: 'text-amber-700',
         ring: 'ring-amber-200',
-        label: 'Pending',
+        label: 'Offered',
+      },
+      negotiating: {
+        icon: <Clock size={14} />,
+        bg: 'bg-indigo-50',
+        text: 'text-indigo-700',
+        ring: 'ring-indigo-200',
+        label: 'Negotiating',
+      },
+      agreed: {
+        icon: <CreditCard size={14} />,
+        bg: 'bg-cyan-50',
+        text: 'text-cyan-700',
+        ring: 'ring-cyan-200',
+        label: 'Agreed',
       },
       failed: {
         icon: <XCircle size={14} />,
@@ -102,11 +169,25 @@ const Payment = () => {
         ring: 'ring-red-200',
         label: 'Failed',
       },
+      rejected: {
+        icon: <XCircle size={14} />,
+        bg: 'bg-red-50',
+        text: 'text-red-700',
+        ring: 'ring-red-200',
+        label: 'Rejected',
+      },
+      expired: {
+        icon: <XCircle size={14} />,
+        bg: 'bg-gray-50',
+        text: 'text-gray-700',
+        ring: 'ring-gray-200',
+        label: 'Expired',
+      },
       refunded: {
-        icon: <CheckCircle size={14} />,
-        bg: 'bg-blue-50',
-        text: 'text-blue-700',
-        ring: 'ring-blue-200',
+        icon: <RotateCcw size={14} />,
+        bg: 'bg-purple-50',
+        text: 'text-purple-700',
+        ring: 'ring-purple-200',
         label: 'Refunded',
       },
     };
@@ -335,7 +416,7 @@ const Payment = () => {
                         {payment.lawyer_name || 'Unknown Lawyer'}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
-                        {payment.lawyer_email || `Appointment #${payment.appointment_id || '—'}`}
+                        {payment.display_title || (payment.lawyer_email ? payment.lawyer_email : `Payment #${payment.id}`)}
                       </p>
                     </div>
                   </div>
@@ -356,23 +437,23 @@ const Payment = () => {
 
                   {/* Date */}
                   <div className="col-span-2">
-                    <p className="text-sm text-gray-700">{formatDate(payment.created_at)}</p>
-                    <p className="text-xs text-gray-400">{formatTime(payment.created_at)}</p>
+                    <p className="text-sm text-gray-700">{formatDate(payment.date)}</p>
+                    <p className="text-xs text-gray-400">{formatTime(payment.date)}</p>
                   </div>
 
                   {/* Method */}
                   <div className="col-span-1">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                      {payment.payment_method || 'eSewa'}
+                      {payment.type === 'case' ? 'Case Pay' : (payment.payment_method || 'eSewa')}
                     </span>
                   </div>
 
                   {/* Amount */}
                   <div className="col-span-2 text-right">
                     <p className="text-sm font-bold text-gray-900">
-                      Rs. {parseFloat(payment.total_amount || 0).toLocaleString()}
+                      Rs. {parseFloat(payment.display_amount || 0).toLocaleString()}
                     </p>
-                    {payment.tax_amount && parseFloat(payment.tax_amount) > 0 && (
+                    {payment.type === 'appointment' && payment.tax_amount && parseFloat(payment.tax_amount) > 0 && (
                       <p className="text-xs text-gray-400">
                         Tax: Rs. {parseFloat(payment.tax_amount).toLocaleString()}
                       </p>
@@ -381,7 +462,7 @@ const Payment = () => {
 
                   {/* Status */}
                   <div className="col-span-2 flex justify-center">
-                    {getStatusBadge(payment.status)}
+                    {getStatusBadge(payment.display_status)}
                   </div>
                 </div>
               ))}
@@ -398,8 +479,8 @@ const Payment = () => {
                 <span className="font-semibold text-gray-900">
                   Rs.{' '}
                   {filteredPayments
-                    .filter((p) => p.status === 'completed')
-                    .reduce((sum, p) => sum + parseFloat(p.total_amount || 0), 0)
+                    .filter((p) => p.display_status === 'completed' || p.display_status === 'paid')
+                    .reduce((sum, p) => sum + parseFloat(p.display_amount || 0), 0)
                     .toLocaleString()}
                 </span>
               </p>

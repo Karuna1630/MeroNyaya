@@ -332,6 +332,14 @@ class CaseViewSet(viewsets.ModelViewSet):
             case.lawyer = request.user
             case.accepted_at = timezone.now()
         elif new_status == 'completed':
+            # Check if payment is paid before allowing completion
+            from payment.models import CasePaymentRequest
+            payment_request = CasePaymentRequest.objects.filter(case=case).first()
+            if not payment_request or payment_request.status != 'paid':
+                return Response(
+                    {'error': 'Case can only be marked as completed after the agreed payment is received.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             case.completed_at = timezone.now()
         
         case.save()

@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "./Sidebar";
 import LawyerDashHeader from "./LawyerDashHeader";
+import CreatePaymentRequestForm from "../../components/CasePayment/CreatePaymentRequestForm";
+import PaymentRequestCard from "../../components/CasePayment/PaymentRequestCard";
 import {
   FileText,
   ChevronLeft,
@@ -19,17 +21,22 @@ import {
   CheckCircle,
   Circle,
   Plus,
+  DollarSign,
 } from "lucide-react";
-import { fetchCases, updateCaseDetails } from "../slices/caseSlice";
+import { fetchCases, updateCaseDetails, updateCaseStatus } from "../slices/caseSlice";
+import { getCasePaymentRequests } from "../../axios/casePaymentAPI";
 
 const LawyerCaseDetail = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { id } = useParams();
-  const [activeTab, setActiveTab] = useState("Details");
+  const [activeTab, setActiveTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
   const [noteText, setNoteText] = useState("");
+  const [paymentRequests, setPaymentRequests] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [currentUser] = useState(JSON.parse(localStorage.getItem("user") || "{}"));
 
   const { cases, casesLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
@@ -55,8 +62,49 @@ const LawyerCaseDetail = () => {
         nextHearingDate: caseData.next_hearing_date || "",
         status: caseData.status || "accepted",
       });
+      
+      // Load payment requests for this case
+      loadPaymentRequests();
     }
   }, [caseData]);
+
+  const loadPaymentRequests = async () => {
+    if (!id) return;
+    setLoadingPayments(true);
+    try {
+      const response = await getCasePaymentRequests(parseInt(id));
+      if (response.data.IsSuccess) {
+        setPaymentRequests(response.data.Result.payment_requests);
+      }
+    } catch (error) {
+      console.log("No payment requests yet");
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  const handlePaymentRequestSuccess = async () => {
+    // Reload payment requests after creation
+    await loadPaymentRequests();
+  };
+
+  const handleMarkCaseComplete = async () => {
+    try {
+      const resultAction = await dispatch(
+        updateCaseStatus({ caseId: parseInt(id), status: 'completed' })
+      );
+      if (updateCaseStatus.fulfilled.match(resultAction)) {
+        // Reload case data after status update
+        await dispatch(fetchCases());
+        alert(t('casePayment.caseMarkedComplete') || 'Case marked as completed successfully');
+      } else {
+        alert(t('casePayment.failedToComplete') || 'Failed to complete case');
+      }
+    } catch (error) {
+      console.error('Error marking case as complete:', error);
+      alert('Error marking case as complete');
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -267,24 +315,29 @@ const LawyerCaseDetail = () => {
               <div className="bg-white rounded-lg shadow-sm">
                 <div className="border-b border-gray-200">
                   <div className="flex gap-1 p-1">
-                    {[t('lawyerCaseDetail.timeline'), t('lawyerCaseDetail.documents'), t('lawyerCaseDetail.details')].map((tab) => (
+                    {[
+                      { label: t('lawyerCaseDetail.timeline'), key: 'timeline' },
+                      { label: t('lawyerCaseDetail.documents'), key: 'documents' },
+                      { label: t('lawyerCaseDetail.details'), key: 'details' },
+                      caseData?.status?.toLowerCase() === 'in_progress' ? { label: t('casePayment.paymentRequest'), key: 'payment' } : null,
+                    ].filter(Boolean).map((tab) => (
                       <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key)}
                         className={`px-4 py-2 text-sm font-medium rounded transition ${
-                          activeTab === tab
+                          activeTab === tab.key
                             ? "bg-gray-100 text-gray-900"
                             : "text-gray-600 hover:text-gray-900"
                         }`}
                       >
-                        {tab}
+                        {tab.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Timeline Tab */}
-                {activeTab === t('lawyerCaseDetail.timeline') && (
+                {activeTab === 'timeline' && (
                   <div className="p-6">
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('lawyerCaseDetail.caseTimeline')}</h3>
@@ -328,7 +381,7 @@ const LawyerCaseDetail = () => {
                 )}
 
                 {/* Documents Tab */}
-                {activeTab === t('lawyerCaseDetail.documents') && (
+                {activeTab === 'documents' && (
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">{t('lawyerCaseDetail.caseDocuments')}</h3>
@@ -344,7 +397,7 @@ const LawyerCaseDetail = () => {
                 )}
 
                 {/* Details Tab */}
-                {activeTab === t('lawyerCaseDetail.details') && (
+                {activeTab === 'details' && (
                   <div className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-6">{t('lawyerCaseDetail.caseDetailsHeader')}</h3>
 
@@ -466,6 +519,49 @@ const LawyerCaseDetail = () => {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Payment Tab */}
+                {activeTab === 'payment' && caseData?.status?.toLowerCase() === 'in_progress' && (
+                  <div className="p-6 space-y-6">
+                    {loadingPayments ? (
+                      <div className="text-center py-12">
+                        <div className="inline-block">
+                          <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        </div>
+                      </div>
+                    ) : paymentRequests && paymentRequests.length > 0 ? (
+                      <>
+                        {paymentRequests.map((payment) => (
+                          <PaymentRequestCard
+                            key={payment.id}
+                            paymentRequest={payment}
+                            currentUser={currentUser}
+                            onResponseSuccess={handlePaymentRequestSuccess}
+                          />
+                        ))}
+                        
+                        {paymentRequests.some(p => p.status === 'paid') && (
+                          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-green-800 mb-4 font-medium">{t('casePayment.paymentReceivedMarkComplete') || 'Payment received! You can now mark this case as completed.'}</p>
+                            <button
+                              onClick={handleMarkCaseComplete}
+                              className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium flex items-center justify-center gap-2"
+                            >
+                              <CheckCircle size={18} />
+                              {t('casePayment.markCaseComplete') || 'Mark Case as Complete'}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <CreatePaymentRequestForm
+                        caseId={parseInt(id)}
+                        caseTitle={caseData.title}
+                        onSuccess={handlePaymentRequestSuccess}
+                      />
+                    )}
                   </div>
                 )}
               </div>

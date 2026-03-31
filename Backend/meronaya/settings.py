@@ -178,6 +178,7 @@ STATIC_URL = 'static/'
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+BACKEND_URL = config('BACKEND_URL', default='http://127.0.0.1:8000')
 
 # # external setups
 # AUTH_USER_MODEL = "users.User"

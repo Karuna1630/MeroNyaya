@@ -44,14 +44,27 @@ export const verifyEsewaPayment = createAsyncThunk(
   }
 );
 
+// Verify eSewa Case payment after redirect
+export const verifyEsewaCasePayment = createAsyncThunk(
+  'payment/verifyEsewaCasePayment',
+  async (encodedData, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get(`/payment/esewa/verify-case/?data=${encodeURIComponent(encodedData)}`);
+      return response.data.Result;
+    } catch (error) {
+      return rejectWithValue(extractErrorMessage(error, 'Case payment verification failed'));
+    }
+  }
+);
+
 // Fetch payment history
 export const fetchPaymentHistory = createAsyncThunk(
   'payment/fetchPaymentHistory',
   async (_, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.get('/payment/');
-      // api_response format: { Result: { payments: [...] } }
-      return response.data.Result?.payments || [];
+      // api_response format: { Result: { payments: [...], case_payment_requests: [...] } }
+      return response.data.Result;
     } catch (error) {
       return rejectWithValue(extractErrorMessage(error, 'Failed to load payments'));
     }
@@ -141,6 +154,22 @@ export const verifyKhaltiPayment = createAsyncThunk(
   }
 );
 
+// Verify Khalti Case payment after redirect
+export const verifyKhaltiCasePayment = createAsyncThunk(
+  'payment/verifyKhaltiCasePayment',
+  async ({ pidx, transaction_id, purchase_order_id }, { rejectWithValue }) => {
+    try {
+      const params = new URLSearchParams({ pidx });
+      if (transaction_id) params.append('transaction_id', transaction_id);
+      if (purchase_order_id) params.append('purchase_order_id', purchase_order_id);
+      const response = await axiosInstance.get(`/payment/khalti/verify-case/?${params.toString()}`);
+      return response.data.Result;
+    } catch (error) {
+      return rejectWithValue(extractErrorMessage(error, 'Khalti case payment verification failed'));
+    }
+  }
+);
+
 const initialState = {
   // Initiation
   initiating: false,
@@ -161,6 +190,7 @@ const initialState = {
 
   // History
   payments: [],
+  casePaymentRequests: [],
   paymentsLoading: false,
   paymentsError: null,
 
@@ -237,6 +267,21 @@ const paymentSlice = createSlice({
         state.verifying = false;
         state.verifyError = action.payload;
       })
+      
+      // Verify Case Esewa
+      .addCase(verifyEsewaCasePayment.pending, (state) => {
+        state.verifying = true;
+        state.verifyError = null;
+        state.verifiedPayment = null;
+      })
+      .addCase(verifyEsewaCasePayment.fulfilled, (state, action) => {
+        state.verifying = false;
+        state.verifiedPayment = action.payload;
+      })
+      .addCase(verifyEsewaCasePayment.rejected, (state, action) => {
+        state.verifying = false;
+        state.verifyError = action.payload;
+      })
 
       // Khalti Initiate
       .addCase(initiateKhaltiPayment.pending, (state) => {
@@ -270,6 +315,21 @@ const paymentSlice = createSlice({
         state.verifyError = action.payload;
       })
 
+      // Khalti Verify Case
+      .addCase(verifyKhaltiCasePayment.pending, (state) => {
+        state.verifying = true;
+        state.verifyError = null;
+        state.verifiedPayment = null;
+      })
+      .addCase(verifyKhaltiCasePayment.fulfilled, (state, action) => {
+        state.verifying = false;
+        state.verifiedPayment = action.payload;
+      })
+      .addCase(verifyKhaltiCasePayment.rejected, (state, action) => {
+        state.verifying = false;
+        state.verifyError = action.payload;
+      })
+
       // History
       .addCase(fetchPaymentHistory.pending, (state) => {
         state.paymentsLoading = true;
@@ -277,7 +337,8 @@ const paymentSlice = createSlice({
       })
       .addCase(fetchPaymentHistory.fulfilled, (state, action) => {
         state.paymentsLoading = false;
-        state.payments = action.payload || [];
+        state.payments = action.payload?.payments || [];
+        state.casePaymentRequests = action.payload?.case_payment_requests || [];
       })
       .addCase(fetchPaymentHistory.rejected, (state, action) => {
         state.paymentsLoading = false;

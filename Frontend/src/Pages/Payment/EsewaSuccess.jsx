@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { verifyEsewaPayment, clearVerifiedPayment } from '../slices/paymentSlice';
-import { CheckCircle, Loader2, XCircle, ArrowLeft, Calendar } from 'lucide-react';
+import { verifyEsewaPayment, verifyEsewaCasePayment, clearVerifiedPayment } from '../slices/paymentSlice';
+import { CheckCircle, Loader2, XCircle, ArrowLeft, Calendar, FileText } from 'lucide-react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
@@ -15,8 +15,11 @@ const EsewaSuccess = () => {
 
   useEffect(() => {
     const data = searchParams.get('data');
+    const type = searchParams.get('type');
+    
     if (data && !verified) {
-      dispatch(verifyEsewaPayment(data)).then((res) => {
+      const verifyThunk = type === 'case' ? verifyEsewaCasePayment : verifyEsewaPayment;
+      dispatch(verifyThunk(data)).then((res) => {
         if (!res.error) {
           setVerified(true);
         }
@@ -56,6 +59,8 @@ const EsewaSuccess = () => {
                 ? 'Please wait while we confirm your payment with eSewa.'
                 : verifyError
                 ? verifyError
+                : searchParams.get('type') === 'case'
+                ? 'Your case payment has been confirmed and the case is now completed.'
                 : 'Your consultation appointment has been confirmed.'}
             </p>
           </div>
@@ -90,13 +95,23 @@ const EsewaSuccess = () => {
 
           {/* Actions */}
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex gap-3">
-            <button
-              onClick={() => navigate('/clientappointment')}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#0F1A3D] text-white rounded-xl font-semibold text-sm hover:bg-blue-950 transition-colors"
-            >
-              <Calendar size={16} />
-              View Appointments
-            </button>
+            {searchParams.get('type') === 'case' ? (
+              <button
+                onClick={() => navigate('/client/cases')}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#0F1A3D] text-white rounded-xl font-semibold text-sm hover:bg-blue-950 transition-colors"
+              >
+                <FileText size={16} />
+                View My Cases
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/clientappointment')}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#0F1A3D] text-white rounded-xl font-semibold text-sm hover:bg-blue-950 transition-colors"
+              >
+                <Calendar size={16} />
+                View Appointments
+              </button>
+            )}
             <button
               onClick={() => navigate('/clientdashboard')}
               className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-colors"
