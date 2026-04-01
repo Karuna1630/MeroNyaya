@@ -8,6 +8,7 @@ import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCirc
 import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
 import { LAW_CATEGORIES } from "../../utils/lawCategories";
 import LawyerProfileModal from "./LawyerProfileModal";
+import Pagination from "../../components/Pagination";
 
 const specializations = [
   "All Specializations",
@@ -329,45 +330,13 @@ const FindLawyers = () => {
 
           {/* Pagination Controls */}
           {!loading && !error && totalPages > 1 && (
-            <div className="mt-10 flex flex-col items-center gap-4">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Previous
-                </button>
-                
-                <div className="flex items-center gap-1">
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => handlePageChange(i + 1)}
-                      className={`w-10 h-10 rounded-lg text-sm font-medium transition ${
-                        currentPage === i + 1
-                          ? "bg-[#0F1A3D] text-white"
-                          : "text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-200"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Next
-                </button>
-              </div>
-              
-              <p className="text-sm text-gray-500">
-                Page <span className="font-semibold text-gray-900">{currentPage}</span> of <span className="font-semibold text-gray-900">{totalPages}</span>
-              </p>
-            </div>
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={itemsPerPage}
+              totalItems={sortedLawyers.length}
+            />
           )}
 
           {/* No Results Message */}

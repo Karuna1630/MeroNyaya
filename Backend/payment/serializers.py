@@ -9,6 +9,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     user_profile_image = serializers.ImageField(source="user.profile_image", read_only=True, default=None)
     lawyer_name = serializers.CharField(source="lawyer.name", read_only=True, default=None)
     lawyer_email = serializers.CharField(source="lawyer.email", read_only=True, default=None)
+    lawyer_profile_image = serializers.ImageField(source="lawyer.profile_image", read_only=True, default=None)
 
     class Meta:
         model = Payment
@@ -22,6 +23,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "lawyer",
             "lawyer_name",
             "lawyer_email",
+            "lawyer_profile_image",
             "amount",
             "tax_amount",
             "total_amount",
@@ -62,6 +64,7 @@ class PayoutSerializer(serializers.ModelSerializer):
     """Serializer for the Payout model."""
     lawyer_name = serializers.CharField(source="lawyer.name", read_only=True)
     lawyer_email = serializers.CharField(source="lawyer.email", read_only=True)
+    lawyer_profile_image = serializers.ImageField(source="lawyer.profile_image", read_only=True, default=None)
     processed_by_name = serializers.CharField(source="processed_by.name", read_only=True, default=None)
     payment_ids = serializers.SerializerMethodField()
 
@@ -72,6 +75,7 @@ class PayoutSerializer(serializers.ModelSerializer):
             "lawyer",
             "lawyer_name",
             "lawyer_email",
+            "lawyer_profile_image",
             "processed_by",
             "processed_by_name",
             "amount",

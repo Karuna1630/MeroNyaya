@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { fetchProposals, acceptProposal, rejectProposal } from '../../slices/proposalSlice';
 import { fetchCases } from '../../slices/caseSlice';
+import Pagination from '../../../components/Pagination';
 
 const LawyerProposal = () => {
   const dispatch = useDispatch();
@@ -242,28 +243,13 @@ const LawyerProposal = () => {
             )}
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl shadow-sm border border-slate-100 mt-6">
-                <span className="text-sm text-slate-600">
-                  Page <span className="font-semibold text-slate-900">{currentPage}</span> of{" "}
-                  <span className="font-semibold text-slate-900">{totalPages}</span>
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
+              <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={proposalsPerPage}
+                totalItems={caseProposals.length}
+              />
             )}
             {(acceptProposalError || rejectProposalError) && (
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-red-100 text-red-600 text-sm">

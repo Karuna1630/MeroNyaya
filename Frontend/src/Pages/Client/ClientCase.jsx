@@ -29,6 +29,7 @@ import {
 import Sidebar from "./sidebar";
 import DashHeader from "./ClientDashHeader";
 import { fetchCases, deleteCase, updateCase } from "../slices/caseSlice";
+import Pagination from "../../components/Pagination";
 
 const ClientCase = () => {
   const { t } = useTranslation();
@@ -599,32 +600,13 @@ const ClientCase = () => {
               </div>
 
               {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-200">
-                  <span className="text-sm text-slate-700">
-                    Showing {((currentPage - 1) * casesPerPage) + 1} to {Math.min(currentPage * casesPerPage, filteredCases.length)} of {filteredCases.length} cases
-                  </span>
-                  <div className="flex gap-2 items-center">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="p-1 rounded-md hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronLeft size={20} className="text-slate-600" />
-                    </button>
-                    <span className="text-sm font-medium text-slate-700 mx-2">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="p-1 rounded-md hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronRight size={20} className="text-slate-600" />
-                    </button>
-                  </div>
-                </div>
-              )}
+              <Pagination 
+                currentPage={currentPage} 
+                totalPages={totalPages} 
+                onPageChange={setCurrentPage} 
+                itemsPerPage={casesPerPage} 
+                totalItems={filteredCases.length} 
+              />
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'is_verified', 'is_kyc_verified', 'is_lawyer', 'is_superuser', 'is_staff', 'role', 'date_joined', 'profile_image']
+        fields = ['id', 'email', 'name', 'phone', 'is_active', 'is_verified', 'is_kyc_verified', 'is_lawyer', 'is_superuser', 'is_staff', 'role', 'date_joined', 'profile_image']
         read_only_fields = ['id', 'date_joined', 'role', 'is_verified', 'is_kyc_verified', 'is_superuser', 'is_staff', 'profile_image']
     
     #  Creating a method to get full url for profile image

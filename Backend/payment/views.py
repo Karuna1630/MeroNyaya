@@ -903,6 +903,13 @@ class AdminRevenueView(APIView):
             recent_payouts = Payout.objects.all().select_related("lawyer", "processed_by")[:20]
             payout_serializer = PayoutSerializer(recent_payouts, many=True)
 
+            # Prepend media URL to lawyer__profile_image since values() returns raw paths
+            media_url = settings.MEDIA_URL
+            lawyer_breakdown_list = list(lawyer_breakdown)
+            for lb in lawyer_breakdown_list:
+                if lb.get("lawyer__profile_image"):
+                    lb["lawyer__profile_image"] = f"{media_url}{lb['lawyer__profile_image']}"
+
             return api_response(
                 is_success=True,
                 status_code=status.HTTP_200_OK,
@@ -917,7 +924,7 @@ class AdminRevenueView(APIView):
                         "total_paid_out": str(paid_out_total["amount"] or 0),
                         "total_pending_payout": str(pending_payout_total["amount"] or 0),
                     },
-                    "lawyer_breakdown": list(lawyer_breakdown),
+                    "lawyer_breakdown": lawyer_breakdown_list,
                     "payments": serializer.data,
                     "payouts": payout_serializer.data,
                 },

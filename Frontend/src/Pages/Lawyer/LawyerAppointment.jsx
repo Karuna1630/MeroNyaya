@@ -26,6 +26,7 @@ import axiosInstance from "../../axios/axiosinstance";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { acceptConsultationSchema } from "../utils/consultationValidation";
 import { getImageUrl } from '../../utils/imageUrl';
+import Pagination from "../../components/Pagination";
 
 const LawyerAppointment = () => {
   const { t } = useTranslation();
@@ -604,27 +605,13 @@ const LawyerAppointment = () => {
 
                 {/* Pagination */}
                 {filteredAppointments.length > 0 && (
-                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                    <div className="text-sm font-semibold text-slate-700">
-                      Page <span className="font-bold text-[#0F1A3D]">{currentPage}</span> of <span className="font-bold text-[#0F1A3D]">{totalPages}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                        className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                        className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
+                  <Pagination 
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={filteredAppointments.length}
+                  />
                 )}
               </div>
             </div>

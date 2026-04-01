@@ -61,7 +61,7 @@ const Pagination = ({
     return pages;
   };
 
-  if (totalPages <= 1) return null;
+  if (totalItems === 0) return null;
 
   return (
     <div className="flex flex-col gap-4 mt-6">

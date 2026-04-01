@@ -11,10 +11,14 @@ import {
   Clock,
   X,
   Send,
+  History,
+  Receipt,
+  LayoutDashboard
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import AdminDashHeader from './AdminDashHeader';
 import Statcard from './Statcard';
+import Pagination from '../../components/Pagination';
 import { getImageUrl } from '../../utils/imageUrl';
 import {
   fetchAdminRevenue,
@@ -42,6 +46,13 @@ const AdminRevenue = () => {
   const [paymentMethod, setPaymentMethod] = useState('esewa');
   const [notes, setNotes] = useState('');
 
+  // Tab & Pagination state
+  const [activeTab, setActiveTab] = useState('overview');
+  const [pageOverview, setPageOverview] = useState(1);
+  const [pagePayout, setPagePayout] = useState(1);
+  const [pageTransaction, setPageTransaction] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     dispatch(fetchAdminRevenue());
   }, [dispatch]);
@@ -50,6 +61,20 @@ const AdminRevenue = () => {
   const lawyerBreakdown = revenue?.lawyer_breakdown || [];
   const payments = revenue?.payments || [];
   const recentPayouts = revenue?.payouts || [];
+
+  // Pagination Logic
+  const paginatedBreakdown = lawyerBreakdown.slice(
+    (pageOverview - 1) * itemsPerPage,
+    pageOverview * itemsPerPage
+  );
+  const paginatedPayouts = recentPayouts.slice(
+    (pagePayout - 1) * itemsPerPage,
+    pagePayout * itemsPerPage
+  );
+  const paginatedTransactions = payments.slice(
+    (pageTransaction - 1) * itemsPerPage,
+    pageTransaction * itemsPerPage
+  );
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -172,209 +197,303 @@ const AdminRevenue = () => {
                 />
               </div>
 
-              {/* Lawyer Breakdown with Payout Actions */}
-              <div className="bg-white rounded-2xl p-8 shadow-sm mb-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900">Revenue Per Lawyer</h2>
-                    <p className="text-sm text-gray-500 mt-1">Breakdown of earnings and payout status</p>
-                  </div>
-                </div>
-
-                {lawyerBreakdown.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <Users size={48} className="mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500 font-medium">No transactions yet</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b-2 border-gray-100">
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Transactions</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Platform Fee</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer Earned</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Pending</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Paid Out</th>
-                          <th className="text-center py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {lawyerBreakdown.map((lawyer, idx) => (
-                          <tr key={lawyer.lawyer__id || idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                            <td className="py-4 px-3">
-                              <div className="flex items-center gap-2">
-                                <img
-                                  src={getImageUrl(lawyer.lawyer__profile_image, lawyer.lawyer__name)}
-                                  alt={lawyer.lawyer__name}
-                                  className="w-8 h-8 rounded-full object-cover"
-                                />
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-900">{lawyer.lawyer__name || 'Unknown'}</p>
-                                  <p className="text-xs text-gray-400">{lawyer.lawyer__email}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-4 px-3 text-right">
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600">
-                                {lawyer.transaction_count}
-                              </span>
-                            </td>
-                            <td className="py-4 px-3 text-right text-sm font-semibold text-emerald-600">
-                              Rs. {parseFloat(lawyer.platform_fee || 0).toLocaleString()}
-                            </td>
-                            <td className="py-4 px-3 text-right text-sm font-medium text-gray-900">
-                              Rs. {parseFloat(lawyer.lawyer_earned || 0).toLocaleString()}
-                            </td>
-                            <td className="py-4 px-3 text-right">
-                              {parseFloat(lawyer.pending_payout || 0) > 0 ? (
-                                <span className="text-sm font-semibold text-amber-600">
-                                  Rs. {parseFloat(lawyer.pending_payout).toLocaleString()}
-                                </span>
-                              ) : (
-                                <span className="text-sm text-gray-400">Rs. 0</span>
-                              )}
-                            </td>
-                            <td className="py-4 px-3 text-right">
-                              <span className="text-sm font-medium text-green-600">
-                                Rs. {parseFloat(lawyer.paid_out || 0).toLocaleString()}
-                              </span>
-                            </td>
-                            <td className="py-4 px-3 text-center">
-                              {parseFloat(lawyer.pending_payout || 0) > 0 ? (
-                                <button
-                                  onClick={() => handleOpenPayoutModal(lawyer)}
-                                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
-                                >
-                                  <Send size={13} />
-                                  Pay Lawyer
-                                </button>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 text-xs font-semibold rounded-lg">
-                                  <CheckCircle size={13} />
-                                  Settled
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+              {/* Tabs Navigation */}
+              <div className="flex items-center gap-1 bg-gray-100 p-1.5 rounded-2xl mb-8 w-fit mx-auto lg:mx-0 shadow-sm border border-gray-200">
+                {[
+                  { id: 'overview', name: 'Overview', icon: <LayoutDashboard size={18}/> },
+                  { id: 'payouts', name: 'Payout History', icon: <History size={18}/> },
+                  { id: 'transactions', name: 'Transactions', icon: <Receipt size={18}/> },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      activeTab === tab.id
+                        ? 'bg-white text-blue-600 shadow-md transform scale-105'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.name}
+                  </button>
+                ))}
               </div>
 
-              {/* Recent Payouts */}
-              {recentPayouts.length > 0 && (
-                <div className="bg-white rounded-2xl p-8 shadow-sm mb-8">
+              {/* Tab Content: Overview */}
+              {activeTab === 'overview' && (
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">Revenue Per Lawyer</h2>
+                      <p className="text-sm text-gray-500 mt-1">Breakdown of earnings and payout status</p>
+                    </div>
+                  </div>
+
+                  {lawyerBreakdown.length === 0 ? (
+                    <div className="py-12 text-center text-gray-400">No data found</div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b-2 border-gray-100">
+                              <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer</th>
+                              <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Transactions</th>
+                              <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Platform Fee</th>
+                              <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer Earned</th>
+                              <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Pending</th>
+                              <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Paid Out</th>
+                              <th className="text-center py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {paginatedBreakdown.map((lawyer, idx) => (
+                              <tr key={lawyer.lawyer__id || idx} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                <td className="py-4 px-3">
+                                  <div className="flex items-center gap-3">
+                                    <img
+                                      src={getImageUrl(lawyer.lawyer__profile_image, lawyer.lawyer__name)}
+                                      alt={lawyer.lawyer__name}
+                                      className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                                      onError={(e) => {
+                                        e.target.src = getImageUrl(null, lawyer.lawyer__name);
+                                        e.target.onerror = null;
+                                      }}
+                                    />
+                                    <div>
+                                      <p className="text-sm font-semibold text-gray-900">{lawyer.lawyer__name || 'Unknown'}</p>
+                                      <p className="text-xs text-gray-400">{lawyer.lawyer__email}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-3 text-right">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600">
+                                    {lawyer.transaction_count}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-3 text-right text-sm font-semibold text-emerald-600">
+                                  Rs. {parseFloat(lawyer.platform_fee || 0).toLocaleString()}
+                                </td>
+                                <td className="py-4 px-3 text-right text-sm font-medium text-gray-900">
+                                  Rs. {parseFloat(lawyer.lawyer_earned || 0).toLocaleString()}
+                                </td>
+                                <td className="py-4 px-3 text-right">
+                                  {parseFloat(lawyer.pending_payout || 0) > 0 ? (
+                                    <span className="text-sm font-semibold text-amber-600">
+                                      Rs. {parseFloat(lawyer.pending_payout).toLocaleString()}
+                                    </span>
+                                  ) : (
+                                    <span className="text-sm text-gray-400">Rs. 0</span>
+                                  )}
+                                </td>
+                                <td className="py-4 px-3 text-right">
+                                  <span className="text-sm font-medium text-green-600">
+                                    Rs. {parseFloat(lawyer.paid_out || 0).toLocaleString()}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-3 text-center">
+                                  {parseFloat(lawyer.pending_payout || 0) > 0 ? (
+                                    <button
+                                      onClick={() => handleOpenPayoutModal(lawyer)}
+                                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer shadow-sm active:scale-95"
+                                    >
+                                      <Send size={13} />
+                                      Pay Lawyer
+                                    </button>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 text-xs font-semibold rounded-lg">
+                                      <CheckCircle size={13} />
+                                      Settled
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <Pagination 
+                        currentPage={pageOverview}
+                        totalPages={Math.ceil(lawyerBreakdown.length / itemsPerPage)}
+                        onPageChange={setPageOverview}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={lawyerBreakdown.length}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Tab Content: Payouts */}
+              {activeTab === 'payouts' && (
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
                   <div className="mb-6">
                     <h2 className="text-xl font-bold text-gray-900">Payout History</h2>
                     <p className="text-sm text-gray-500 mt-1">Record of all payouts made to lawyers</p>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b-2 border-gray-100">
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer</th>
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Method</th>
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Payments</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentPayouts.map((payout, idx) => (
-                          <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                            <td className="py-3 px-3">
-                              <p className="text-sm font-semibold text-gray-900">{payout.lawyer_name}</p>
-                              <p className="text-xs text-gray-400">{payout.lawyer_email}</p>
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-1 text-sm text-gray-600">
-                                <Calendar size={14} className="text-gray-400" />
-                                {formatDate(payout.created_at)}
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 text-right text-sm font-bold text-green-600">
-                              Rs. {parseFloat(payout.amount || 0).toLocaleString()}
-                            </td>
-                            <td className="py-3 px-3 text-sm text-gray-700 capitalize">{(payout.payment_method || '-').replace('_', ' ')}</td>
-                            <td className="py-3 px-3 text-sm text-gray-700">{(payout.payment_ids || []).length} payments</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  
+                  {recentPayouts.length === 0 ? (
+                    <div className="py-12 text-center text-gray-400">No payout history found</div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b-2 border-gray-100">
+                              <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer</th>
+                              <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                              <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount Paid</th>
+                              <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Method</th>
+                              <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider font-bold">Payments</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {paginatedPayouts.map((payout, idx) => (
+                              <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="py-4 px-3">
+                                  <div className="flex items-center gap-3">
+                                    <img
+                                      src={getImageUrl(payout.lawyer_profile_image, payout.lawyer_name)}
+                                      alt={payout.lawyer_name}
+                                      className="w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm"
+                                      onError={(e) => {
+                                        e.target.src = getImageUrl(null, payout.lawyer_name);
+                                        e.target.onerror = null;
+                                      }}
+                                    />
+                                    <div>
+                                      <p className="text-sm font-semibold text-gray-900">{payout.lawyer_name}</p>
+                                      <p className="text-xs text-gray-400">{payout.lawyer_email}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-3">
+                                  <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                                    <Calendar size={14} className="text-gray-400" />
+                                    {formatDate(payout.created_at)}
+                                  </div>
+                                </td>
+                                <td className="py-4 px-3 text-right text-sm font-bold text-green-600">
+                                  Rs. {parseFloat(payout.amount || 0).toLocaleString()}
+                                </td>
+                                <td className="py-4 px-3">
+                                  <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded capitalize">
+                                    {(payout.payment_method || '-').replace('_', ' ')}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-3">
+                                  <span className="text-xs text-gray-500 font-medium">
+                                    {payout.payment_ids?.length || 0} items
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <Pagination 
+                        currentPage={pagePayout}
+                        totalPages={Math.ceil(recentPayouts.length / itemsPerPage)}
+                        onPageChange={setPagePayout}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={recentPayouts.length}
+                      />
+                    </>
+                  )}
                 </div>
               )}
 
-              {/* All Transactions */}
-              <div className="bg-white rounded-2xl p-8 shadow-sm">
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">All Transactions</h2>
-                  <p className="text-sm text-gray-500 mt-1">Complete history of completed payments</p>
-                </div>
+              {/* Tab Content: Transactions */}
+              {activeTab === 'transactions' && (
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-bold text-gray-900">All Transactions</h2>
+                    <p className="text-sm text-gray-500 mt-1">Complete history of completed payments</p>
+                  </div>
 
-                {payments.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <DollarSign size={48} className="mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500 font-medium">No transactions yet</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b-2 border-gray-100">
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Client</th>
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer</th>
-                          <th className="text-left py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Platform Fee</th>
-                          <th className="text-right py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer Gets</th>
-                          <th className="text-center py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Payout</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {payments.map((payment) => (
-                          <tr key={payment.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                            <td className="py-3 px-3 text-sm font-medium text-gray-900">{payment.user_name || 'Client'}</td>
-                            <td className="py-3 px-3 text-sm text-gray-700">{payment.lawyer_name || 'Lawyer'}</td>
-                            <td className="py-3 px-3">
-                              <div className="flex items-center gap-1 text-sm text-gray-600">
-                                <Calendar size={14} className="text-gray-400" />
-                                {formatDate(payment.created_at)}
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 text-right text-sm font-medium text-gray-900">
-                              Rs. {parseFloat(payment.total_amount).toLocaleString()}
-                            </td>
-                            <td className="py-3 px-3 text-right text-sm font-semibold text-emerald-600">
-                              Rs. {parseFloat(payment.platform_fee).toLocaleString()}
-                            </td>
-                            <td className="py-3 px-3 text-right text-sm text-gray-700">
-                              Rs. {parseFloat(payment.lawyer_earning).toLocaleString()}
-                            </td>
-                            <td className="py-3 px-3 text-center">
-                              {payment.payout_status === 'paid' ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-600">
-                                  <CheckCircle size={12} />
-                                  Paid
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600">
-                                  <Clock size={12} />
-                                  Pending
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+                  {payments.length === 0 ? (
+                    <div className="py-12 text-center text-gray-400">No transactions recorded</div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b-2 border-gray-100 text-left">
+                              <th className="py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Client</th>
+                              <th className="py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Lawyer</th>
+                              <th className="py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider">Details</th>
+                              <th className="py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider text-right">Revenue</th>
+                              <th className="py-4 px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider text-center">Payout</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50">
+                            {paginatedTransactions.map((payment) => (
+                              <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
+                                <td className="py-4 px-3">
+                                  <div className="flex items-center gap-3">
+                                    <img
+                                      src={getImageUrl(payment.user_profile_image, payment.user_name)}
+                                      alt={payment.user_name}
+                                      className="w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm"
+                                      onError={(e) => {
+                                        e.target.src = getImageUrl(null, payment.user_name || 'User');
+                                        e.target.onerror = null;
+                                      }}
+                                    />
+                                    <span className="text-sm font-medium text-gray-900">{payment.user_name || 'Client'}</span>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-3 border-l-0">
+                                  <div className="flex items-center gap-3">
+                                    <img
+                                      src={getImageUrl(payment.lawyer_profile_image, payment.lawyer_name)}
+                                      alt={payment.lawyer_name}
+                                      className="w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm"
+                                      onError={(e) => {
+                                        e.target.src = getImageUrl(null, payment.lawyer_name || 'Lawyer');
+                                        e.target.onerror = null;
+                                      }}
+                                    />
+                                    <span className="text-sm font-medium text-gray-700">{payment.lawyer_name || 'Lawyer'}</span>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-3">
+                                  <p className="text-sm font-bold text-gray-700">Rs. {parseFloat(payment.total_amount).toLocaleString()}</p>
+                                  <p className="text-xs text-gray-400">{formatDate(payment.created_at)}</p>
+                                </td>
+                                <td className="py-4 px-3 text-right">
+                                  <p className="text-sm font-bold text-emerald-600">+Rs. {parseFloat(payment.platform_fee).toLocaleString()}</p>
+                                  <p className="text-xs text-gray-400">Commission</p>
+                                </td>
+                                <td className="py-4 px-3 text-center">
+                                  {payment.payout_status === 'paid' ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase bg-green-50 text-green-600 border border-green-100">
+                                      <CheckCircle size={10} />
+                                      Settled
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase bg-amber-50 text-amber-600 border border-amber-100">
+                                      <Clock size={10} />
+                                      Pending
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <Pagination 
+                        currentPage={pageTransaction}
+                        totalPages={Math.ceil(payments.length / itemsPerPage)}
+                        onPageChange={setPageTransaction}
+                        itemsPerPage={itemsPerPage}
+                        totalItems={payments.length}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -406,10 +525,21 @@ const AdminRevenue = () => {
               {/* Lawyer Contact Info */}
               <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Send Payment To</p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{pendingPayments?.lawyer_name || selectedLawyer.lawyer__name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{pendingPayments?.lawyer_email || selectedLawyer.lawyer__email}</p>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={getImageUrl(selectedLawyer.lawyer__profile_image, selectedLawyer.lawyer__name)}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      alt=""
+                      onError={(e) => {
+                        e.target.src = getImageUrl(null, selectedLawyer.lawyer__name);
+                        e.target.onerror = null;
+                      }}
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{pendingPayments?.lawyer_name || selectedLawyer.lawyer__name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{pendingPayments?.lawyer_email || selectedLawyer.lawyer__email}</p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-medium text-gray-500">

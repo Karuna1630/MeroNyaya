@@ -26,6 +26,21 @@ export const fetchAdminStats = createAsyncThunk(
   }
 );
 
+/* ================= UPDATE USER STATUS ================= */
+export const updateUserStatus = createAsyncThunk(
+  'admin/updateUserStatus',
+  async ({ userId, is_active }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.patch(`/authentications/admin/user/${userId}/`, {
+        is_active
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 /* ================= FETCH KYC LIST ================= */
 export const fetchKycList = createAsyncThunk(
   'admin/fetchKycList',
@@ -70,8 +85,10 @@ const initialState = {
   kycLoading: false,
   kycError: null,
 
-  reviewLoading: false,
   reviewError: null,
+
+  userUpdateLoading: false,
+  userUpdateError: null,
 };
 
 /* ================= SLICE ================= */
@@ -126,8 +143,29 @@ const adminSlice = createSlice({
     });
 
     builder.addCase(reviewKyc.rejected, (state, action) => {
-      state.reviewLoading = false;
       state.reviewError = action.payload;
+    });
+
+    /* Update User Status */
+    builder.addCase(updateUserStatus.pending, (state) => {
+      state.userUpdateLoading = true;
+      state.userUpdateError = null;
+    });
+
+    builder.addCase(updateUserStatus.fulfilled, (state, action) => {
+      state.userUpdateLoading = false;
+      const updatedUser = action.payload;
+      // Update the user in the stats list if present
+      if (state.stats.users) {
+        state.stats.users = state.stats.users.map((u) =>
+          u.id === updatedUser.id ? { ...u, ...updatedUser } : u
+        );
+      }
+    });
+
+    builder.addCase(updateUserStatus.rejected, (state, action) => {
+      state.userUpdateLoading = false;
+      state.userUpdateError = action.payload;
     });
   }
 });

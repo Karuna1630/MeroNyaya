@@ -630,3 +630,45 @@ class UserProfileView(APIView):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
     
+# Creating API view for superusers to manage any user (update, delete, retrieve)
+class AdminUserUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserResponseSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsSuperUser]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve, update, or delete any user by ID (Superuser only).",
+        responses={
+            200: openapi.Response(description="User details updated/retrieved successfully.", schema=UserResponseSerializer),
+            403: openapi.Response(description="Permission denied."),
+            404: openapi.Response(description="User not found."),
+        },
+        tags=["Admin"],
+    )
+    def patch(self, request, *args, **kwargs):
+        try:
+            return super().patch(request, *args, **kwargs)
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            user = self.get_object()
+            if user.is_superuser:
+                 return api_response(
+                    is_success=False,
+                    error_message="Cannot delete a superuser.",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            return super().delete(request, *args, **kwargs)
+        except Exception as e:
+            return api_response(
+                is_success=False,
+                error_message=str(e),
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )

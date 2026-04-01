@@ -45,8 +45,8 @@ import EditProfile from './Pages/Profile/EditProfile.jsx';
 import AdminDashboard from './Pages/Admin/AdminDashboard.jsx';
 import AdminKYCVerification from './Pages/Admin/AdminKYCVerification.jsx';
 import AdminRevenue from './Pages/Admin/AdminRevenue.jsx';
-
-
+import AdminCases from './Pages/Admin/AdminCases.jsx';
+import AdminUsers from './Pages/Admin/AdminUsers.jsx';
 
 import KYC from './Pages/KYC/KYC.jsx';
 import EsewaSuccess from './Pages/Payment/EsewaSuccess.jsx';
@@ -113,6 +113,8 @@ function App() {
         <Route path='/admindashboard' element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path='/admin/verification' element={<ProtectedRoute requiredRole="admin"><AdminKYCVerification /></ProtectedRoute>} />
         <Route path='/admin/revenue' element={<ProtectedRoute requiredRole="admin"><AdminRevenue /></ProtectedRoute>} />
+        <Route path='/admin/cases' element={<ProtectedRoute requiredRole="admin"><AdminCases /></ProtectedRoute>} />
+        <Route path='/admin/users' element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
 
         {/* KYC - Protected */}
         <Route path='/kyc' element={<ProtectedRoute requiredRole="lawyer"><LawyerReviewGuard><KYC /></LawyerReviewGuard></ProtectedRoute>} />

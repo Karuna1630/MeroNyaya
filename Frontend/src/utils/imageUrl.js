@@ -7,7 +7,7 @@ const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http:/
  * - Null/empty values fall back to a ui-avatars URL using the given name.
  */
 export const getImageUrl = (imageUrl, name = 'User') => {
-  if (!imageUrl) {
+  if (!imageUrl || imageUrl === 'null' || imageUrl === 'undefined' || imageUrl === 'None') {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0F1A3D&color=fff`;
   }
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {

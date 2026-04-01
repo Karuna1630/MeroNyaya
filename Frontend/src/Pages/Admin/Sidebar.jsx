@@ -31,6 +31,8 @@ const Sidebar = () => {
   // Define menu items with icons, labels, and paths for navigation
   const menuItems = [
     { icon: LayoutDashboard, label: "Admin Dashboard", path: "/admindashboard" },
+    { icon: Users, label: "User Management", path: "/admin/users" },
+    { icon: Briefcase, label: "Case Management", path: "/admin/cases" },
     { icon: ShieldCheck, label: "Lawyer Verification", path: "/admin/verification" },
     { icon: DollarSign, label: "Revenue", path: "/admin/revenue" },
   ];
