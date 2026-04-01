@@ -26,10 +26,10 @@ class PayoutAdmin(admin.ModelAdmin):
 class CasePaymentRequestAdmin(admin.ModelAdmin):
     list_display = [
         "id", "case", "lawyer", "proposed_amount", "current_agreed_amount",
-        "status", "rejection_count", "created_at", "expires_at"
+        "status", "created_at", "expires_at"
     ]
-    list_filter = ["status", "rejection_count", "created_at", "expires_at"]
-    search_fields = ["case__title", "lawyer__name", "lawyer__email"]
+    list_filter = ["status", "created_at", "expires_at"]
+    search_fields = ["case__case_title", "lawyer__name", "lawyer__email"]
     readonly_fields = [
         "id", "created_at", "expires_at", "responded_at", "agreed_at", "paid_at"
     ]
@@ -37,11 +37,11 @@ class CasePaymentRequestAdmin(admin.ModelAdmin):
         ("Case Information", {
             "fields": ("id", "case", "lawyer")
         }),
-        ("Amount Negotiation", {
-            "fields": ("proposed_amount", "current_agreed_amount", "client_counter_offer")
+        ("Amount Tracking", {
+            "fields": ("proposed_amount", "current_agreed_amount")
         }),
         ("Status & Tracking", {
-            "fields": ("status", "rejection_count", "description")
+            "fields": ("status", "description")
         }),
         ("Timeline", {
             "fields": ("created_at", "expires_at", "responded_at", "agreed_at", "paid_at")

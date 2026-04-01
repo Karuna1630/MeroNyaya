@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Sidebar from "../sidebar";
 import DashHeader from "../ClientDashHeader";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import PaymentRequestCard from "../../../components/CasePayment/PaymentRequestCard";
-import { getCasePaymentRequests } from "../../../axios/casePaymentAPI";
+import { getCasePaymentRequests, verifyEsewaPayment, verifyKhaltiPayment } from "../../../axios/casePaymentAPI";
+import { getLawyerDetail } from "../../../axios/kycAPI";
 import {
   FileText,
   MessageSquare,
@@ -27,6 +28,7 @@ import ClientCaseDetailCard from "./ClientCaseDetailCard";
 
 const ClientCaseDetail = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("Timeline");
@@ -43,6 +45,12 @@ const ClientCaseDetail = () => {
     meetingLocation: "",
     phoneNumber: "",
   });
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [lawyerAvailability, setLawyerAvailability] = useState({
+    days: [],
+    timeSlots: [],
+  });
+  const [lawyerAvailabilityLoading, setLawyerAvailabilityLoading] = useState(false);
 
   const { cases, scheduleCaseAppointmentLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
@@ -62,6 +70,80 @@ const ClientCaseDetail = () => {
       loadPaymentRequests();
     }
   }, [caseData?.id]);
+
+  // Fetch lawyer availability when case has an assigned lawyer
+  useEffect(() => {
+    const fetchLawyerAvailability = async () => {
+      const lawyerId = caseData?.lawyer_id || caseData?.lawyer;
+      if (!lawyerId) {
+        // Reset to defaults if no lawyer assigned
+        setLawyerAvailability({ days: [], timeSlots: [] });
+        return;
+      }
+
+      setLawyerAvailabilityLoading(true);
+      try {
+        const response = await getLawyerDetail(lawyerId);
+        // Handle potential "Result" wrapping if Backend uses it for single objects
+        const lawyerData = response.data.Result ?? response.data;
+        
+        if (!lawyerData) {
+          console.warn("Lawyer record not found for ID:", lawyerId);
+          setLawyerAvailability({ days: [], timeSlots: [] });
+          return;
+        }
+
+        // Parse availability_days - handle both JSON strings and raw arrays
+        let rawDays = lawyerData.availability_days;
+        if (typeof rawDays === "string" && rawDays.trim()) {
+          try {
+            rawDays = JSON.parse(rawDays);
+          } catch (e) {
+            // Comma-separated or single string
+            rawDays = rawDays.includes(",") 
+              ? rawDays.split(",").map(d => d.trim())
+              : [rawDays.trim()];
+          }
+        }
+        
+        // Convert to 3-letter abbreviations as requested
+        const availableDays = Array.isArray(rawDays) 
+          ? rawDays
+              .map(d => (typeof d === "string" && d.length > 2 ? d.slice(0, 3) : (d || "").toString()))
+              .filter(Boolean)
+          : [];
+        
+        // Generate time slots (2-hour intervals)
+        const startMin = toMinutes(lawyerData.available_from);
+        const endMin = toMinutes(lawyerData.available_until);
+        const timeSlots = [];
+        
+        if (startMin !== null && endMin !== null && endMin > startMin) {
+          for (let t = startMin; t <= endMin; t += 120) {
+            const label = to12Hour(t);
+            if (label) timeSlots.push(label);
+          }
+        }
+
+        setLawyerAvailability({
+          days: availableDays,
+          timeSlots: timeSlots,
+        });
+
+        // Set initial selections if data is present
+        if (availableDays.length > 0) setSelectedDay(availableDays[0]);
+        if (timeSlots.length > 0) setSelectedTime(timeSlots[0]);
+        
+      } catch (error) {
+        console.error("Error fetching lawyer availability details:", error);
+        setLawyerAvailability({ days: [], timeSlots: [] });
+      } finally {
+        setLawyerAvailabilityLoading(false);
+      }
+    };
+
+    fetchLawyerAvailability();
+  }, [caseData?.lawyer_id, caseData?.lawyer]);
 
   const loadPaymentRequests = async () => {
     if (!id) return;
@@ -83,15 +165,89 @@ const ClientCaseDetail = () => {
     await loadPaymentRequests();
   };
 
-  // Reset schedule form when case data changes (e.g., when loading new case details)
-  const availableDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-  const timeSlots = ["10:00 AM", "11:00 AM", "12:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
+  // Verify payment when returning from payment gateway
+  useEffect(() => {
+    const verifyPayment = async () => {
+      const params = new URLSearchParams(location.search);
+      const esewaData = params.get("data");
+      const khaltiPidx = params.get("pidx");
+      const khaltiTransactionId = params.get("transaction_id");
+
+      if (esewaData && !verifyingPayment) {
+        setVerifyingPayment(true);
+        try {
+          const response = await verifyEsewaPayment(esewaData);
+          if (response.data.IsSuccess) {
+            toast.success("Payment verified successfully! Case status updated.");
+            // Refresh cases and payment requests
+            await dispatch(fetchCases());
+            await loadPaymentRequests();
+            // Clear URL params
+            window.history.replaceState({}, document.title, `/client/case/${id}`);
+          } else {
+            toast.error(`Payment verification failed: ${response.data.ErrorMessage?.[0] || "Unknown error"}`);
+          }
+        } catch (error) {
+          console.error("eSewa verification error:", error);
+          toast.error("Failed to verify eSewa payment");
+        } finally {
+          setVerifyingPayment(false);
+        }
+      } else if (khaltiPidx && !verifyingPayment) {
+        setVerifyingPayment(true);
+        // purchase_order_id in URL is our transaction_uuid
+        const purchaseOrderId = params.get("purchase_order_id");
+        
+        try {
+          const response = await verifyKhaltiPayment(khaltiPidx, khaltiTransactionId, purchaseOrderId);
+          if (response.data.IsSuccess) {
+            toast.success("Payment verified successfully! Case status updated.");
+            // Refresh cases and payment requests
+            await dispatch(fetchCases());
+            await loadPaymentRequests();
+            // Clear URL params
+            window.history.replaceState({}, document.title, `/client/case/${id}`);
+          } else {
+            toast.error(`Payment verification failed: ${response.data.ErrorMessage?.[0] || response.data.error_message || "Unknown error"}`);
+          }
+        } catch (error) {
+          console.error("Khalti verification error:", error);
+          toast.error("Failed to verify Khalti payment");
+        } finally {
+          setVerifyingPayment(false);
+        }
+      }
+    };
+
+    if (id) {
+      verifyPayment();
+    }
+  }, [location, id, dispatch]);
+
+  const toMinutes = (timeStr) => {
+    if (!timeStr) return null;
+    const [h, m] = timeStr.split(":").map((v) => parseInt(v, 10));
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  };
+
+  const to12Hour = (minutes) => {
+    if (minutes == null) return null;
+    const h24 = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    const suffix = h24 >= 12 ? "PM" : "AM";
+    const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    const mm = m.toString().padStart(2, "0");
+    return `${h12}:${mm} ${suffix}`;
+  };
 
   // Function to reset the schedule meeting form to its initial state
   const resetScheduleForm = () => {
     setSelectedMeetingType("Video");
-    setSelectedDay("Mon");
-    setSelectedTime("10:00 AM");
+    const defaultDay = lawyerAvailability.days[0] || "Mon";
+    const defaultTime = lawyerAvailability.timeSlots[0] || "10:00 AM";
+    setSelectedDay(defaultDay);
+    setSelectedTime(defaultTime);
     setMeetingForm({ title: "", meetingLocation: "", phoneNumber: "" });
     setScheduleError("");
   };
@@ -532,44 +688,52 @@ const ClientCaseDetail = () => {
                   </>
                 )}
 
-                <div className="col-span-2">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Select Day</p>
-                  <div className="grid grid-cols-5 gap-2">
-                    {availableDays.map((day) => (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => setSelectedDay(day)}
-                        className={`px-2 py-2 rounded-lg text-xs font-semibold transition ${
-                          selectedDay === day
-                            ? "bg-slate-900 text-white"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    ))}
-                  </div>
+                <div className="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Select Day</p>
+                  {lawyerAvailability.days.length > 0 ? (
+                    <div className="grid grid-cols-5 gap-2">
+                      {lawyerAvailability.days.map((day) => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => setSelectedDay(day)}
+                          className={`px-2 py-2 rounded-lg text-xs font-semibold transition ${
+                            selectedDay === day
+                              ? "bg-slate-900 text-white"
+                              : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No availability days set by lawyer.</p>
+                  )}
                 </div>
 
-                <div className="col-span-2">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Preferred Time</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {timeSlots.map((time) => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => setSelectedTime(time)}
-                        className={`px-3 py-2 rounded-lg text-xs font-semibold transition border ${
-                          selectedTime === time
-                            ? "bg-slate-900 text-white border-slate-900"
-                            : "border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
+                <div className="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Preferred Time</p>
+                  {lawyerAvailability.timeSlots.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {lawyerAvailability.timeSlots.map((time) => (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => setSelectedTime(time)}
+                          className={`px-3 py-2 rounded-lg text-xs font-semibold transition border text-center ${
+                            selectedTime === time
+                              ? "bg-slate-900 text-white border-slate-900"
+                              : "border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
+                          }`}
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 italic">No availability times set by lawyer.</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -587,7 +751,7 @@ const ClientCaseDetail = () => {
               </button>
               <button
                 type="submit"
-                disabled={scheduleCaseAppointmentLoading}
+                disabled={scheduleCaseAppointmentLoading || !selectedDay || !selectedTime}
                 className="px-6 py-2 rounded-lg text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {scheduleCaseAppointmentLoading ? "Scheduling..." : "Schedule Meeting"}

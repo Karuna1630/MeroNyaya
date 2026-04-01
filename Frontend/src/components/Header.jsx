@@ -66,7 +66,7 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full bg-[#0F1A3D] sticky top-0 z-[100]">
+    <header className="w-full bg-[#0F1A3D] sticky top-0 z-100">
       <div className="w-full px-6 md:px-12">
         <div className="flex items-center justify-between h-20">
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DollarSign, AlertCircle } from "lucide-react";
+import { DollarSign, AlertCircle, Info, ChevronRight, Briefcase } from "lucide-react";
 import { createCasePaymentRequest } from "../../axios/casePaymentAPI";
 import { toast } from "react-toastify";
 
@@ -15,12 +15,11 @@ const CreatePaymentRequestForm = ({ caseId, caseTitle, onSuccess, isLoading = fa
     const newErrors = {};
 
     if (!amount || parseFloat(amount) <= 0) {
-      newErrors.amount = t("casePayment.enterValidAmount") || "Please enter a valid amount";
+      newErrors.amount = t("casePayment.enterValidAmount");
     }
 
     if (parseFloat(amount) > 999999) {
-      newErrors.amount =
-        t("casePayment.amountTooLarge") || "Amount cannot exceed Rs. 999,999";
+      newErrors.amount = t("casePayment.amountTooLarge");
     }
 
     setErrors(newErrors);
@@ -36,13 +35,6 @@ const CreatePaymentRequestForm = ({ caseId, caseTitle, onSuccess, isLoading = fa
 
     setLoading(true);
     try {
-      const payload = {
-        case_id: caseId,
-        proposed_amount: parseFloat(amount),
-        description: description
-      };
-      console.log("Sending payment request payload:", payload);
-      
       const response = await createCasePaymentRequest(
         caseId,
         parseFloat(amount),
@@ -50,50 +42,31 @@ const CreatePaymentRequestForm = ({ caseId, caseTitle, onSuccess, isLoading = fa
       );
 
       if (response.data.IsSuccess) {
-        toast.success(
-          t("casePayment.requestCreated") ||
-            "Payment request created successfully!"
-        );
+        toast.success(t("casePayment.requestCreated"));
         setAmount("");
         setDescription("");
         onSuccess(response.data.Result.payment_request);
       }
     } catch (error) {
-      console.error("Payment request error:", error.response?.data);
-      
-      // The backend returns errors in different formats
-      let errorMsg = "Error creating payment request";
+      let errorMsg = t("casePayment.errorCreating");
       let isAlreadyExists = false;
       
       if (error.response?.data) {
         const data = error.response.data;
-        
-        // Try different error message locations
         if (data.ErrorMessage) {
-          console.log("Full ErrorMessage object:", data.ErrorMessage);
           if (typeof data.ErrorMessage === 'object') {
-            // If it's an object, try to extract the error message
-            errorMsg = data.ErrorMessage.error || JSON.stringify(data.ErrorMessage);
-            // Check if it's the "already exists" error
-            isAlreadyExists = errorMsg.includes("already exists");
+            const innerError = data.ErrorMessage.error || JSON.stringify(data.ErrorMessage);
+            isAlreadyExists = innerError.includes("already exists");
+            errorMsg = innerError;
           } else {
             errorMsg = data.ErrorMessage;
           }
         } else if (data.error_message) {
           errorMsg = data.error_message;
-        } else if (data.error) {
-          errorMsg = data.error;
-        } else if (data.errors) {
-          errorMsg = JSON.stringify(data.errors);
         }
       }
       
-      console.error("Parsed error message:", errorMsg);
-      
-      // If payment request already exists, reload the existing one instead of showing error
       if (isAlreadyExists) {
-        console.log("Payment request already exists. Reloading existing request...");
-        // Call onSuccess to reload payment requests and show the existing one
         onSuccess();
       } else {
         toast.error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
@@ -103,130 +76,115 @@ const CreatePaymentRequestForm = ({ caseId, caseTitle, onSuccess, isLoading = fa
     }
   };
 
+  const earnings = amount ? (parseFloat(amount) * 0.9).toFixed(2) : "0.00";
+
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 border-b border-gray-200">
+    <div className="bg-white rounded-xl shadow-md border-2 border-blue-500 overflow-hidden max-w-2xl mx-auto font-sans">
+      {/* Simple Header */}
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <DollarSign className="w-6 h-6 text-blue-600" />
+          <Briefcase className="w-6 h-6 text-blue-600" />
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {t("casePayment.requestPayment") || "Request Payment"}
+            <h3 className="text-lg font-bold text-gray-900">
+              {t("casePayment.requestPayment")}
             </h3>
-            <p className="text-sm text-gray-600">{caseTitle}</p>
+            <p className="text-sm text-gray-500">{caseTitle}</p>
           </div>
         </div>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
-        {/* Info banner */}
-        <div className="flex gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        {/* Info Banner */}
+        <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-3">
+          <Info className="w-5 h-5 text-blue-600 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-blue-900">
-              {t("casePayment.paymentInfo") || "Payment Information"}
-            </p>
-            <ul className="text-sm text-blue-800 mt-1 space-y-1 ml-4 list-disc">
-              <li>
-                {t("casePayment.oneTimeRequest") || "This is a one-time payment request for total legal services."}
-              </li>
-              <li>
-                {t("casePayment.clientWillPay") || "The client will be notified to review and complete the payment."}
-              </li>
-              <li>
-                {t("casePayment.expiresIn30Days") || "Request expires in 30 days if not paid."}
-              </li>
-              <li>
-                {t("casePayment.platformFee10Percent") || "Platform takes 10% commission on the total amount."}
-              </li>
-            </ul>
+             <h4 className="text-xs font-bold text-blue-900 uppercase mb-1">{t("casePayment.paymentGuide")}</h4>
+             <p className="text-[11px] text-blue-800 leading-tight">
+               One-time total billing • 10% Platform Fee • Secure handling
+             </p>
           </div>
         </div>
 
-        {/* Proposed Amount */}
-        <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-gray-900 mb-2">
-            {t("casePayment.proposedAmount") || "Proposed Amount"}
-            <span className="text-red-500 ml-1">*</span>
-          </label>
+        {/* Amount Input */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center px-1">
+            <label htmlFor="amount" className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+              {t("casePayment.proposedAmount")}
+            </label>
+            {errors.amount && (
+              <span className="text-[10px] font-bold text-red-500 flex items-center gap-1">
+                <AlertCircle size={12} /> {errors.amount}
+              </span>
+            )}
+          </div>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 font-medium">
-              Rs.
-            </span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">Rs.</span>
             <input
               id="amount"
               type="number"
               step="0.01"
-              min="0"
-              max="999999"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               disabled={loading || isLoading}
-              placeholder={t("casePayment.enterAmount") || "Enter amount"}
-              className={`w-full pl-12 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition ${
-                errors.amount ? "border-red-500" : "border-gray-300"
+              placeholder="0.00"
+              className={`w-full pl-14 pr-4 py-4 bg-gray-50 border-2 rounded-lg text-2xl font-black text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-50 transition-all ${
+                errors.amount ? "border-red-200" : "border-transparent focus:border-blue-500"
               }`}
             />
           </div>
-          {errors.amount && (
-            <p className="mt-1 text-sm text-red-600">{errors.amount}</p>
-          )}
-          {amount && (
-            <p className="mt-2 text-sm text-gray-600">
-              {t("casePayment.yourEarning") || "Your earning (after 10% commission)"}:{" "}
-              <span className="font-semibold text-gray-900">
-                Rs. {(parseFloat(amount) * 0.9).toLocaleString("en-NP", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </p>
-          )}
         </div>
 
-        {/* Description/Justification */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-2">
-            {t("casePayment.justification") || "Justification (Optional)"}
+        {/* Breakdown Card */}
+        <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-between">
+           <div className="flex items-center gap-3">
+              <DollarSign size={20} className="text-emerald-600" />
+              <div>
+                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("casePayment.yourNetEarning")}</p>
+                 <p className="text-lg font-black text-emerald-600">Rs. {parseFloat(earnings).toLocaleString()}</p>
+              </div>
+           </div>
+           <div className="text-right">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t("casePayment.platformFee")}</p>
+              <p className="text-xs font-bold text-red-500">- Rs. {(amount ? parseFloat(amount) * 0.1 : 0).toLocaleString()}</p>
+           </div>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-2">
+          <label htmlFor="description" className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">
+            {t("casePayment.justificationOptional")}
           </label>
           <textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={loading || isLoading}
-            placeholder={t("casePayment.explainAmount") ||
-              "Explain why you're requesting this amount..."}
-            rows="4"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition"
+            placeholder={t("casePayment.explainAmountBrief")}
+            rows="3"
+            className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-lg text-sm font-medium text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all resize-none"
           />
         </div>
 
-        {/* Submit Button */}
-        <div className="flex gap-3 pt-4 border-t border-gray-200">
+        {/* Submit */}
+        <div className="pt-2">
           <button
             type="submit"
             disabled={loading || isLoading}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
           >
             {loading || isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                {t("casePayment.sending") || "Sending..."}
-              </>
+              <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
-                <DollarSign className="w-5 h-5" />
-                {t("casePayment.sendRequest") || "Send Payment Request"}
+                <span className="uppercase tracking-widest text-sm">{t("casePayment.sendPaymentRequest")}</span>
+                <ChevronRight size={18} />
               </>
             )}
           </button>
         </div>
 
-        {/* Terms */}
-        <p className="text-xs text-gray-600 text-center">
-          {t("casePayment.bySubmitting") ||
-            "By submitting, you agree that this payment reflects the fair value of your legal services."}
+        <p className="text-[10px] font-bold text-gray-400 text-center uppercase tracking-wider">
+          {t("casePayment.termsDisclaimer")}
         </p>
       </form>
     </div>

@@ -16,7 +16,8 @@ import {
   X,
   Check,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyConsultations } from "../slices/consultationSlice";
@@ -45,6 +46,9 @@ const LawyerAppointment = () => {
   const [showCaseCompleteModal, setShowCaseCompleteModal] = useState(false);
   const [selectedCaseAppointmentView, setSelectedCaseAppointmentView] = useState(null);
   const [caseAppointmentProcessingId, setCaseAppointmentProcessingId] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("all"); // Filter for type: all, consultation, case
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   const initialFetchDoneRef = useRef(false);
 
   // Select necessary state from Redux store
@@ -65,6 +69,11 @@ const LawyerAppointment = () => {
       dispatch(fetchCases());
     }
   }, [dispatch]);
+
+  // Reset pagination when tab or filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, typeFilter]);
 
   // Combine case appointments from both case details and case appointments slice
   const caseAppointmentsFromCases = useMemo(() => {
@@ -89,10 +98,40 @@ const LawyerAppointment = () => {
     const pending = consultations.filter(c => c.status === "requested").length;
     const accepted = consultations.filter(c => c.status === "accepted").length;
     const completed = consultations.filter(c => c.status === "completed").length;
+    const rejected = consultations.filter(c => c.status === "rejected").length;
     return [
-      { value: pending, label: t('lawyerAppointment.pending'), gradient: "from-amber-500 to-orange-500", ring: "ring-amber-500/20" },
-      { value: accepted, label: t('lawyerAppointment.accepted'), gradient: "from-emerald-500 to-emerald-600", ring: "ring-emerald-500/20" },
-      { value: completed, label: t('lawyerAppointment.completed'), gradient: "from-blue-500 to-blue-600", ring: "ring-blue-500/20" },
+      { 
+        value: pending, 
+        label: t('lawyerAppointment.pending'), 
+        gradient: "from-amber-500 to-orange-500", 
+        ring: "ring-amber-500/20",
+        icon: AlertCircle,
+        iconColor: "text-amber-100"
+      },
+      { 
+        value: accepted, 
+        label: t('lawyerAppointment.accepted'), 
+        gradient: "from-cyan-500 to-teal-600", 
+        ring: "ring-cyan-500/20",
+        icon: Check,
+        iconColor: "text-cyan-100"
+      },
+      { 
+        value: completed, 
+        label: t('lawyerAppointment.completed'), 
+        gradient: "from-green-500 to-emerald-600", 
+        ring: "ring-green-500/20",
+        icon: CheckCircle,
+        iconColor: "text-green-100"
+      },
+      { 
+        value: rejected, 
+        label: t('lawyerAppointment.rejected'), 
+        gradient: "from-red-500 to-rose-600", 
+        ring: "ring-red-500/20",
+        icon: XCircle,
+        iconColor: "text-red-100"
+      },
     ];
   }, [consultations, t]);
 
@@ -145,15 +184,33 @@ const LawyerAppointment = () => {
 
   // Filter appointments based on active tab selection
   const filteredAppointments = useMemo(() => {
+    let filtered = [];
+    
     if (activeTab === t('lawyerAppointment.pending')) {
-      return mergedAppointments.filter(a => a.status === 'requested' || a.status === 'pending');
+      filtered = mergedAppointments.filter(a => a.status === 'requested' || a.status === 'pending');
     } else if (activeTab === t('lawyerAppointment.accepted')) {
-      return mergedAppointments.filter(a => a.status === 'accepted' || a.status === 'confirmed');
+      filtered = mergedAppointments.filter(a => a.status === 'accepted' || a.status === 'confirmed');
     } else if (activeTab === t('lawyerAppointment.completed')) {
-      return mergedAppointments.filter(a => a.status === 'completed');
+      filtered = mergedAppointments.filter(a => a.status === 'completed');
+    } else {
+      filtered = mergedAppointments.filter(a => a.status === 'rejected');
     }
-    return mergedAppointments.filter(a => a.status === 'rejected');
-  }, [activeTab, mergedAppointments, t]);
+    
+    // Apply type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(a => a.type === typeFilter);
+    }
+    
+    return filtered;
+  }, [activeTab, mergedAppointments, typeFilter, t]);
+
+  // Paginate appointments
+  const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+  const paginatedAppointments = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAppointments.slice(startIndex, endIndex);
+  }, [filteredAppointments, currentPage, itemsPerPage]);
 
   // Helper function to get the appropriate icon for the consultation mode (video, in-person, or default)
   const getModeIcon = (mode) => {
@@ -196,6 +253,17 @@ const LawyerAppointment = () => {
       return 'upcoming';
     }
     return appointment.status;
+  };
+
+  // Helper function to convert 24-hour time format to 12-hour format (with AM/PM)
+  const convertTo12HourFormat = (timeStr) => {
+    if (!timeStr) return "N/A";
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const minute = parseInt(minutes) || 0;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    return `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
   };
 
   // Handle file input changes for document uploads in case appointments
@@ -384,15 +452,27 @@ const LawyerAppointment = () => {
 
         <div className="flex-1 p-8 overflow-y-auto">
           {/* Stats Cards */}
-          <div className="grid grid-cols-3 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <div key={index} className={`relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br ${stat.gradient} ring-1 ${stat.ring} flex flex-col items-center justify-center text-center`}>
-                <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-                <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
-                <span className="relative z-10 text-3xl font-extrabold mb-1">{stat.value}</span>
-                <span className="relative z-10 text-xs font-semibold text-white/70 uppercase tracking-widest">{stat.label}</span>
-              </div>
-            ))}
+          <div className="grid grid-cols-4 gap-6 mb-8">
+            {stats.map((stat, index) => {
+              const IconComponent = stat.icon;
+              return (
+                <div 
+                  key={index} 
+                  className={`relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br ${stat.gradient} ring-1 ${stat.ring} flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-2xl hover:scale-105 cursor-pointer group`}
+                >
+                  <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 group-hover:bg-white/20 transition-all duration-300" />
+                  <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5 group-hover:bg-white/10 transition-all duration-300" />
+                  
+                  {/* Icon */}
+                  <div className="relative z-10 mb-3">
+                    <IconComponent size={32} className={`${stat.iconColor} group-hover:scale-110 transition-transform duration-300`} />
+                  </div>
+                  
+                  <span className="relative z-10 text-3xl font-extrabold mb-1 group-hover:text-white transition-all">{stat.value}</span>
+                  <span className="relative z-10 text-xs font-semibold text-white/70 uppercase tracking-widest group-hover:text-white/90 transition-all">{stat.label}</span>
+                </div>
+              );
+            })}
           </div>
 
           {/* Main Content Section - Full Width */}
@@ -402,21 +482,35 @@ const LawyerAppointment = () => {
                 <p className="text-sm text-slate-500 font-medium tracking-tight">Manage both consultation requests and case-related appointments from clients.</p>
               </div>
               
-              {/* Tabs */}
-              <div className="bg-slate-100/80 p-1.5 rounded-2xl w-full flex">
-                {[t('lawyerAppointment.pending'), t('lawyerAppointment.accepted'), t('lawyerAppointment.rejected'), t('lawyerAppointment.completed')].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
-                      activeTab === tab
-                        ? "bg-white text-[#0F1A3D] shadow-sm"
-                        : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+{/* Tabs and Type Filter */}
+              <div className="flex gap-4 items-center">
+                {/* Tabs */}
+                <div className="bg-slate-100/80 p-1.5 rounded-2xl flex-1 flex">
+                  {[t('lawyerAppointment.pending'), t('lawyerAppointment.accepted'), t('lawyerAppointment.rejected'), t('lawyerAppointment.completed')].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${
+                        activeTab === tab
+                          ? "bg-white text-[#0F1A3D] shadow-sm"
+                          : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Type Filter Dropdown */}
+                <select 
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+                >
+                  <option value="all">All Types</option>
+                  <option value="consultation">Consult</option>
+                  <option value="case">Case</option>
+                </select>
               </div>
 
               {/* Unified Appointments Table */}
@@ -424,19 +518,18 @@ const LawyerAppointment = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/50 border-b border-slate-100">
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Type</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.client')}</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.requested')}</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('lawyerAppointment.mode')}</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Payment</th>
-                        <th className="px-6 py-5 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">{t('lawyerAppointment.actions')}</th>
+                      <tr className="bg-slate-200 border-b-2 border-slate-400">
+                        <th className="px-6 py-5 text-[11px] font-bold text-black uppercase tracking-widest">{t('lawyerAppointment.client')}</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-black uppercase tracking-widest">{t('lawyerAppointment.requested')}</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-black uppercase tracking-widest">{t('lawyerAppointment.mode')}</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-black uppercase tracking-widest">Status</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-black uppercase tracking-widest">Payment</th>
+                        <th className="px-6 py-5 text-[11px] font-bold text-black uppercase tracking-widest text-right">{t('lawyerAppointment.actions')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {filteredAppointments.length > 0 ? (
-                        filteredAppointments.map((appointment) => {
+                      {paginatedAppointments.length > 0 ? (
+                        paginatedAppointments.map((appointment) => {
                           const statusDisplay = getAppointmentStatus(appointment);
                           const dateStr = appointment.scheduled_date || appointment.requested_day;
                           const timeStr = appointment.scheduled_time || appointment.requested_time;
@@ -444,11 +537,6 @@ const LawyerAppointment = () => {
                           
                           return (
                             <tr key={`${appointment.type}-${appointment.id}`} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-6 py-5">
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${appointment.type === 'case' ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
-                                  {appointment.type === 'case' ? "Case" : "Consult"}
-                                </span>
-                              </td>
                               <td className="px-6 py-5">
                                 <div className="flex items-center gap-3">
                                   <img src={getImageUrl(appointment.client_profile_image, appointment.client_name)} alt={appointment.client_name} className="w-10 h-10 rounded-full object-cover border-2 border-slate-50 shadow-sm" onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${appointment.client_name || 'Client'}&background=0F1A3D&color=fff`; }} />
@@ -463,7 +551,7 @@ const LawyerAppointment = () => {
                                   </div>
                                   <div className="flex items-center gap-2 text-slate-400 mt-1">
                                     <Clock size={12} />
-                                    <span className="text-[11px] font-medium">{timeStr || "N/A"}</span>
+                                    <span className="text-[11px] font-medium">{convertTo12HourFormat(timeStr)}</span>
                                   </div>
                                 </div>
                               </td>
@@ -492,9 +580,9 @@ const LawyerAppointment = () => {
                                     </>
                                   )}
                                   {(appointment.status === "accepted" || appointment.status === "confirmed") && (
-                                    <button onClick={() => { if (appointment.type === 'consultation') { handleCompleteClick(appointment.originalConsultation); } else { handleCaseCompleteClick(appointment.originalCaseAppointment); } }} disabled={processingId === appointment.id || caseAppointmentProcessingId === appointment.id} className="px-4 py-2 bg-blue-100 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" title="Mark as Complete"><CheckCircle size={16} />Complete</button>
+                                    <button onClick={() => { if (appointment.type === 'consultation') { handleCompleteClick(appointment.originalConsultation); } else { handleCaseCompleteClick(appointment.originalCaseAppointment); } }} disabled={processingId === appointment.id || caseAppointmentProcessingId === appointment.id} className="px-4 py-2 bg-[#0F1A3D] rounded-lg text-white hover:bg-slate-800 transition-all duration-200 font-semibold text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" title="Mark as Complete"><CheckCircle size={16} />Complete</button>
                                   )}
-                                  <button onClick={() => { if (appointment.type === 'consultation') { setSelectedConsultation(appointment.originalConsultation); } else { setSelectedCaseAppointmentView(appointment.originalCaseAppointment); } }} className="px-4 py-2 bg-blue-100 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 font-semibold text-sm flex items-center gap-2" title="View Details"><Eye size={16} />View</button>
+                                  <button onClick={() => { if (appointment.type === 'consultation') { setSelectedConsultation(appointment.originalConsultation); } else { setSelectedCaseAppointmentView(appointment.originalCaseAppointment); } }} className="px-4 py-2 bg-[#0F1A3D] rounded-lg text-white hover:bg-slate-800 transition-all duration-200 font-semibold text-sm flex items-center gap-2" title="View Details"><Eye size={16} />View</button>
                                 </div>
                               </td>
                             </tr>
@@ -502,7 +590,7 @@ const LawyerAppointment = () => {
                         })
                       ) : (
                         <tr>
-                          <td colSpan="7" className="px-6 py-16 text-center">
+                          <td colSpan="6" className="px-6 py-16 text-center">
                             <div className="flex flex-col items-center gap-2 opacity-40">
                               <Clock size={40} className="text-slate-400 mb-2" />
                               <p className="text-sm font-bold text-slate-500 tracking-tight">No appointments {activeTab.toLowerCase()}</p>
@@ -513,6 +601,31 @@ const LawyerAppointment = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination */}
+                {filteredAppointments.length > 0 && (
+                  <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                    <div className="text-sm font-semibold text-slate-700">
+                      Page <span className="font-bold text-[#0F1A3D]">{currentPage}</span> of <span className="font-bold text-[#0F1A3D]">{totalPages}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

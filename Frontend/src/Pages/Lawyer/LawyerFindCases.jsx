@@ -98,10 +98,24 @@ const LawyerFindCases = () => {
   const filteredCases = useMemo(() => {
     if (!publicCases || publicCases.length === 0) return [];
     
+    console.log('Filtering cases. Total:', publicCases.length);
     return publicCases.filter((item) => {
-      const matchesSearch = (item.case_title || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            (item.case_description || "").toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === "All Categories" || item.case_category === categoryFilter;
+      // Robust status check: only exclude cases we are CERTAIN shouldn't be here
+      const status = (item.status || "").toLowerCase();
+      const isClosed = ["accepted", "closed", "rejected", "removed"].includes(status);
+      
+      if (isClosed) return false;
+
+      const title = (item.case_title || "").toLowerCase();
+      const desc = (item.case_description || "").toLowerCase();
+      const search = searchTerm.toLowerCase();
+      const matchesSearch = title.includes(search) || desc.includes(search);
+      
+      const categoryLabel = t('lawyerFindCases.filterByCategory');
+      const matchesCategory = categoryFilter === categoryLabel || 
+                             categoryFilter === "All Categories" || 
+                             item.case_category === categoryFilter;
+                             
       const matchesPriority = priorityFilter === "All" || item.urgency_level === priorityFilter;
       
       return matchesSearch && matchesCategory && matchesPriority;
@@ -196,10 +210,8 @@ const LawyerFindCases = () => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  return (
-    <div className="flex min-h-screen bg-gray-50/50 text-[#0F1A3D]">
+  };  return (
+    <div className="flex min-h-screen bg-gray-50/50 text-[#1A202C]">
       <Sidebar />
       
       <div className="flex-1 flex flex-col min-w-0">
@@ -208,25 +220,25 @@ const LawyerFindCases = () => {
           subtitle={t('lawyerFindCases.subtitle')}
         />
 
-        <main className="p-8 space-y-6">
+        <main className="p-6 md:p-8 space-y-6">
           {/* Search & Filters Section */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-            <div className="flex flex-wrap gap-4">
-              <div className="flex-1 min-w-75 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input 
                   type="text" 
                   placeholder={t('lawyerFindCases.search')}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
+                  className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                 />
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <div className="relative group">
+                <div className="relative">
                   <select 
-                    className="appearance-none bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                     value={categoryFilter}
                     onChange={(e) => handleCategoryChange(e.target.value)}
                   >
@@ -240,9 +252,9 @@ const LawyerFindCases = () => {
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
 
-                <div className="relative group">
+                <div className="relative">
                   <select 
-                    className="appearance-none bg-gray-50 border border-gray-200 rounded-xl px-5 py-3 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                     value={priorityFilter}
                     onChange={(e) => handlePriorityChange(e.target.value)}
                   >
@@ -258,34 +270,32 @@ const LawyerFindCases = () => {
               </div>
             </div>
             
-            <p className="text-sm font-medium text-gray-500">
-              Showing <span className="text-[#0F1A3D] font-bold">{filteredCases.length}</span> cases
-              <span className="mx-2 text-gray-300">•</span>
-              <span className="text-[#0F1A3D] font-bold">{availableCases.length}</span> public
-              <span className="mx-2 text-gray-300">•</span>
-              <span className="text-[#0F1A3D] font-bold">{proposedItems.length}</span> proposed
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1">
+              {t('lawyerFindCases.showing')} <span className="text-blue-600">{filteredCases.length}</span> {t('lawyerFindCases.cases')}
+              <span className="mx-2 text-gray-200">|</span>
+              <span className="text-gray-600">{availableCases.length}</span> {t('lawyerFindCases.public')}
             </p>
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center justify-center">
-            <div className="bg-gray-100 rounded-full p-1 inline-flex gap-1">
+          <div className="flex items-center">
+            <div className="bg-gray-100 rounded-lg p-1 flex gap-1">
               <button
                 onClick={() => handleTabChange("public")}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${
                   activeTab === "public"
-                    ? "bg-white text-[#0F1A3D] shadow"
-                    : "text-gray-500 hover:text-[#0F1A3D]"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                 }`}
               >
                 {t('lawyerFindCases.publicTab')}
               </button>
               <button
                 onClick={() => handleTabChange("proposed")}
-                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${
                   activeTab === "proposed"
-                    ? "bg-white text-[#0F1A3D] shadow"
-                    : "text-gray-500 hover:text-[#0F1A3D]"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                 }`}
               >
                 {t('lawyerFindCases.proposedTab')}
@@ -294,20 +304,20 @@ const LawyerFindCases = () => {
           </div>
 
           {/* Case List */}
-          <div className="space-y-6 pb-8">
+          <div className="space-y-4 pb-12">
             {publicCasesLoading ? (
-              <div className="bg-white py-24 rounded-3xl border border-gray-100 flex flex-col items-center justify-center text-gray-500 gap-4">
-                <div className="w-12 h-12 border-4 border-[#0F1A3D] border-t-transparent rounded-full animate-spin"></div>
+              <div className="bg-white py-24 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-gray-400 gap-4">
+                <div className="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-sm font-medium">{t('lawyerFindCases.loadingCases')}</p>
               </div>
             ) : publicCasesError ? (
-              <div className="bg-white py-24 rounded-3xl border border-red-200 flex flex-col items-center justify-center text-red-500 gap-4">
+              <div className="bg-white py-16 rounded-xl border border-red-50 flex flex-col items-center justify-center text-red-500 gap-4">
                 <div className="text-center space-y-2">
-                  <p className="text-xl font-bold">{t('lawyerFindCases.errorLoadingCases')}</p>
-                  <p className="text-sm">{publicCasesError}</p>
+                  <p className="font-bold">{t('lawyerFindCases.errorLoadingCases')}</p>
+                  <p className="text-xs text-gray-500 max-w-xs mx-auto">{publicCasesError}</p>
                   <button 
                     onClick={() => dispatch(fetchPublicCases())}
-                    className="mt-4 px-6 py-2 bg-[#0F1A3D] text-white rounded-xl text-sm font-bold hover:bg-black transition-colors"
+                    className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all"
                   >
                     {t('lawyerFindCases.retry')}
                   </button>
@@ -317,167 +327,158 @@ const LawyerFindCases = () => {
               activeTab === "public" ? (
                 pagedPublicCases.length > 0 ? (
                   pagedPublicCases.map((item) => (
-                    <div key={item.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
+                    <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row overflow-hidden group">
                       <div className="flex-1 p-6 space-y-4">
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 
                             onClick={() => navigate(`/lawyercase/${item.id}`)}
-                            className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight hover:text-blue-600 cursor-pointer transition-colors"
+                            className="text-lg font-bold text-slate-800 group-hover:text-blue-600 cursor-pointer transition-colors"
                           >
                             {item.case_title}
                           </h2>
-                          <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(item.urgency_level)}`}>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getPriorityClasses(item.urgency_level)}`}>
                             {item.urgency_level}
                           </span>
-                          <div className="flex gap-2">
-                            <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{item.case_category}</span>
-                            {item.location && (
-                              <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase">
-                                <MapPin size={14} />
-                                {item.location}
-                              </span>
-                            )}
-                          </div>
+                          <span className="px-2 py-0.5 bg-gray-50 text-gray-500 rounded text-[10px] font-bold uppercase tracking-wider border border-gray-100">
+                             {item.case_category}
+                          </span>
                         </div>
 
-                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 max-w-4xl">
+                        <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
                           {item.case_description}
                         </p>
 
                         <div className="flex flex-wrap items-center gap-6 pt-2">
-                          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
-                            <Calendar size={16} className="text-gray-400" />
-                            {t('lawyerFindCases.posted')}: {formatDate(item.created_at)}
+                          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400">
+                            <Calendar size={14} />
+                            {formatDate(item.created_at)}
                           </div>
-                          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
-                            <FileText size={16} className="text-gray-400" />
-                            {item.document_count || 0} documents
+                          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400">
+                            <MapPin size={14} />
+                            {item.location || t('cases.notSpecified')}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs font-semibold text-gray-400">
+                            <FileText size={14} />
+                            {item.document_count || 0} {t('lawyerCaseDetail.files')}
                           </div>
                         </div>
                       </div>
 
-                      <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
+                      <div className="w-full md:w-52 bg-slate-50/50 border-l border-gray-100 p-6 flex flex-col justify-center gap-2.5">
                         <button 
                           onClick={() => navigate(`/lawyercase/${item.id}`)}
-                          className="flex items-center justify-center gap-2 w-full py-2.5 bg-white text-[#0F1A3D] border-2 border-[#0F1A3D] rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm"
+                          className="w-full py-2.5 bg-white text-slate-700 border border-gray-200 rounded-lg text-xs font-bold hover:bg-white hover:border-blue-600 hover:text-blue-600 transition-all shadow-sm"
                         >
-                          <Eye size={16} />
-                          View Details
+                          {t('lawyerFindCases.viewDetails')}
                         </button>
                         <button 
                           onClick={() => handleOpenProposal(item)}
-                          className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#0F1A3D] text-white rounded-xl text-xs font-bold hover:bg-black transition-colors shadow-sm"
+                          className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-sm"
                         >
-                          <Send size={16} />
-                          Send Proposal
+                          {t('lawyerFindCases.submitProposal')}
                         </button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="bg-white py-10 rounded-2xl border border-dashed border-gray-200 text-center text-sm text-gray-500">
-                    No public cases available with current filters.
+                  <div className="bg-white py-20 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 gap-3">
+                    <FileText size={40} className="opacity-20" />
+                    <p className="text-sm font-medium">{t('lawyerFindCases.noCasesFound')}</p>
                   </div>
                 )
               ) : (
                 proposedItems.length > 0 ? (
                   proposedItems.map(({ caseData, proposal }) => (
-                    <div key={`proposal-${proposal.id}`} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-200 flex flex-col md:flex-row overflow-hidden">
-                      <div className="flex-1 p-6 space-y-4">
-                        <div className="flex flex-wrap items-center gap-3">
+                    <div key={`proposal-${proposal.id}`} className="bg-white rounded-2xl border-2 border-gray-100 shadow-md hover:shadow-2xl hover:border-[#0F1A3D]/30 transition-all duration-300 overflow-hidden">
+                      {/* Card Header with Status Badge */}
+                      <div className="bg-gradient-to-r from-emerald-50 to-emerald-50/50 border-b-2 border-emerald-100 p-6">
+                        <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
                           <h2 
                             onClick={() => handleViewProposed({ caseData, proposal })}
-                            className="text-xl font-bold text-[#0F1A3D] uppercase tracking-tight hover:text-blue-600 cursor-pointer transition-colors"
+                            className="text-xl font-bold text-[#0F1A3D] hover:text-emerald-600 cursor-pointer transition-colors line-clamp-2"
                           >
                             {caseData?.case_title || proposal.case_title}
                           </h2>
-                          <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase ${getPriorityClasses(caseData?.urgency_level || "Medium")}`}>
-                            {caseData?.urgency_level || "Medium"}
-                          </span>
-                          <div className="flex gap-2">
-                            <span className="px-3 py-1 bg-[#0F1A3D] text-white rounded text-[10px] font-semibold uppercase tracking-wider">{caseData?.case_category || proposal.case_category || "General"}</span>
-                            {caseData?.location && (
-                              <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 uppercase">
-                                <MapPin size={14} />
-                                {caseData.location}
-                              </span>
-                            )}
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                            <CheckCircle2 size={12} />
+                            {t('lawyerFindCases.proposed')}
                           </div>
                         </div>
+                        <span className="inline-block px-3 py-1 bg-[#0F1A3D]/10 text-[#0F1A3D] rounded-full text-[10px] font-bold uppercase tracking-wider border border-[#0F1A3D]/20">
+                          {caseData?.case_category || proposal.case_category}
+                        </span>
+                      </div>
 
-                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-2 max-w-4xl">
+                      {/* Card Body */}
+                      <div className="p-6 space-y-4">
+                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
                           {caseData?.case_description || "Case details are not available."}
                         </p>
 
-                        <div className="flex flex-wrap items-center gap-6 pt-2">
-                          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
-                            <Calendar size={16} className="text-gray-400" />
-                            Posted: {formatDate(caseData?.created_at || proposal.created_at)}
+                        {/* Card Info */}
+                        <div className="flex items-center gap-2 py-4 border-y border-gray-100">
+                          <div className="p-2 rounded-lg bg-[#0F1A3D]/10">
+                            <Calendar size={16} className="text-[#0F1A3D]" />
                           </div>
-                          <div className="flex items-center gap-2 text-[12px] font-bold text-gray-500 uppercase">
-                            <FileText size={16} className="text-gray-400" />
-                            {caseData?.document_count || 0} documents
+                          <div className="text-xs">
+                            <p className="text-gray-400 font-semibold">Posted</p>
+                            <p className="font-bold text-[#0F1A3D]">{formatDate(caseData?.created_at || proposal.created_at)}</p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="w-full md:w-64 bg-gray-50/50 border-l border-gray-100 p-6 flex flex-col justify-center items-center gap-3">
+                      {/* Card Footer with Actions */}
+                      <div className="bg-gradient-to-r from-[#0F1A3D]/2 to-transparent p-6 flex flex-col sm:flex-row gap-3">
                         <button 
                           onClick={() => handleViewProposed({ caseData, proposal })}
-                          className="flex items-center justify-center gap-2 w-full py-2.5 bg-white text-[#0F1A3D] border-2 border-[#0F1A3D] rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm"
+                          className="flex-1 py-3 bg-white text-[#0F1A3D] border-2 border-[#0F1A3D] rounded-lg text-sm font-bold hover:bg-[#0F1A3D]/5 transition-all duration-200 flex items-center justify-center gap-2"
                         >
                           <Eye size={16} />
-                          View Details
+                          {t('lawyerFindCases.viewDetails')}
                         </button>
+                        
                         {proposal.status === "rejected" ? (
-                          <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-red-50 text-red-700 rounded-xl text-xs font-bold border border-red-200">
-                            <X size={16} />
-                            Proposal Rejected
+                          <div className="flex-1 py-3 bg-red-50 text-red-600 rounded-lg text-sm font-bold text-center border-2 border-red-200 uppercase tracking-wider">
+                            {t('lawyerFindCases.rejected')}
                           </div>
                         ) : proposal.status === "accepted" ? (
-                          <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-200">
-                            <CheckCircle2 size={16} />
-                            Proposal Accepted
-                          </div>
-                        ) : proposal.status === "withdrawn" ? (
-                          <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold border border-slate-200">
-                            <X size={16} />
-                            Proposal Withdrawn
+                          <div className="flex-1 py-3 bg-emerald-600 text-white rounded-lg text-sm font-bold text-center border-2 border-emerald-600 uppercase tracking-wider shadow-md">
+                            {t('lawyerFindCases.accepted')}
                           </div>
                         ) : (
-                          <div className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-50 text-green-700 rounded-xl text-xs font-bold border border-green-200">
-                            <CheckCircle2 size={16} />
-                            Proposal Sent
+                          <div className="flex-1 py-3 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-bold text-center border-2 border-emerald-200 uppercase tracking-wider">
+                            {t('lawyerFindCases.proposalSuccess')}
                           </div>
                         )}
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="bg-white py-10 rounded-2xl border border-dashed border-gray-200 text-center text-sm text-gray-500">
-                    No proposed cases yet.
+                  <div className="bg-white py-20 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 gap-3">
+                    <FileText size={40} className="opacity-20" />
+                    <p className="text-sm font-medium">{t('lawyerFindCases.noProposalsFound')}</p>
                   </div>
                 )
               )
             ) : (
-              <div className="bg-white py-24 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-500 gap-4">
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center">
-                    <Search size={40} className="text-gray-200" />
-                </div>
-                <div className="text-center space-y-1">
-                    <p className="text-xl font-bold text-[#0F1A3D]">No cases found</p>
+              <div className="bg-white py-24 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-gray-400 gap-4">
+                <Search size={40} className="opacity-20" />
+                <div className="text-center">
+                    <p className="text-lg font-bold text-slate-900">{t('lawyerFindCases.noCasesFound')}</p>
                     <p className="text-sm">Try adjusting your filters or search terms</p>
                 </div>
               </div>
             )}
             {activeTab === "public" && availableCases.length > 0 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPublicPages}
-                onPageChange={setCurrentPage}
-                itemsPerPage={itemsPerPage}
-                totalItems={availableCases.length}
-              />
+              <div className="pt-6">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPublicPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={availableCases.length}
+                />
+              </div>
             )}
           </div>
         </main>
@@ -502,88 +503,86 @@ const LawyerFindCases = () => {
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
             onClick={() => setShowProposedViewModal(false)}
           />
-          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all">
-            <div className="p-8 pb-4 sticky top-0 bg-white z-10 border-b border-gray-50">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Case Details</h2>
-                  <p className="text-gray-500 text-sm mt-1">Your proposal for this case</p>
-                </div>
-                <button
-                  onClick={() => setShowProposedViewModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
-                >
-                  <X size={24} />
-                </button>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all">
+            <div className="p-6 border-b border-gray-100 sticky top-0 bg-white z-10 flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Case Details</h2>
+                <p className="text-xs text-gray-500">Your proposal for this case</p>
               </div>
+              <button
+                onClick={() => setShowProposedViewModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            <div className="p-8 pt-6 space-y-6">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-semibold text-gray-900">
+            <div className="p-6 space-y-6">
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h3 className="text-lg font-bold text-gray-900">
                     {selectedProposedCase.case_title}
                   </h3>
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getPriorityClasses(selectedProposedCase.urgency_level)}`}>
+                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase tracking-wider ${getPriorityClasses(selectedProposedCase.urgency_level)}`}>
                     {selectedProposedCase.urgency_level}
                   </span>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4 border-t border-gray-200 pt-6">
-                <div>
-                  <p className="text-xs text-gray-500 uppercase mb-1">Category</p>
-                  <p className="text-sm text-gray-900">
-                    {selectedProposedCase.case_category || "General"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase mb-1">Posted Date</p>
-                  <p className="text-sm text-gray-900">
-                    {formatDate(selectedProposedCase.created_at)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase mb-1">Documents</p>
-                  <p className="text-sm text-gray-900">
-                    {selectedProposedCase.document_count || selectedProposedCase.documents?.length || 0} files
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 uppercase mb-1">Proposal Status</p>
-                  <p className="text-sm text-gray-900">
-                    {selectedProposal?.status || "pending"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs text-gray-500 uppercase">Description</p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {selectedProposedCase.case_description}
-                </p>
-              </div>
-
-              <div className="space-y-2 border-t border-gray-200 pt-6">
-                <label className="text-sm font-medium text-gray-900">Your Proposal</label>
-                <div className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-800 whitespace-pre-wrap">
-                  {selectedProposal?.proposal_text || "No proposal text available."}
-                </div>
-              </div>
-
-              {selectedProposal?.client_feedback && (
-                <div className="space-y-2 border-t border-gray-200 pt-6">
-                  <label className="text-sm font-medium text-gray-900">Client Feedback</label>
-                  <div className="w-full p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900 whitespace-pre-wrap">
-                    {selectedProposal.client_feedback}
+                <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-xl">
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Category</p>
+                    <p className="text-sm font-semibold text-gray-700">
+                      {selectedProposedCase.case_category || "General"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Posted Date</p>
+                    <p className="text-sm font-semibold text-gray-700">
+                      {formatDate(selectedProposedCase.created_at)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Files</p>
+                    <p className="text-sm font-semibold text-gray-700">
+                      {selectedProposedCase.document_count || selectedProposedCase.documents?.length || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Status</p>
+                    <p className="text-sm font-semibold text-gray-700 capitalize">
+                      {selectedProposal?.status || "pending"}
+                    </p>
                   </div>
                 </div>
-              )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+                <div className="space-y-2">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Description</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {selectedProposedCase.case_description}
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-4 border-t border-gray-100">
+                  <label className="text-sm font-bold text-gray-900">Your Proposal</label>
+                  <div className="w-full p-4 bg-blue-50/50 border border-blue-100 rounded-xl text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {selectedProposal?.proposal_text || "No proposal text available."}
+                  </div>
+                </div>
+
+                {selectedProposal?.client_feedback && (
+                  <div className="space-y-2 pt-4 border-t border-gray-100">
+                    <label className="text-sm font-bold text-gray-900">Client Feedback</label>
+                    <div className="w-full p-4 bg-amber-50/50 border border-amber-100 rounded-xl text-sm text-amber-900 whitespace-pre-wrap leading-relaxed italic">
+                      {selectedProposal.client_feedback}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-4">
                 <button
                   onClick={() => setShowProposedViewModal(false)}
-                  className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm font-bold hover:bg-black transition-all shadow-sm"
                 >
                   Close
                 </button>

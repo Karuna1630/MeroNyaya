@@ -12,7 +12,6 @@ from .views import (
     AdminLawyerPendingPaymentsView,
     CreateCasePaymentRequestView,
     RespondToCasePaymentView,
-    LawyerRespondToCounterOfferView,
     CasePaymentRequestDetailView,
     CasePaymentRequestListView,
     EsewaInitiateCasePaymentView,
@@ -36,7 +35,6 @@ urlpatterns = [
     path("cases/request/", CreateCasePaymentRequestView.as_view(), name="create-case-payment-request"),
     path("cases/<uuid:payment_request_id>/", CasePaymentRequestDetailView.as_view(), name="case-payment-request-detail"),
     path("cases/<uuid:payment_request_id>/respond/", RespondToCasePaymentView.as_view(), name="respond-to-case-payment"),
-    path("cases/<uuid:payment_request_id>/counter-respond/", LawyerRespondToCounterOfferView.as_view(), name="lawyer-respond-to-counter"),
     path("cases/<int:case_id>/requests/", CasePaymentRequestListView.as_view(), name="case-payment-request-list"),
     # Case payment - payment gateway endpoints
     path("cases/esewa/initiate/", EsewaInitiateCasePaymentView.as_view(), name="esewa-initiate-case"),

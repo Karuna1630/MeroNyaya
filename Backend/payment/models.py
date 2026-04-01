@@ -149,16 +149,13 @@ class Payout(models.Model):
 class CasePaymentRequest(models.Model):
     """
     Model for handling payment requests when a case is completed.
-    Lawyers can request payment from clients with negotiation capability.
+    Lawyers can request payment from clients for their services.
     """
     
     PAYMENT_STATUS_CHOICES = [
         ("pending", "Pending"),  # Initial request from lawyer
-        ("negotiating", "Negotiating"),  # Client made counter-offer
-        ("agreed", "Agreed"),  # Both parties agreed on amount
-        ("paid", "Paid"),  # Payment completed
-        ("cancelled", "Cancelled"),  # Request cancelled
-        ("disputed", "Disputed"),  # Escalated to admin after max rejections
+        ("agreed", "Agreed"),   # Client accepted the request
+        ("paid", "Paid"),       # Payment completed
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -179,33 +176,22 @@ class CasePaymentRequest(models.Model):
     proposed_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        help_text="Initial amount proposed by lawyer.",
+        help_text="The amount requested by the lawyer.",
     )
     current_agreed_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Currently agreed amount (may be different from proposed).",
-    )
-    client_counter_offer = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="Latest counter-offer from client.",
+        help_text="The final amount agreed by both parties.",
     )
     
-    # Status and negotiation tracking
+    # Status tracking
     status = models.CharField(
         max_length=20,
         choices=PAYMENT_STATUS_CHOICES,
         default="pending",
         help_text="Current status of payment request.",
-    )
-    rejection_count = models.IntegerField(
-        default=0,
-        help_text="Number of times client rejected the offer.",
     )
     
     # Timeline

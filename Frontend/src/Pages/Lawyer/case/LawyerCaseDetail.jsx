@@ -463,66 +463,151 @@ const LawyerCaseDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Client Information */}
+              {/* Contact Person Information (Client or Lawyer depending on current user role) */}
               <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-900 mb-4">Client Information</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                  {user?.role === 'Lawyer' ? 'Client Information' : 'Lawyer Information'}
+                </h3>
                 
-                <div className="flex items-center gap-3 mb-4">
-                  {caseData.client_profile_image ? (
-                    <img
-                      src={caseData.client_profile_image}
-                      alt={caseData.client_name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
-                      <span className="text-pink-700 font-semibold text-lg">
-                        {caseData.client_name?.charAt(0)}
-                      </span>
+                {/* Display Client Info when Lawyer is viewing */}
+                {user?.role === 'Lawyer' && (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      {caseData?.client_profile_image ? (
+                        <img
+                          src={caseData.client_profile_image}
+                          alt={caseData.client_name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
+                          <span className="text-pink-700 font-semibold text-lg">
+                            {caseData?.client_name?.charAt(0) || 'C'}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{caseData?.client_name || 'Client'}</h4>
+                        <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                          Client
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{caseData.client_name}</h4>
-                    <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                      Client
-                    </span>
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone size={16} />
-                    <span>+977-9841234567</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail size={16} />
-                    <span>{caseData.client_email}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin size={16} />
-                    <span>Kathmandu, Ward 10</span>
-                  </div>
-                </div>
+                    <div className="space-y-3">
+                      {caseData?.client_phone && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone size={16} />
+                          <span>{caseData.client_phone}</span>
+                        </div>
+                      )}
+                      {caseData?.client_email && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Mail size={16} />
+                          <span>{caseData.client_email}</span>
+                        </div>
+                      )}
+                      {caseData?.client_address && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin size={16} />
+                          <span>{caseData.client_address}</span>
+                        </div>
+                      )}
+                    </div>
 
-                <div className="flex gap-2 mt-4">
-                  <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
-                    <MessageSquare size={16} />
-                    Message
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleScheduleClick}
-                    className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${
-                      canScheduleCaseMeeting
-                        ? "border-gray-300 hover:bg-gray-50"
-                        : "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
-                    }`}
-                    disabled={!canScheduleCaseMeeting}
-                  >
-                    <Calendar size={16} />
-                    Schedule
-                  </button>
-                </div>
+                    <div className="flex gap-2 mt-4">
+                      <button 
+                        onClick={() => navigate('/lawyermessage', { state: { caseId: caseData.id } })}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                        <MessageSquare size={16} />
+                        Message
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleScheduleClick}
+                        className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${
+                          canScheduleCaseMeeting
+                            ? 'border-gray-300 hover:bg-gray-50'
+                            : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                        }`}
+                        disabled={!canScheduleCaseMeeting}
+                      >
+                        <Calendar size={16} />
+                        Schedule
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Display Lawyer Info when Client is viewing */}
+                {user?.role === 'Client' && (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      {caseData?.lawyer_profile_image ? (
+                        <img
+                          src={caseData.lawyer_profile_image}
+                          alt={caseData.lawyer_name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                          <span className="text-blue-700 font-semibold text-lg">
+                            {caseData?.lawyer_name?.charAt(0) || 'L'}
+                          </span>
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{caseData?.lawyer_name || 'Lawyer'}</h4>
+                        <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                          Lawyer
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {caseData?.lawyer_phone && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone size={16} />
+                          <span>{caseData.lawyer_phone}</span>
+                        </div>
+                      )}
+                      {caseData?.lawyer_email && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Mail size={16} />
+                          <span>{caseData.lawyer_email}</span>
+                        </div>
+                      )}
+                      {caseData?.lawyer_address && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin size={16} />
+                          <span>{caseData.lawyer_address}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 mt-4">
+                      <button 
+                        onClick={() => navigate('/clientmessage', { state: { caseId: caseData.id } })}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                        <MessageSquare size={16} />
+                        Message
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleScheduleClick}
+                        className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${
+                          canScheduleCaseMeeting
+                            ? 'border-gray-300 hover:bg-gray-50'
+                            : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                        }`}
+                        disabled={!canScheduleCaseMeeting}
+                      >
+                        <Calendar size={16} />
+                        Schedule
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

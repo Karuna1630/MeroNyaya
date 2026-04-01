@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Search,
   ChevronDown,
+  RotateCcw,
 } from 'lucide-react';
 import DashHeader from './ClientDashHeader';
 import Sidebar from './sidebar';

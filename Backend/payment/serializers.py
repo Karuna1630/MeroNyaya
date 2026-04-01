@@ -109,7 +109,7 @@ class CreatePayoutSerializer(serializers.Serializer):
 
 
 class CasePaymentRequestSerializer(serializers.ModelSerializer):
-    """Serializer for case payment requests with negotiation tracking."""
+    """Serializer for case payment requests."""
     
     # Nested case information
     case_id = serializers.IntegerField(source="case.id", read_only=True)
@@ -147,9 +147,7 @@ class CasePaymentRequestSerializer(serializers.ModelSerializer):
             "client_profile_image",
             "proposed_amount",
             "current_agreed_amount",
-            "client_counter_offer",
             "status",
-            "rejection_count",
             "description",
             "created_at",
             "expires_at",
@@ -171,7 +169,6 @@ class CasePaymentRequestSerializer(serializers.ModelSerializer):
             "client_email",
             "client_profile_image",
             "status",
-            "rejection_count",
             "created_at",
             "expires_at",
             "responded_at",
@@ -181,45 +178,34 @@ class CasePaymentRequestSerializer(serializers.ModelSerializer):
 
 
 class CreateCasePaymentRequestSerializer(serializers.Serializer):
-    """Serializer for lawyer to create a payment request for a case."""
+    """Serializer for lawyer to create a billing request for a case."""
     
     case_id = serializers.IntegerField(help_text="The case ID for which payment is being requested.")
     proposed_amount = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
-        help_text="Initial amount proposed by lawyer.",
+        help_text="The amount requested by the lawyer.",
     )
     description = serializers.CharField(
         required=False,
         allow_blank=True,
-        help_text="Justification for the amount.",
+        help_text="Justification for the requested amount.",
     )
 
 
 class RespondToCasePaymentSerializer(serializers.Serializer):
-    """Serializer for client to respond to a payment request."""
+    """Serializer for client to accept a payment request."""
     
     RESPONSE_CHOICES = [
         ("accept", "Accept"),
-        ("reject", "Reject"),
-        ("counter", "Counter-offer"),
     ]
     
     response = serializers.ChoiceField(
         choices=RESPONSE_CHOICES,
-        help_text="Client's response to payment request.",
-    )
-    counter_amount = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        required=False,
-        allow_null=True,
-        help_text="Amount offered in counter-proposal (required if response='counter').",
+        help_text="Client's response (only 'accept' is supported).",
     )
     
     def validate(self, data):
-        if data.get("response") == "counter" and not data.get("counter_amount"):
-            raise serializers.ValidationError(
-                "counter_amount is required when response is 'counter'."
-            )
+        if data.get("response") != "accept":
+            raise serializers.ValidationError("Only 'accept' is allowed.")
         return data
