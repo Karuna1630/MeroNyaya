@@ -1,5 +1,5 @@
-from rest_framework import viewsets, status, filters
-from rest_framework.decorators import action
+from rest_framework.views import APIView
+from rest_framework import status, generics, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -20,73 +20,63 @@ from .serializers import (
 )
 
 
-class CaseViewSet(viewsets.ModelViewSet):
+# ─────────────────────────────────────────────────────
+# Case Views
+# ─────────────────────────────────────────────────────
+
+class CaseListCreateView(generics.ListCreateAPIView):
     """
-    ViewSet for managing legal cases
+    List all cases or create a new one.
+    GET /api/cases/
+    POST /api/cases/
     """
     permission_classes = [IsAuthenticated]
-    # Using different serializers for list and detail views
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-    # Enable searching and ordering on list endpoints
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    # Allow searching by case title and description, and ordering by creation or update time
     search_fields = ['case_title', 'case_description']
     ordering_fields = ['created_at', 'updated_at']
     ordering = ['-created_at']
-    
-    
-    # filtering queryset based on user role and query parameters
-    def get_queryset(self):
-        if getattr(self, 'swagger_fake_view', False):
-            return Case.objects.none()
 
-        # Get the authenticated user
+    def get_queryset(self):
         user = self.request.user
         if not user.is_authenticated:
             return Case.objects.none()
         queryset = Case.objects.none()
-        
+
         # Clients see only their own cases
         if user.role == 'Client':
             queryset = Case.objects.filter(client=user).select_related('client', 'lawyer')
-        
         # Lawyers see public cases and cases assigned to them
         elif user.role == 'Lawyer':
             queryset = Case.objects.filter(
-                models.Q(lawyer=user) | 
+                models.Q(lawyer=user) |
                 models.Q(status__in=['public', 'proposals_received'], lawyer_selection='public') |
                 models.Q(status__in=['sent_to_lawyers', 'proposals_received'], preferred_lawyers=user)
             ).select_related('client', 'lawyer').distinct()
-        
         # Admin sees all cases
         elif user.is_superuser:
             queryset = Case.objects.all().select_related('client', 'lawyer')
-        
+
         # Apply manual filters from query params
         status_filter = self.request.query_params.get('status', None)
         if status_filter:
             queryset = queryset.filter(status=status_filter)
-        
+
         category_filter = self.request.query_params.get('case_category', None)
         if category_filter:
             queryset = queryset.filter(case_category=category_filter)
-        
+
         urgency_filter = self.request.query_params.get('urgency_level', None)
         if urgency_filter:
             queryset = queryset.filter(urgency_level=urgency_filter)
-        
-        return queryset
-    
-    # Dynamically select serializer based on action (list, retrieve, etc.)
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return CaseListSerializer
-        elif self.action == 'public_cases':
-            return PublicCaseSerializer
-        return CaseSerializer
-    
 
-    # CREATE CASE - only clients can create cases, with optional preferred lawyers and document uploads
+        return queryset
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return CaseListSerializer
+        return CaseSerializer
+
     def create(self, request, *args, **kwargs):
         """
         Create a new case (clients only)
@@ -96,7 +86,7 @@ class CaseViewSet(viewsets.ModelViewSet):
                 {'error': 'Only clients can create cases'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        # handle preferred lawyers if provided (accepting both list and comma-separated string formats)
+        # handle preferred lawyers if provided
         preferred_ids = []
         if 'preferred_lawyers' in request.data:
             preferred_ids = request.data.getlist('preferred_lawyers')
@@ -111,17 +101,15 @@ class CaseViewSet(viewsets.ModelViewSet):
                     {'error': 'One or more selected lawyers are invalid'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        
-        # Validate the request data using the serializer
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        # Save the case to database, associating it with the authenticated client
         case = serializer.save()
 
         # Set preferred lawyers if provided
         if preferred_ids:
             case.preferred_lawyers.set(valid_lawyers)
-        
+
         # Create timeline event for case creation
         CaseTimeline.objects.create(
             case=case,
@@ -130,11 +118,9 @@ class CaseViewSet(viewsets.ModelViewSet):
             description=f'Case "{case.case_title}" was created by {request.user.name}',
             created_by=request.user
         )
-        
-      # Handle file uploads using serializer validation
-        files = request.FILES.getlist('documents')
 
-        # Validate each file using the CaseDocumentSerializer
+        # Handle file uploads
+        files = request.FILES.getlist('documents')
         for file in files:
             document_data = {
                 "file": file,
@@ -143,12 +129,10 @@ class CaseViewSet(viewsets.ModelViewSet):
                 "file_size": file.size,
                 "uploaded_by": request.user.id
             }
-
             doc_serializer = CaseDocumentSerializer(data=document_data)
             doc_serializer.is_valid(raise_exception=True)
             doc_serializer.save(case=case)
 
-            # Create timeline event for document upload
             CaseTimeline.objects.create(
                 case=case,
                 event_type='document_uploaded',
@@ -156,7 +140,7 @@ class CaseViewSet(viewsets.ModelViewSet):
                 description=f'Client ({request.user.name}) uploaded: {file.name}',
                 created_by=request.user
             )
-        
+
         # Notify preferred lawyers about the new case
         if preferred_ids:
             for lawyer in valid_lawyers:
@@ -168,7 +152,6 @@ class CaseViewSet(viewsets.ModelViewSet):
                     link='/lawyercaserequest'
                 )
         else:
-            # Notify all lawyers about the new public case
             all_lawyers = User.objects.filter(role='Lawyer')
             for lawyer in all_lawyers:
                 send_notification(
@@ -180,48 +163,79 @@ class CaseViewSet(viewsets.ModelViewSet):
                 )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
-    def public_cases(self, request):
-        """
-        Get all public cases available for lawyers
-        """
+
+
+class CaseDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update or delete a specific case.
+    GET/PUT/PATCH/DELETE /api/cases/<pk>/
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = CaseSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Case.objects.all().select_related('client', 'lawyer')
+        if user.role == 'Client':
+            return Case.objects.filter(client=user).select_related('client', 'lawyer')
+        if user.role == 'Lawyer':
+            return Case.objects.filter(
+                models.Q(lawyer=user) |
+                models.Q(status__in=['public', 'proposals_received'], lawyer_selection='public') |
+                models.Q(status__in=['sent_to_lawyers', 'proposals_received'], preferred_lawyers=user)
+            ).select_related('client', 'lawyer').distinct()
+        return Case.objects.none()
+
+
+class PublicCasesView(APIView):
+    """
+    Get all public cases available for lawyers.
+    GET /api/cases/public_cases/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
         if request.user.role != 'Lawyer':
             return Response(
                 {'error': 'Only lawyers can view public cases'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
-        # Show cases that are public or have proposals being reviewed
+
         cases = Case.objects.filter(
             models.Q(status__in=['public', 'proposals_received'], lawyer_selection='public') |
             models.Q(status__in=['public', 'proposals_received'], preferred_lawyers=request.user)
         ).select_related('client').distinct().order_by('-created_at')
-        
-        serializer = self.get_serializer(cases, many=True)
+
+        serializer = PublicCaseSerializer(cases, many=True)
         return Response(serializer.data)
-    
-    @action(detail=True, methods=['post', 'patch'], permission_classes=[IsAuthenticated], parser_classes=[MultiPartParser, FormParser, JSONParser])
-    def upload_documents(self, request, pk=None):
-        """
-        Upload additional documents to a case (by client or assigned lawyer)
-        """
-        case = self.get_object()
-        
-        # Allow both client and assigned lawyer to upload documents
+
+
+class CaseUploadDocumentsView(APIView):
+    """
+    Upload additional documents to a case.
+    POST/PATCH /api/cases/<pk>/upload_documents/
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def _handle_upload(self, request, pk):
+        case = get_object_or_404(Case, pk=pk)
+
         if case.client != request.user and case.lawyer != request.user:
             return Response(
                 {'error': 'You can only upload documents to your own cases or cases assigned to you'},
                 status=status.HTTP_403_FORBIDDEN
             )
-        
+
         files = request.FILES.getlist('documents')
         if not files:
             return Response(
                 {'error': 'No files provided'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         documents = []
         for file in files:
             doc = CaseDocument.objects.create(
@@ -233,8 +247,7 @@ class CaseViewSet(viewsets.ModelViewSet):
                 file_size=file.size
             )
             documents.append(doc)
-            
-            # Create timeline event for document upload
+
             uploader_role = "Client" if case.client == request.user else "Lawyer"
             CaseTimeline.objects.create(
                 case=case,
@@ -243,8 +256,8 @@ class CaseViewSet(viewsets.ModelViewSet):
                 description=f'{uploader_role} ({request.user.name}) uploaded: {file.name}',
                 created_by=request.user
             )
-        
-        # Notify the other party about new documents
+
+        # Notify the other party
         notify_user = case.lawyer if case.client == request.user else case.client
         if notify_user:
             send_notification(
@@ -257,424 +270,205 @@ class CaseViewSet(viewsets.ModelViewSet):
 
         serializer = CaseDocumentSerializer(documents, many=True)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def accept_case(self, request, pk=None):
-        """
-        Lawyer accepts a public case
-        """
-        if request.user.role != 'Lawyer':
-            return Response(
-                {'error': 'Only lawyers can accept cases'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        case = self.get_object()
-        
-        if case.status != 'public':
-            return Response(
-                {'error': 'Case is not available for acceptance'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        case.lawyer = request.user
-        case.status = 'accepted'
-        case.accepted_at = timezone.now()
-        case.save()
-        
-        # Create timeline event for case acceptance
-        CaseTimeline.objects.create(
-            case=case,
-            event_type='case_accepted',
-            title='Case Accepted',
-            description=f'Lawyer {request.user.name} accepted the case',
-            created_by=request.user
-        )
-
-        # Notify client that their case was accepted
-        send_notification(
-            user=case.client,
-            title='Case Accepted',
-            message=f'Lawyer {request.user.name} accepted your case "{case.case_title}"',
-            notif_type='case',
-            link=f'/client/case/{case.id}'
-        )
-        
-        serializer = self.get_serializer(case)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
-    def update_status(self, request, pk=None):
-        """
-        Update case status
-        """
-        case = self.get_object()
-        new_status = request.data.get('status')
-        
-        if not new_status:
-            return Response(
-                {'error': 'Status is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Validate status transitions
-        valid_statuses = dict(Case.STATUS_CHOICES).keys()
-        if new_status not in valid_statuses:
-            return Response(
-                {'error': 'Invalid status'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        case.status = new_status
-        
-        # Assign lawyer when accepting and update timestamps
-        if new_status == 'accepted':
-            case.lawyer = request.user
-            case.accepted_at = timezone.now()
-        elif new_status == 'completed':
-            # Check if payment is paid before allowing completion
-            from payment.models import CasePaymentRequest
-            payment_request = CasePaymentRequest.objects.filter(case=case).first()
-            if not payment_request or payment_request.status != 'paid':
-                return Response(
-                    {'error': 'Case can only be marked as completed after the agreed payment is received.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            case.completed_at = timezone.now()
-        
-        case.save()
-        
-        # Create timeline event for status change
-        CaseTimeline.objects.create(
-            case=case,
-            event_type='status_changed',
-            title=f'Status Changed to {new_status.title()}',
-            description=f'Case status changed to {new_status.replace("_", " ").title()}',
-            created_by=request.user
-        )
-
-        # Notify the other party about status change
-        if case.client and case.client != request.user:
-            send_notification(
-                user=case.client,
-                title='Case Status Updated',
-                message=f'Your case "{case.case_title}" is now {new_status.replace("_", " ").title()}',
-                notif_type='case',
-                link=f'/client/case/{case.id}'
-            )
-        if case.lawyer and case.lawyer != request.user:
-            send_notification(
-                user=case.lawyer,
-                title='Case Status Updated',
-                message=f'Case "{case.case_title}" is now {new_status.replace("_", " ").title()}',
-                notif_type='case',
-                link=f'/lawyercase/{case.id}'
-            )
-
-        serializer = self.get_serializer(case)
-        return Response(serializer.data)
-    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
-    def update_case_details(self, request, pk=None):
-        """
-        Update case details by assigned lawyer (court info, hearing date, case number, etc.)
-        """
-        if request.user.role != 'Lawyer':
-            return Response(
-                {'error': 'Only lawyers can update case details'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        case = self.get_object()
-        
-        # Ensure only the assigned lawyer can update
-        if case.lawyer != request.user:
-            return Response(
-                {'error': 'You can only update cases assigned to you'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Fields that lawyers can update
-        updatable_fields = ['case_number', 'court_name', 'opposing_party', 'next_hearing_date', 'status', 'notes']
-        
-        for field in updatable_fields:
-            if field in request.data:
-                value = request.data[field]
-                # Convert empty strings to None for date fields
-                if field == 'next_hearing_date' and value == '':
-                    value = None
-                setattr(case, field, value)
-        
-        case.save()
-        
-        # Create timeline event for case status update
-        status_display = case.status.replace('_', ' ').title()
-        CaseTimeline.objects.create(
-            case=case,
-            event_type='status_changed',
-            title=f'Status Changed to {status_display}',
-            description=f'Case status changed to {status_display}',
-            created_by=request.user
-        )
-
-        # Notify the client about the status update
-        if case.client:
-            send_notification(
-                user=case.client,
-                title='Case Status Updated',
-                message=f'Your case "{case.case_title}" is now {status_display}',
-                notif_type='case',
-                link=f'/client/case/{case.id}'
-            )
-
-        serializer = self.get_serializer(case)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def add_timeline_event(self, request, pk=None):
-        """
-        Add a timeline event (note) to a case
-        """
-        case = self.get_object()
-        
-        # Allow both client and assigned lawyer to add notes
-        if case.client != request.user and case.lawyer != request.user:
-            return Response(
-                {'error': 'You can only add notes to your own cases or cases assigned to you'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        event_type = request.data.get('event_type', 'note_added')
-        title = request.data.get('title')
-        description = request.data.get('description')
-        
-        # Validate required fields
-        if not title:
-            return Response(
-                {'error': 'Title (topic) is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        if not description:
-            return Response(
-                {'error': 'Description is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        timeline_event = CaseTimeline.objects.create(
-            case=case,
-            event_type=event_type,
-            title=title,
-            description=description,
-            created_by=request.user
-        )
-        
-        # Notify the other party about the new timeline update
-        notify_user = case.client if request.user == case.lawyer else case.lawyer
-        if notify_user:
-            send_notification(
-                user=notify_user,
-                title='Case Timeline Updated',
-                message=f'A new update was added to your case "{case.case_title}": {title}',
-                notif_type='case',
-                link=f'/client/case/{case.id}' if notify_user == case.client else f'/lawyercase/{case.id}'
-            )
-
-        from .serializers import CaseTimelineSerializer
-        serializer = CaseTimelineSerializer(timeline_event)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def schedule_meeting(self, request, pk=None):
-        """
-        Schedule a case appointment (client only)
-        """
-        if request.user.role != 'Client':
-            return Response(
-                {'error': 'Only clients can schedule case appointments'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        case = self.get_object()
-        if case.client != request.user:
-            return Response(
-                {'error': 'You can only schedule appointments for your own cases'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        # Validate that the case has been accepted by a lawyer or is in progress
-        if case.status not in ['accepted', 'in_progress']:
-            return Response(
-                {'error': f'Case must be accepted or in progress before scheduling appointments. Current status: {case.status}'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Validate that a lawyer has been assigned
-        if not case.lawyer:
-            return Response(
-                {'error': 'No lawyer has been assigned to this case yet'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer = CaseAppointmentSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        appointment = serializer.save(
-            case=case,
-            client=request.user,
-            lawyer=case.lawyer
-        )
-
-        # Notify lawyer about the new meeting request
-        send_notification(
-            user=case.lawyer,
-            title='New Meeting Request',
-            message=f'{request.user.name} requested a meeting for case "{case.case_title}"',
-            notif_type='appointment',
-            link='/lawyerappointment'
-        )
-
-        return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
+    def post(self, request, pk):
+        return self._handle_upload(request, pk)
 
 
-class CaseAppointmentViewSet(viewsets.ModelViewSet):
+
+
+
+class CaseActionView(APIView):
     """
-    ViewSet for managing case appointments
+    Handle various case actions: update_status, update_case_details, add_timeline_event, schedule_meeting.
+    PATCH/POST /api/cases/<pk>/<action>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, action):
+        case = get_object_or_404(Case, pk=pk)
+
+        if action == 'update_status':
+            new_status = request.data.get('status')
+            if not new_status:
+                return Response({'error': 'Status is required'}, status=status.HTTP_400_BAD_REQUEST)
+            if new_status not in dict(Case.STATUS_CHOICES).keys():
+                return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+            case.status = new_status
+            if new_status == 'accepted':
+                case.lawyer = request.user
+                case.accepted_at = timezone.now()
+            elif new_status == 'completed':
+                from payment.models import CasePaymentRequest
+                payment_request = CasePaymentRequest.objects.filter(case=case).first()
+                if not payment_request or payment_request.status != 'paid':
+                    return Response({'error': 'Case can only be marked as completed after the agreed payment is received.'}, status=status.HTTP_400_BAD_REQUEST)
+                case.completed_at = timezone.now()
+
+            case.save()
+
+            CaseTimeline.objects.create(
+                case=case, event_type='status_changed',
+                title=f'Status Changed to {new_status.title()}',
+                description=f'Case status changed to {new_status.replace("_", " ").title()}',
+                created_by=request.user
+            )
+
+            if case.client and case.client != request.user:
+                send_notification(user=case.client, title='Case Status Updated', message=f'Your case "{case.case_title}" is now {new_status.replace("_", " ").title()}', notif_type='case', link=f'/client/case/{case.id}')
+            if case.lawyer and case.lawyer != request.user:
+                send_notification(user=case.lawyer, title='Case Status Updated', message=f'Case "{case.case_title}" is now {new_status.replace("_", " ").title()}', notif_type='case', link=f'/lawyercase/{case.id}')
+
+            return Response(CaseSerializer(case).data)
+
+        elif action == 'update_case_details':
+            if request.user.role != 'Lawyer':
+                return Response({'error': 'Only lawyers can update case details'}, status=status.HTTP_403_FORBIDDEN)
+            if case.lawyer != request.user:
+                return Response({'error': 'You can only update cases assigned to you'}, status=status.HTTP_403_FORBIDDEN)
+
+            for field in ['case_number', 'court_name', 'opposing_party', 'next_hearing_date', 'status', 'notes']:
+                if field in request.data:
+                    value = request.data[field]
+                    if field == 'next_hearing_date' and value == '':
+                        value = None
+                    setattr(case, field, value)
+
+            case.save()
+            status_display = case.status.replace('_', ' ').title()
+            CaseTimeline.objects.create(case=case, event_type='status_changed', title=f'Status Changed to {status_display}', description=f'Case status changed to {status_display}', created_by=request.user)
+            
+            if case.client:
+                send_notification(user=case.client, title='Case Status Updated', message=f'Your case "{case.case_title}" is now {status_display}', notif_type='case', link=f'/client/case/{case.id}')
+            return Response(CaseSerializer(case).data)
+
+        return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, pk, action):
+        case = get_object_or_404(Case, pk=pk)
+
+        if action == 'add_timeline_event':
+            if case.client != request.user and case.lawyer != request.user:
+                return Response({'error': 'You can only add notes to your own cases or cases assigned to you'}, status=status.HTTP_403_FORBIDDEN)
+
+            title = request.data.get('title')
+            description = request.data.get('description')
+            if not title or not description:
+                return Response({'error': 'Title and description are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            timeline_event = CaseTimeline.objects.create(
+                case=case, event_type=request.data.get('event_type', 'note_added'),
+                title=title, description=description, created_by=request.user
+            )
+
+            notify_user = case.client if request.user == case.lawyer else case.lawyer
+            if notify_user:
+                send_notification(user=notify_user, title='Case Timeline Updated', message=f'A new update was added to your case "{case.case_title}": {title}', notif_type='case', link=f'/client/case/{case.id}' if notify_user == case.client else f'/lawyercase/{case.id}')
+
+            from .serializers import CaseTimelineSerializer
+            return Response(CaseTimelineSerializer(timeline_event).data, status=status.HTTP_201_CREATED)
+
+        elif action == 'schedule_meeting':
+            if request.user.role != 'Client':
+                return Response({'error': 'Only clients can schedule case appointments'}, status=status.HTTP_403_FORBIDDEN)
+            if case.client != request.user:
+                return Response({'error': 'You can only schedule appointments for your own cases'}, status=status.HTTP_403_FORBIDDEN)
+            if case.status not in ['accepted', 'in_progress']:
+                return Response({'error': f'Case must be accepted or in progress before scheduling appointments.'}, status=status.HTTP_400_BAD_REQUEST)
+            if not case.lawyer:
+                return Response({'error': 'No lawyer has been assigned to this case yet'}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = CaseAppointmentSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            appointment = serializer.save(case=case, client=request.user, lawyer=case.lawyer)
+
+            send_notification(user=case.lawyer, title='New Meeting Request', message=f'{request.user.name} requested a meeting for case "{case.case_title}"', notif_type='appointment', link='/lawyerappointment')
+            return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
+
+        return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ─────────────────────────────────────────────────────
+# Case Appointment Views
+# ─────────────────────────────────────────────────────
+
+class CaseAppointmentListCreateView(generics.ListCreateAPIView):
+    """
+    List all case appointments or create a new one.
+    GET /api/cases/appointments/
+    POST /api/cases/appointments/
     """
     permission_classes = [IsAuthenticated]
     serializer_class = CaseAppointmentSerializer
 
     def get_queryset(self):
-        if getattr(self, 'swagger_fake_view', False):
-            return CaseAppointment.objects.none()
-
         user = self.request.user
         if not user.is_authenticated:
             return CaseAppointment.objects.none()
-        queryset = CaseAppointment.objects.none()
 
         if user.role == 'Client':
-            queryset = CaseAppointment.objects.filter(client=user).select_related('case', 'client', 'lawyer')
+            return CaseAppointment.objects.filter(client=user).select_related('case', 'client', 'lawyer')
         elif user.role == 'Lawyer':
-            queryset = CaseAppointment.objects.filter(case__lawyer=user).select_related('case', 'client', 'lawyer')
+            return CaseAppointment.objects.filter(case__lawyer=user).select_related('case', 'client', 'lawyer')
         elif user.is_superuser:
-            queryset = CaseAppointment.objects.all().select_related('case', 'client', 'lawyer')
+            return CaseAppointment.objects.all().select_related('case', 'client', 'lawyer')
 
-        return queryset
+        return CaseAppointment.objects.none()
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def confirm(self, request, pk=None):
-        """
-        Confirm a case appointment (lawyer only)
-        """
-        appointment = self.get_object()
 
-        if request.user.role != 'Lawyer':
-            return Response(
-                {'error': 'Only lawyers can confirm case appointments'},
-                status=status.HTTP_403_FORBIDDEN
-            )
 
-        if appointment.case.lawyer != request.user:
-            return Response(
-                {'error': 'You can only confirm appointments for your assigned cases'},
-                status=status.HTTP_403_FORBIDDEN
-            )
 
-        scheduled_date_raw = request.data.get('scheduled_date')
-        scheduled_time_raw = request.data.get('scheduled_time')
-        meeting_link = request.data.get('meeting_link')
 
-        if not scheduled_date_raw:
-            return Response({'error': 'scheduled_date is required'}, status=status.HTTP_400_BAD_REQUEST)
-        if not scheduled_time_raw:
-            return Response({'error': 'scheduled_time is required'}, status=status.HTTP_400_BAD_REQUEST)
-        if appointment.mode == CaseAppointment.MODE_VIDEO and not meeting_link:
-            return Response({'error': 'meeting_link is required for video appointments'}, status=status.HTTP_400_BAD_REQUEST)
+class CaseAppointmentActionView(APIView):
+    """
+    Handle case appointment actions: confirm, reject, complete (lawyer only).
+    POST /api/cases/appointments/<pk>/<action>/
+    """
+    permission_classes = [IsAuthenticated]
 
-        scheduled_date = parse_date(scheduled_date_raw)
-        scheduled_time = parse_time(scheduled_time_raw)
-
-        if not scheduled_date:
-            return Response({'error': 'scheduled_date must be a valid date'}, status=status.HTTP_400_BAD_REQUEST)
-        if not scheduled_time:
-            return Response({'error': 'scheduled_time must be a valid time'}, status=status.HTTP_400_BAD_REQUEST)
-
-        appointment.scheduled_date = scheduled_date
-        appointment.scheduled_time = scheduled_time
-        appointment.meeting_link = meeting_link if appointment.mode == CaseAppointment.MODE_VIDEO else None
-        appointment.status = CaseAppointment.STATUS_CONFIRMED
-        appointment.save()
-
-        # Notify client that appointment is confirmed
-        send_notification(
-            user=appointment.client,
-            title='Appointment Confirmed',
-            message=f'Your appointment for case "{appointment.case.case_title}" has been confirmed by {request.user.name}',
-            notif_type='appointment',
-            link='/clientappointment'
-        )
-
-        return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def reject(self, request, pk=None):
-        """
-        Reject a case appointment (lawyer only)
-        """
-        appointment = self.get_object()
+    def post(self, request, pk, action):
+        appointment = get_object_or_404(CaseAppointment, pk=pk)
 
         if request.user.role != 'Lawyer':
-            return Response(
-                {'error': 'Only lawyers can reject case appointments'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({'error': 'Only lawyers can process case appointments'}, status=status.HTTP_403_FORBIDDEN)
 
         if appointment.case.lawyer != request.user:
-            return Response(
-                {'error': 'You can only reject appointments for your assigned cases'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            return Response({'error': 'You can only process appointments for your assigned cases'}, status=status.HTTP_403_FORBIDDEN)
 
-        appointment.status = CaseAppointment.STATUS_CANCELLED
+        if action == 'confirm':
+            scheduled_date_raw = request.data.get('scheduled_date')
+            scheduled_time_raw = request.data.get('scheduled_time')
+            meeting_link = request.data.get('meeting_link')
+
+            if not scheduled_date_raw or not scheduled_time_raw:
+                return Response({'error': 'scheduled_date and scheduled_time are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+            appointment.scheduled_date = parse_date(scheduled_date_raw)
+            appointment.scheduled_time = parse_time(scheduled_time_raw)
+            appointment.meeting_link = meeting_link if appointment.mode == CaseAppointment.MODE_VIDEO else None
+            appointment.status = CaseAppointment.STATUS_CONFIRMED
+            title_msg = 'Appointment Confirmed'
+            body_msg = f'has been confirmed by {request.user.name}'
+
+        elif action == 'reject':
+            appointment.status = CaseAppointment.STATUS_CANCELLED
+            title_msg = 'Appointment Rejected'
+            body_msg = f'was rejected by {request.user.name}'
+
+        elif action == 'complete':
+            appointment.status = CaseAppointment.STATUS_COMPLETED
+            title_msg = 'Appointment Completed'
+            body_msg = 'has been marked as completed'
+        
+        else:
+            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
         appointment.save()
 
-        # Notify client that appointment was rejected
         send_notification(
             user=appointment.client,
-            title='Appointment Rejected',
-            message=f'Your appointment for case "{appointment.case.case_title}" was rejected by {request.user.name}',
-            notif_type='appointment',
-            link='/clientappointment'
-        )
-
-        return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def complete(self, request, pk=None):
-        """
-        Mark a case appointment as completed (lawyer only)
-        """
-        appointment = self.get_object()
-
-        if request.user.role != 'Lawyer':
-            return Response(
-                {'error': 'Only lawyers can complete case appointments'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        if appointment.case.lawyer != request.user:
-            return Response(
-                {'error': 'You can only complete appointments for your assigned cases'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        appointment.status = CaseAppointment.STATUS_COMPLETED
-        appointment.save()
-
-        # Notify client that appointment is completed
-        send_notification(
-            user=appointment.client,
-            title='Appointment Completed',
-            message=f'Your appointment for case "{appointment.case.case_title}" has been marked as completed',
+            title=title_msg,
+            message=f'Your appointment for case "{appointment.case.case_title}" {body_msg}',
             notif_type='appointment',
             link='/clientappointment'
         )

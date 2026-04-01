@@ -1,10 +1,16 @@
 from django.urls import path
-from .views import ConsultationViewSet
+from .views import (
+    ConsultationListCreateView,
+    ConsultationDetailView,
+    ConsultationAcceptView,
+    ConsultationRejectView,
+    ConsultationCompleteView,
+)
 
 urlpatterns = [
-    path("", ConsultationViewSet.as_view({'get': 'list', 'post': 'create'}), name="consultation-list"),
-    path("<int:pk>/", ConsultationViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name="consultation-detail"),
-    path("<int:pk>/accept/", ConsultationViewSet.as_view({'post': 'accept'}), name="consultation-accept"),
-    path("<int:pk>/reject/", ConsultationViewSet.as_view({'post': 'reject'}), name="consultation-reject"),
-    path("<int:pk>/complete/", ConsultationViewSet.as_view({'post': 'complete'}), name="consultation-complete"),
+    path("", ConsultationListCreateView.as_view(), name="consultation-list"),
+    path("<int:pk>/", ConsultationDetailView.as_view(), name="consultation-detail"),
+    path("<int:pk>/accept/", ConsultationAcceptView.as_view(), name="consultation-accept"),
+    path("<int:pk>/reject/", ConsultationRejectView.as_view(), name="consultation-reject"),
+    path("<int:pk>/complete/", ConsultationCompleteView.as_view(), name="consultation-complete"),
 ]

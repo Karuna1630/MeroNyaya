@@ -1,10 +1,16 @@
 from django.urls import path
-from .views import NotificationViewSet
+from .views import (
+    NotificationListView,
+    NotificationDetailView,
+    NotificationReadView,
+    NotificationReadAllView,
+    NotificationUnreadCountView,
+)
 
 urlpatterns = [
-    path('', NotificationViewSet.as_view({'get': 'list'}), name='notification-list'),
-    path('read_all/', NotificationViewSet.as_view({'patch': 'read_all'}), name='notification-read-all'),
-    path('unread_count/', NotificationViewSet.as_view({'get': 'unread_count'}), name='notification-unread-count'),
-    path('<int:pk>/', NotificationViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update', 'delete': 'destroy'}), name='notification-detail'),
-    path('<int:pk>/read/', NotificationViewSet.as_view({'patch': 'read'}), name='notification-read'),
+    path('', NotificationListView.as_view(), name='notification-list'),
+    path('read_all/', NotificationReadAllView.as_view(), name='notification-read-all'),
+    path('unread_count/', NotificationUnreadCountView.as_view(), name='notification-unread-count'),
+    path('<int:pk>/', NotificationDetailView.as_view(), name='notification-detail'),
+    path('<int:pk>/read/', NotificationReadView.as_view(), name='notification-read'),
 ]

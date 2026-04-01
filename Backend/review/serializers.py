@@ -6,7 +6,16 @@ from authentication.models import User
 class ReviewSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.name', read_only=True)
     lawyer_name = serializers.CharField(source='lawyer.name', read_only=True)
-    client_profile_image = serializers.ImageField(source='client.profile_image', read_only=True)
+    client_profile_image = serializers.SerializerMethodField()
+    
+    def get_client_profile_image(self, obj):
+        if obj.client and obj.client.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.client.profile_image.url)
+            return obj.client.profile_image.url
+        return None
+        
     
     class Meta:
         model = Review

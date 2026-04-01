@@ -1,5 +1,5 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.views import APIView
+from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
@@ -7,40 +7,61 @@ from .models import Notification
 from .serializers import NotificationSerializer
 
 
-class NotificationViewSet(viewsets.ModelViewSet):
+class NotificationListView(generics.ListAPIView):
     """
-    ViewSet for managing notifications.
-    Users can only access their own notifications.
+    List all notifications for the authenticated user.
+    GET /api/notifications/
     """
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
-    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
-        if getattr(self, 'swagger_fake_view', False):
-            return Notification.objects.none()
-
-        # Each user only sees their own notifications
         return Notification.objects.filter(
             user=self.request.user
         ).order_by('-created_at')
 
-    @action(detail=True, methods=['patch'])
-    def read(self, request, pk=None):
-        """
-        Mark a single notification as read
-        """
-        notification = self.get_object()
-        notification.mark_as_read()
 
-        serializer = self.get_serializer(notification)
+class NotificationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update or delete a specific notification.
+    GET/PATCH/DELETE /api/notifications/<pk>/
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationSerializer
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+
+class NotificationReadView(APIView):
+    """
+    Mark a single notification as read.
+    PATCH /api/notifications/<pk>/read/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            notification = Notification.objects.get(pk=pk, user=request.user)
+        except Notification.DoesNotExist:
+            return Response(
+                {'detail': 'Notification not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        notification.mark_as_read()
+        serializer = NotificationSerializer(notification)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['patch'])
-    def read_all(self, request):
-        """
-        Mark all notifications as read for the current user
-        """
+
+class NotificationReadAllView(APIView):
+    """
+    Mark all notifications as read for the current user.
+    PATCH /api/notifications/read_all/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
         Notification.objects.filter(
             user=request.user,
             is_read=False
@@ -48,11 +69,15 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
         return Response({'detail': 'All notifications marked as read'})
 
-    @action(detail=False, methods=['get'])
-    def unread_count(self, request):
-        """
-        Return the count of unread notifications for the current user
-        """
+
+class NotificationUnreadCountView(APIView):
+    """
+    Return the count of unread notifications for the current user.
+    GET /api/notifications/unread_count/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
         count = Notification.objects.filter(
             user=request.user,
             is_read=False

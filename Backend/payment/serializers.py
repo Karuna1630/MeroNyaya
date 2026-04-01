@@ -6,10 +6,26 @@ from case.models import Case
 class PaymentSerializer(serializers.ModelSerializer):
     appointment_id = serializers.IntegerField(source="appointment.id", read_only=True)
     user_name = serializers.CharField(source="user.name", read_only=True)
-    user_profile_image = serializers.ImageField(source="user.profile_image", read_only=True, default=None)
+    user_profile_image = serializers.SerializerMethodField()
     lawyer_name = serializers.CharField(source="lawyer.name", read_only=True, default=None)
     lawyer_email = serializers.CharField(source="lawyer.email", read_only=True, default=None)
-    lawyer_profile_image = serializers.ImageField(source="lawyer.profile_image", read_only=True, default=None)
+    lawyer_profile_image = serializers.SerializerMethodField()
+
+    def get_user_profile_image(self, obj):
+        if obj.user and obj.user.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.user.profile_image.url)
+            return obj.user.profile_image.url
+        return None
+
+    def get_lawyer_profile_image(self, obj):
+        if obj.lawyer and obj.lawyer.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.lawyer.profile_image.url)
+            return obj.lawyer.profile_image.url
+        return None
 
     class Meta:
         model = Payment
@@ -64,9 +80,17 @@ class PayoutSerializer(serializers.ModelSerializer):
     """Serializer for the Payout model."""
     lawyer_name = serializers.CharField(source="lawyer.name", read_only=True)
     lawyer_email = serializers.CharField(source="lawyer.email", read_only=True)
-    lawyer_profile_image = serializers.ImageField(source="lawyer.profile_image", read_only=True, default=None)
+    lawyer_profile_image = serializers.SerializerMethodField()
     processed_by_name = serializers.CharField(source="processed_by.name", read_only=True, default=None)
     payment_ids = serializers.SerializerMethodField()
+
+    def get_lawyer_profile_image(self, obj):
+        if obj.lawyer and obj.lawyer.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.lawyer.profile_image.url)
+            return obj.lawyer.profile_image.url
+        return None
 
     class Meta:
         model = Payout
@@ -124,14 +148,30 @@ class CasePaymentRequestSerializer(serializers.ModelSerializer):
     lawyer_id = serializers.IntegerField(source="lawyer.id", read_only=True)
     lawyer_name = serializers.CharField(source="lawyer.name", read_only=True)
     lawyer_email = serializers.CharField(source="lawyer.email", read_only=True)
-    lawyer_profile_image = serializers.ImageField(source="lawyer.profile_image", read_only=True, allow_null=True)
+    lawyer_profile_image = serializers.SerializerMethodField()
     
     # Client information (from case)
     client_id = serializers.IntegerField(source="case.client.id", read_only=True)
     client_name = serializers.CharField(source="case.client.name", read_only=True)
     client_email = serializers.CharField(source="case.client.email", read_only=True)
-    client_profile_image = serializers.ImageField(source="case.client.profile_image", read_only=True, allow_null=True)
+    client_profile_image = serializers.SerializerMethodField()
     
+    def get_lawyer_profile_image(self, obj):
+        if obj.lawyer and obj.lawyer.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.lawyer.profile_image.url)
+            return obj.lawyer.profile_image.url
+        return None
+
+    def get_client_profile_image(self, obj):
+        if obj.case and obj.case.client and obj.case.client.profile_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.case.client.profile_image.url)
+            return obj.case.client.profile_image.url
+        return None
+
     class Meta:
         model = CasePaymentRequest
         fields = [
