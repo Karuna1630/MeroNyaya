@@ -20,10 +20,14 @@ const LawyerReviewGuard = ({ children }) => {
     dispatch(fetchKycStatus());
   }, [dispatch]);
 
-  // Determine KYC status
-  const rawStatus = status?.status || status?.kyc_status || status?.state || '';
-  const kycStatus = typeof rawStatus === 'string' ? rawStatus.toLowerCase() : '';
-  const isKycVerified = userProfile?.is_kyc_verified === true || kycStatus === 'approved';
+  // Determine KYC status with fallbacks
+  const rawStatus = (status?.status || status?.kyc_status || status?.state || '').toLowerCase();
+  const kycStatus = rawStatus;
+  
+  // A lawyer is verified if the database flag is true OR the current status is approved
+  const isProfileVerified = userProfile?.is_kyc_verified === true;
+  const isStatusApproved = kycStatus === 'approved';
+  const isKycVerified = isProfileVerified || isStatusApproved;
 
   // Check if current path is allowed without KYC
   const isPathAllowedWithoutKyc = ALLOWED_PATHS_WITHOUT_KYC.some((path) =>
@@ -32,23 +36,20 @@ const LawyerReviewGuard = ({ children }) => {
 
   // Block access if KYC not verified and path is not allowed
   useEffect(() => {
-    if (!isKycVerified && !isPathAllowedWithoutKyc) {
+    // If we have user data and we know they aren't verified, and they are on a forbidden path
+    if (userProfile && !isKycVerified && !isPathAllowedWithoutKyc) {
       // Show toast only once per path
       if (!toastShownRef.current[location.pathname]) {
         toastShownRef.current[location.pathname] = true;
-        toast.warning('Your KYC is not verified. You can only navigate once KYC is verified.');
+        toast.warning('Access Restricted: Please complete your KYC verification first.');
       }
       
-      // Redirect after a small delay to let toast render
-      const timer = setTimeout(() => {
-        navigate('/lawyerdashboard', { replace: true });
-      }, 300);
-      
-      return () => clearTimeout(timer);
+      // Redirect to dashboard
+      navigate('/lawyerdashboard', { replace: true });
     }
-  }, [isKycVerified, isPathAllowedWithoutKyc, location.pathname, navigate]);
+  }, [userProfile, isKycVerified, isPathAllowedWithoutKyc, location.pathname, navigate]);
 
-  // Don't render children if blocked
+  // Don't render children if blocked on a restricted path
   if (!isKycVerified && !isPathAllowedWithoutKyc) {
     return null;
   }

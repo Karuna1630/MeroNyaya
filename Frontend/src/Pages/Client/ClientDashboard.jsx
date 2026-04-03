@@ -51,17 +51,57 @@ const ClientDashboard = () => {
 
   // Upcoming appointments
   const upcomingAppointments = useMemo(() => {
+    const now = new Date();
+    
     return consultations
-      .filter((apt) => apt.status === "requested" || apt.status === "accepted")
+      .filter((apt) => apt.status === "accepted")
+      .sort((a, b) => {
+        const aptDateA = a.scheduled_date || a.requested_day;
+        const aptTimeA = a.scheduled_time || a.requested_time;
+        const aptDateB = b.scheduled_date || b.requested_day;
+        const aptTimeB = b.scheduled_time || b.requested_time;
+        
+        const dateA = new Date(`${aptDateA} ${aptTimeA}`);
+        const dateB = new Date(`${aptDateB} ${aptTimeB}`);
+        
+        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+        return dateB - dateA; // Sort descending to handle past appointments gracefully, or dateA - dateB for ascending. But typically past is best sorted descending if we show all. Let's sort descending (newest first) to match recent cases.
+      })
       .slice(0, 4)
-      .map((apt) => ({
-        id: apt.id,
-        lawyer: apt.lawyer?.name || "Lawyer",
-        type: apt.mode === "in_person" ? "In-Person API" : "Video Call",
-        date: apt.status === "accepted" && apt.scheduled_date ? apt.scheduled_date : apt.requested_day,
-        time: apt.status === "accepted" && apt.scheduled_time ? apt.scheduled_time : apt.requested_time,
-        status: apt.status,
-      }));
+      .map((apt) => {
+        let reminder = null;
+        const aptDate = apt.scheduled_date || apt.requested_day;
+        const aptTime = apt.scheduled_time || apt.requested_time;
+        
+        if (aptDate && aptTime) {
+          const appointmentDateTime = new Date(`${aptDate} ${aptTime}`);
+          if (!isNaN(appointmentDateTime.getTime())) {
+            const diffInMs = appointmentDateTime - now;
+            
+            if (diffInMs > 0 && diffInMs <= 24 * 60 * 60 * 1000) {
+              const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+              const diffInMinutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+              if (diffInHours > 0) {
+                reminder = `In ${diffInHours} hour${diffInHours > 1 ? 's' : ''}`;
+              } else if (diffInMinutes > 0) {
+                reminder = `In ${diffInMinutes} min${diffInMinutes !== 1 ? 's' : ''}`;
+              } else {
+                reminder = `Now`;
+              }
+            }
+          }
+        }
+
+        return {
+          id: apt.id,
+          lawyer: apt.lawyer?.name || "Lawyer",
+          type: apt.mode === "in_person" ? "In-Person" : "Video Call",
+          date: aptDate,
+          time: aptTime,
+          status: apt.status,
+          reminder: reminder,
+        };
+      });
   }, [consultations]);
 
   const formatStatus = (status) => {
@@ -270,8 +310,14 @@ const ClientDashboard = () => {
                                 {apt.status}
                               </span>
                             </p>
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1 flex items-center">
                               {apt.date} at {apt.time}
+                              {apt.reminder && (
+                                <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold animate-pulse flex items-center gap-1">
+                                  <Clock size={10} />
+                                  {apt.reminder}
+                                </span>
+                              )}
                             </p>
                           </div>
                         </div>

@@ -89,7 +89,7 @@ const LawyerDashboard = () => {
     return map[status] || status;
   };
 
-// determing the kyc status based on the available data from both user profile and kyc status in th store
+  // determing the kyc status based on the available data from both user profile and kyc status in the store
   const kycStatusValue = status?.status || status?.kyc_status || status?.state;
   
   const isKycApproved = 
@@ -101,10 +101,16 @@ const LawyerDashboard = () => {
 
   const isKycRejected = kycStatusValue === 'rejected';
   
+  // A lawyer is considered "not submitted" if they aren't approved, pending, or rejected.
+  // We also check if status exists to avoid showing it while loading, but for new lawyers status will be 'not_submitted' after fetch.
   const isKycNotSubmitted = !isKycApproved && !isKycPending && !isKycRejected;
-  const modalOpen = showKycModal && !isKycApproved;
 
- 
+  // Auto-open KYC modal if KYC not submitted on first load
+  useEffect(() => {
+    if (isKycNotSubmitted && !initialFetchDoneRef.current) {
+      // Don't auto-open, let user see the banner first
+    }
+  }, [isKycNotSubmitted]);
   useEffect(() => {
     if (isKycApproved) return;
 // Set up an interval to refetch KYC status every 15 seconds if not approved, to get real-time updates without needing a page refresh
@@ -129,9 +135,9 @@ const LawyerDashboard = () => {
 
   // Prevent background scrolling when KYC modal is open by toggling overflow style on the body element
   useEffect(() => {
-    document.body.style.overflow = modalOpen ? 'hidden' : 'unset';
+    document.body.style.overflow = showKycModal ? 'hidden' : 'unset';
     return () => (document.body.style.overflow = 'unset');
-  }, [modalOpen]);
+  }, [showKycModal]);
 
   // function for css of status badge
   const getCaseStatusClasses = (status) => {
@@ -216,7 +222,7 @@ const LawyerDashboard = () => {
   return (
     <div className="relative">
       <ToastContainer />
-      <div className={`flex min-h-screen bg-gray-100 transition ${modalOpen ? 'filter blur-sm pointer-events-none' : ''}`}>
+      <div className={`flex min-h-screen bg-gray-100 transition ${showKycModal ? 'filter blur-sm pointer-events-none' : ''}`}>
         <Sidebar />
 
         <div className="flex-1 flex flex-col min-w-0">
@@ -290,15 +296,29 @@ const LawyerDashboard = () => {
           {isKycNotSubmitted && (
             <div className="px-6 pt-4 pb-2">
               <div
-                className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3 cursor-pointer hover:bg-amber-100 transition"
+                className="bg-red-50 border-2 border-red-300 rounded-2xl p-6 flex items-start gap-4 cursor-pointer hover:bg-red-100 transition shadow-lg"
                 onClick={() => setShowKycModal(true)}
               >
-                <AlertCircle className="text-amber-600 shrink-0" size={20} />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-amber-900">{t('lawyerDashboard.kycNotSubmitted')}</p>
-                  <p className="text-xs text-amber-700">{t('lawyerDashboard.submitKYC')}</p>
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-red-100 border border-red-200 flex items-center justify-center text-red-700">
+                  <AlertCircle size={24} />
                 </div>
-                <ArrowRight className="text-amber-600 shrink-0" size={20} />
+                <div className="flex-1">
+                  <p className="text-base font-bold text-red-900 mb-1">{t('lawyerDashboard.kycNotSubmitted')}</p>
+                  <p className="text-sm text-red-800 mb-3">{t('lawyerDashboard.submitKYC')}</p>
+                  <p className="text-xs text-red-700 mb-3">You cannot access cases, consultations, or earn payments until your KYC is verified.</p>
+                  <button 
+                    className="inline-block px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold text-sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowKycModal(true);
+                    }}
+                  >
+                    Submit KYC Now
+                  </button>
+                </div>
+                <div className="shrink-0">
+                  <ArrowRight className="text-red-600" size={24} />
+                </div>
               </div>
             </div>
           )}
@@ -453,7 +473,7 @@ const LawyerDashboard = () => {
         </div>
       </div>
 
-      {modalOpen && (
+      {showKycModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 overflow-hidden">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowKycModal(false)} />
           <div className="relative w-full max-w-6xl">

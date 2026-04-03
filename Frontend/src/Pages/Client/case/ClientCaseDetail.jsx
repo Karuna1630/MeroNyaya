@@ -8,6 +8,8 @@ import "react-toastify/dist/ReactToastify.css";
 import PaymentRequestCard from "../../../components/CasePayment/PaymentRequestCard";
 import { getCasePaymentRequests, verifyEsewaPayment, verifyKhaltiPayment } from "../../../axios/casePaymentAPI";
 import { getLawyerDetail } from "../../../axios/kycAPI";
+import RatingModal from "../../../components/RatingModal";
+import { createReview } from "../../../axios/reviewAPI";
 import {
   FileText,
   MessageSquare,
@@ -51,6 +53,8 @@ const ClientCaseDetail = () => {
     timeSlots: [],
   });
   const [lawyerAvailabilityLoading, setLawyerAvailabilityLoading] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratedCaseIds, setRatedCaseIds] = useState([]);
 
   const { cases, scheduleCaseAppointmentLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
@@ -62,6 +66,15 @@ const ClientCaseDetail = () => {
     // Fetch case details on component mount
   useEffect(() => {
     dispatch(fetchCases());
+  }, [dispatch]);
+
+  // Auto-refresh case data every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      dispatch(fetchCases());
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [dispatch]);
 
   // Load payment requests for this case
@@ -144,6 +157,25 @@ const ClientCaseDetail = () => {
 
     fetchLawyerAvailability();
   }, [caseData?.lawyer_id, caseData?.lawyer]);
+
+  // Check if case is completed and show rating modal
+  useEffect(() => {
+    console.log('DEBUG: Case data:', caseData);
+    console.log('DEBUG: Case status:', caseData?.status);
+    console.log('DEBUG: Case ID:', caseData?.id);
+    console.log('DEBUG: Rated case IDs:', ratedCaseIds);
+    console.log('DEBUG: Lawyer ID:', caseData?.lawyer_id);
+    
+    if (
+      caseData?.status === "completed" &&
+      caseData?.id &&
+      !ratedCaseIds.includes(caseData.id) &&
+      caseData?.lawyer_id
+    ) {
+      console.log('DEBUG: Opening rating modal for completed case');
+      setShowRatingModal(true);
+    }
+  }, [caseData?.status, caseData?.id, caseData?.lawyer_id, ratedCaseIds]);
 
   const loadPaymentRequests = async () => {
     if (!id) return;
@@ -315,6 +347,25 @@ const ClientCaseDetail = () => {
       dispatch(fetchCases());
     } catch (err) {
       setScheduleError("Failed to schedule the meeting. Please try again.");
+    }
+  };
+
+  const handleRatingSubmit = async (ratingData) => {
+    try {
+      await createReview(
+        ratingData.lawyerId,
+        ratingData.rating,
+        ratingData.comment
+      );
+      
+      // Mark this case as rated
+      setRatedCaseIds([...ratedCaseIds, caseData.id]);
+      
+      // Close modal
+      setShowRatingModal(false);
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      throw new Error("Failed to submit rating. Please try again.");
     }
   };
 
@@ -760,6 +811,18 @@ const ClientCaseDetail = () => {
           </form>
         </div>
       )}
+      
+      {/* Rating Modal */}
+      {caseData && (
+        <RatingModal
+          isOpen={showRatingModal}
+          lawyerName={caseData.lawyer_name || "Lawyer"}
+          lawyerId={caseData.lawyer_id}
+          onClose={() => setShowRatingModal(false)}
+          onSubmit={handleRatingSubmit}
+        />
+      )}
+      
       <ToastContainer />
     </div>
   );

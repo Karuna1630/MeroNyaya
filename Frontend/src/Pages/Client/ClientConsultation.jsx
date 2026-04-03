@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import axiosInstance from "../../axios/axiosinstance";
 import { getImageUrl } from '../../utils/imageUrl';
+import RatingModal from "../../components/RatingModal";
+import { createReview } from "../../axios/reviewAPI";
 
 const ClientConsultation = () => {
   const { t } = useTranslation();
@@ -33,6 +35,9 @@ const ClientConsultation = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [consultationToDelete, setConsultationToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [completedConsultation, setCompletedConsultation] = useState(null);
+  const [ratedConsultationIds, setRatedConsultationIds] = useState([]);
   const { consultations = [] } = useSelector((state) => state.consultation || {});
   const { appointments = [], appointmentsLoading } = useSelector(
     (state) => state.appointment || {}
@@ -51,6 +56,43 @@ const ClientConsultation = () => {
       dispatch(fetchMyAppointments());
     }
   }, [activeTab, dispatch]);
+
+  // Auto-refresh data every 10 seconds to catch completed consultations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      dispatch(fetchMyConsultations());
+      dispatch(fetchMyAppointments());
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  // Check for completed consultations/appointments that need rating
+  useEffect(() => {
+    const completedItems = [
+      ...consultations.filter(c => c.status === "completed"),
+      ...appointments
+        .filter(a => a.status === "completed" && a.consultation_details)
+        .map(a => a.consultation_details)
+    ];
+
+    console.log('DEBUG: All consultations:', consultations);
+    console.log('DEBUG: Completed items:', completedItems);
+    console.log('DEBUG: Rated IDs:', ratedConsultationIds);
+
+    // Find the first completed item that hasn't been rated yet
+    const unratedCompleted = completedItems.find(
+      item => !ratedConsultationIds.includes(item.id)
+    );
+
+    console.log('DEBUG: Unrated completed item:', unratedCompleted);
+
+    if (unratedCompleted) {
+      console.log('DEBUG: Opening rating modal for:', unratedCompleted.lawyer?.name);
+      setCompletedConsultation(unratedCompleted);
+      setShowRatingModal(true);
+    }
+  }, [consultations, appointments, ratedConsultationIds]);
 
   const pendingCount = useMemo(() => {
     return consultations.filter((item) => item.status === "requested").length;
@@ -138,6 +180,30 @@ const ClientConsultation = () => {
       console.error("Error deleting consultation:", error);
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleRatingSubmit = async (ratingData) => {
+    try {
+      await createReview(
+        ratingData.lawyerId,
+        ratingData.rating,
+        ratingData.comment
+      );
+      
+      // Mark this consultation as rated
+      setRatedConsultationIds([...ratedConsultationIds, completedConsultation.id]);
+      
+      // Close modal and reset
+      setShowRatingModal(false);
+      setCompletedConsultation(null);
+      
+      // Refresh consultations to ensure data is current
+      dispatch(fetchMyConsultations());
+      dispatch(fetchMyAppointments());
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      throw new Error("Failed to submit rating. Please try again.");
     }
   };
 
@@ -471,6 +537,20 @@ const ClientConsultation = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Rating Modal */}
+      {completedConsultation && (
+        <RatingModal
+          isOpen={showRatingModal}
+          lawyerName={completedConsultation.lawyer?.name || "Lawyer"}
+          lawyerId={completedConsultation.lawyer?.id || completedConsultation.lawyer_id}
+          onClose={() => {
+            setShowRatingModal(false);
+            setCompletedConsultation(null);
+          }}
+          onSubmit={handleRatingSubmit}
+        />
       )}
     </div>
   );

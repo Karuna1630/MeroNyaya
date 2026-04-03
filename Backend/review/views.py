@@ -6,6 +6,8 @@ from django.db.models import Avg, Count
 from .models import Review
 from .serializers import ReviewSerializer, LawyerReviewSummarySerializer
 from authentication.models import User
+from consultation.models import Consultation
+from case.models import Case
 
 
 class ReviewListCreateView(generics.ListCreateAPIView):
@@ -13,6 +15,8 @@ class ReviewListCreateView(generics.ListCreateAPIView):
     List all reviews or create a new one.
     GET /api/reviews/
     POST /api/reviews/
+    
+    POST Validation: Only clients with completed consultations or cases can rate a lawyer
     """
     serializer_class = ReviewSerializer
     permission_classes = [AllowAny]
@@ -30,11 +34,51 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 
         return queryset.order_by('-created_at')
 
+    def _has_completed_interaction(self, client, lawyer):
+        """
+        Check if client has any completed consultations or cases with the lawyer
+        """
+        # Check for completed consultations
+        completed_consultation = Consultation.objects.filter(
+            client=client,
+            lawyer=lawyer,
+            status=Consultation.STATUS_COMPLETED
+        ).exists()
+        
+        if completed_consultation:
+            return True
+        
+        # Check for completed cases
+        completed_case = Case.objects.filter(
+            client=client,
+            lawyer=lawyer,
+            status='completed'
+        ).exists()
+        
+        return completed_case
+
     def perform_create(self, serializer):
-        if self.request.user.is_authenticated:
-            serializer.save(client=self.request.user)
-        else:
+        if not self.request.user.is_authenticated:
             raise PermissionError("You must be authenticated to leave a review")
+        
+        # Get lawyer_id from request data
+        lawyer_id = self.request.data.get('lawyer_id')
+        
+        if not lawyer_id:
+            raise ValueError("lawyer_id is required")
+        
+        try:
+            lawyer = User.objects.get(id=lawyer_id, is_lawyer=True)
+        except User.DoesNotExist:
+            raise ValueError("Lawyer not found")
+        
+        # Validate that client has completed interaction with lawyer
+        if not self._has_completed_interaction(self.request.user, lawyer):
+            raise PermissionError(
+                "You can only rate lawyers after completing a consultation or case with them"
+            )
+        
+        serializer.save(client=self.request.user, lawyer=lawyer)
 
 
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -131,8 +175,33 @@ class SubmitReviewView(APIView):
     """
     Submit a review for a lawyer.
     POST /api/reviews/submit_review/
+    
+    Validation: Only clients with completed consultations or cases can rate a lawyer
     """
     permission_classes = [IsAuthenticated]
+
+    def _has_completed_interaction(self, client, lawyer):
+        """
+        Check if client has any completed consultations or cases with the lawyer
+        """
+        # Check for completed consultations
+        completed_consultation = Consultation.objects.filter(
+            client=client,
+            lawyer=lawyer,
+            status=Consultation.STATUS_COMPLETED
+        ).exists()
+        
+        if completed_consultation:
+            return True
+        
+        # Check for completed cases
+        completed_case = Case.objects.filter(
+            client=client,
+            lawyer=lawyer,
+            status='completed'
+        ).exists()
+        
+        return completed_case
 
     def post(self, request):
         lawyer_id = request.data.get('lawyer_id')
@@ -152,6 +221,15 @@ class SubmitReviewView(APIView):
             return Response(
                 {'error': 'Lawyer not found'},
                 status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Validate that client has completed interaction with lawyer
+        if not self._has_completed_interaction(request.user, lawyer):
+            return Response(
+                {
+                    'error': 'You can only rate lawyers after completing a consultation or case with them'
+                },
+                status=status.HTTP_403_FORBIDDEN
             )
 
         review_data = {

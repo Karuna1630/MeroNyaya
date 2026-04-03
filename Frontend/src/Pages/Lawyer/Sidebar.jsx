@@ -29,8 +29,14 @@ const Sidebar = () => {
   const { userProfile } = useSelector((state) => state.profile || {});
 
   // Check KYC verification
-  const kycStatus = (status?.status || status?.kyc_status || status?.state || '').toLowerCase();
-  const isKycVerified = userProfile?.is_kyc_verified === true || kycStatus === 'approved';
+  // Check KYC verification state accurately
+  const rawStatus = (status?.status || status?.kyc_status || status?.state || '').toLowerCase();
+  const kycStatus = rawStatus;
+  
+  // A lawyer is verified if the database flag is true OR the current status is approved
+  const isProfileVerified = userProfile?.is_kyc_verified === true;
+  const isStatusApproved = kycStatus === 'approved';
+  const isKycVerified = isProfileVerified || isStatusApproved;
 
   const handleHome = () => {
     navigate("/");
@@ -40,7 +46,7 @@ const Sidebar = () => {
   const handleNavigation = (path) => {
     // Block navigation if KYC not verified and path is restricted
     if (!isKycVerified && RESTRICTED_PATHS.includes(path)) {
-      toast.warning('Your KYC is not verified. You can only navigate once KYC is verified.');
+      toast.warning('Access Restricted: Please complete your KYC verification first.');
       return;
     }
     navigate(path);

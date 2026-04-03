@@ -9,14 +9,13 @@ import {
   Briefcase,
   ArrowRight,
   AlertCircle,
-  Send,
   ChevronLeft,
 } from "lucide-react";
 import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
 import { getImageUrl } from '../../utils/imageUrl';
 import { fetchLawyerDetails } from "../slices/lawyerSlice.js";
-import { submitReview, getLawyerReviews, clearSubmitStatus } from "../slices/reviewSlice.js";
+import { getLawyerReviews } from "../slices/reviewSlice.js";
 import Consultationrequest from "./Consultationrequest.jsx";
 
 const IndividualLawyer = () => {
@@ -28,16 +27,9 @@ const IndividualLawyer = () => {
   const lawyerData = useSelector((state) => state.lawyer.lawyerDetails);
   const loading = useSelector((state) => state.lawyer.lawyerDetailsLoading);
   const error = useSelector((state) => state.lawyer.lawyerDetailsError);
-  const submitLoading = useSelector((state) => state.review.submitLoading);
   const { user } = useSelector((state) => state.auth);
-  const submitSuccess = useSelector((state) => state.review.submitSuccess);
-  const submitError = useSelector((state) => state.review.submitError);
   const reviews = useSelector((state) => state.review.reviews);
   const reviewsLoading = useSelector((state) => state.review.reviewsLoading);
-
-  // Local component state
-  const [reviewText, setReviewText] = useState("");
-  const [selectedRating, setSelectedRating] = useState(5);
 
   const getInitials = (name) => {
     if (!name) return "A";
@@ -88,42 +80,6 @@ const IndividualLawyer = () => {
       dispatch(getLawyerReviews(lawyer.id));
     }
   }, [lawyer?.id, dispatch]);
-
-
-  const handleSubmitReview = async () => {
-    if (reviewText.trim() && lawyer) {
-      // Dispatch review submission to Redux
-      const result = await dispatch(
-        submitReview({
-          lawyerId: lawyer.id,
-          comment: reviewText,
-          rating: selectedRating,
-          title: "",
-        })
-      );
-
-      if (result.type === submitReview.fulfilled.type) {
-        // Success - reset form and refresh reviews
-        setReviewText("");
-        setSelectedRating(5);
-        // Refresh reviews list
-        if (lawyer?.id) {
-          dispatch(getLawyerReviews(lawyer.id));
-        }
-      }
-    }
-  };
-
-  // Clear success message after 2 seconds
-  useEffect(() => {
-    if (submitSuccess) {
-      const timer = setTimeout(() => {
-        dispatch(clearSubmitStatus());
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [submitSuccess, dispatch]);
-
 
   // Show loading state
   if (loading) {
@@ -263,79 +219,6 @@ const IndividualLawyer = () => {
               {/* Reviews Section */}
               <div className="bg-white border border-slate-200 rounded-lg p-8">
                 <h2 className="text-xl font-semibold text-slate-900 mb-6">Reviews & Comments</h2>
-
-                {/* Add Review Form */}
-                <div className="mb-8 pb-8 border-b border-slate-200">
-                  <h3 className="text-base font-semibold text-slate-900 mb-4">Share Your Experience</h3>
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-semibold text-slate-600">You</span>
-                    </div>
-                    <div className="flex-1">
-                      {/* Star Rating Selector */}
-                      <div className="mb-4 flex items-center gap-3">
-                        <span className="text-sm text-slate-600 font-medium">Rating:</span>
-                        <div className="flex gap-2">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              onClick={() => setSelectedRating(star)}
-                              className="transition duration-200 hover:scale-110"
-                            >
-                              <Star
-                                size={24}
-                                className={
-                                  star <= selectedRating
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-slate-300 hover:text-yellow-300"
-                                }
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <textarea
-                        value={reviewText}
-                        onChange={(e) => setReviewText(e.target.value)}
-                        placeholder="Share your feedback about this lawyer..."
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 resize-none"
-                        rows="3"
-                        disabled={submitLoading}
-                      />
-
-                      {/* Success/Error Messages */}
-                      {submitSuccess && (
-                        <div className="mt-3 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-sm text-green-700 font-semibold">Review submitted successfully!</p>
-                        </div>
-                      )}
-                      {submitError && (
-                        <div className="mt-3 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-sm text-red-700 font-semibold">{submitError}</p>
-                        </div>
-                      )}
-
-                      <button
-                        onClick={handleSubmitReview}
-                        disabled={!reviewText.trim() || submitLoading}
-                        className="mt-3 flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {submitLoading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Posting...
-                          </>
-                        ) : (
-                          <>
-                            <Send size={16} />
-                            Post Review
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Reviews List */}
                 <div className="space-y-6">

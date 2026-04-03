@@ -144,6 +144,10 @@ export const fetchKycStatus = createAsyncThunk(
 			const response = await axiosInstance.get('/kyc/status/');
 			return response.data;
 		} catch (error) {
+			// Handle 404 - KYC not yet submitted
+			if (error?.response?.status === 404) {
+				return { status: 'not_submitted', message: 'KYC not yet submitted' };
+			}
 			return rejectWithValue(error.response?.data || error.message);
 		}
 	}
