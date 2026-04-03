@@ -286,7 +286,13 @@ const LawyerCaseDetail = () => {
                       toast.error('Chat is available once you accept this case');
                       return;
                     }
-                    navigate('/lawyermessage', { state: { caseId: caseData.id } });
+                    navigate('/lawyermessage', { 
+                      state: { 
+                        caseId: caseData.id,
+                        recipientId: caseData.client_id || caseData.client,
+                        recipientName: caseData.client_name
+                      } 
+                    });
                   }}
                   disabled={caseData?.status === 'pending'}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -517,7 +523,13 @@ const LawyerCaseDetail = () => {
 
                     <div className="flex gap-2 mt-4">
                       <button 
-                        onClick={() => navigate('/lawyermessage', { state: { caseId: caseData.id } })}
+                        onClick={() => navigate('/lawyermessage', { 
+                          state: { 
+                            caseId: caseData.id,
+                            recipientId: caseData.client_id || caseData.client,
+                            recipientName: caseData.client_name
+                          } 
+                        })}
                         className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
                         <MessageSquare size={16} />
                         Message

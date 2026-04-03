@@ -237,7 +237,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             mark_user_online(
                 self.user.id,
                 self.user.name or self.user.email,
-                self.group_name
+                self.group_name,
+                self.channel_name
             )
             broadcast_presence_update(self.group_name)
         except Exception as e:
@@ -247,7 +248,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def _mark_user_offline(self):
         """Mark user as offline"""
         try:
-            mark_user_offline(self.user.id)
+            mark_user_offline(self.user.id, self.channel_name)
             broadcast_presence_update(self.group_name)
         except Exception as e:
             print(f"Error marking user offline: {e}")

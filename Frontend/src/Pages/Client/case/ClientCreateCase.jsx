@@ -120,6 +120,7 @@ const ClientCreateCase = () => {
       } else {
         await dispatch(createCase(payload)).unwrap();
         toast.success('Case submitted successfully!');
+        navigate('/clientcase');
       }
       
       // Reset form and files after successful submission

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AlertCircle, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getMessages } from '../../axios/chatAPI';
@@ -9,6 +10,7 @@ import DashHeader from './ClientDashHeader';
 
 const ClientMessage = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [conversation, setConversation] = useState(null);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
@@ -19,13 +21,20 @@ const ClientMessage = () => {
 
   /**
    * Load current user and token on mount
+   * Also check if a recipient was passed via navigation state
    */
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
     const accessToken = localStorage.getItem('access_token');
     setCurrentUser(userData);
     setToken(accessToken);
-  }, []);
+
+    // If redirected from a case detail, auto-select that user
+    if (location.state?.recipientId) {
+      console.log('Auto-selecting recipient:', location.state.recipientId);
+      setSelectedUserId(location.state.recipientId);
+    }
+  }, [location.state]);
 
   /**
    * Load conversation when a user is selected

@@ -582,11 +582,13 @@ const ClientCaseDetail = () => {
                 <div className="space-y-3">
                   <button 
                     onClick={() => {
-                      if (caseData?.status === 'pending') {
-                        toast.error('Chat is available once the lawyer accepts your case');
-                        return;
-                      }
-                      navigate('/clientmessage', { state: { caseId: caseData.id } });
+                      navigate('/clientmessage', { 
+                        state: { 
+                          caseId: caseData.id,
+                          recipientId: caseData.lawyer_id || caseData.lawyer,
+                          recipientName: caseData.lawyer_name
+                        } 
+                      });
                     }}
                     disabled={caseData?.status === 'pending'}
                     title={caseData?.status === 'pending' ? 'Chat available once lawyer accepts the case' : 'Message the lawyer'}
