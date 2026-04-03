@@ -23,8 +23,15 @@ from case.models import Case
 
 from .models import Payment, Payout, CasePaymentRequest
 from .serializers import PaymentSerializer, EsewaInitiateSerializer, KhaltiInitiateSerializer, PayoutSerializer, CreatePayoutSerializer
-import hmac as hmac_compare
-from .utils import generate_esewa_signature, build_esewa_signature_message
+from hmac import compare_digest as hmac_compare
+from .utils import (
+    generate_esewa_signature,
+    build_esewa_signature_message,
+    get_esewa_payment_params,
+    initiate_khalti_payment,
+    verify_khalti_payment,
+    verify_esewa_payment_remote,
+)
 
 
 # Creating API view for initiating eSewa payment which allows authenticated clients to pay for video consultation appointments.
@@ -122,27 +129,13 @@ class EsewaInitiateView(APIView):
                 status=Payment.STATUS_INITIATED,
             )
 
-            # Generating HMAC-SHA256 signature for eSewa verification
-            message = build_esewa_signature_message(
-                total_amount=str(total_amount),
-                transaction_uuid=str(payment.transaction_uuid),
+            # Building eSewa form parameters for frontend to submit using utility
+            esewa_params = get_esewa_payment_params(
+                amount=amount,
+                tax_amount=tax_amount,
+                total_amount=total_amount,
+                transaction_uuid=payment.transaction_uuid,
             )
-            signature = generate_esewa_signature(message)
-
-            # Building eSewa form parameters for frontend to submit
-            esewa_params = {
-                "amount": str(amount),
-                "tax_amount": str(tax_amount),
-                "total_amount": str(total_amount),
-                "transaction_uuid": str(payment.transaction_uuid),
-                "product_code": settings.ESEWA_PRODUCT_CODE,
-                "product_service_charge": "0",
-                "product_delivery_charge": "0",
-                "success_url": settings.ESEWA_SUCCESS_URL,
-                "failure_url": settings.ESEWA_FAILURE_URL,
-                "signed_field_names": "total_amount,transaction_uuid,product_code",
-                "signature": signature,
-            }
 
             return api_response(
                 is_success=True,
@@ -245,24 +238,13 @@ class EsewaVerifyView(APIView):
                     },
                 )
 
-            # Verifying with eSewa's transaction status API (with signature fallback)
-            esewa_transaction_status = None
-            esewa_ref = esewa_ref_id
-
-            try:
-                verify_response = requests.get(
-                    settings.ESEWA_VERIFY_URL,
-                    params={
-                        "product_code": settings.ESEWA_PRODUCT_CODE,
-                        "total_amount": str(payment.total_amount),
-                        "transaction_uuid": str(payment.transaction_uuid),
-                    },
-                    timeout=15,
-                )
-                verify_data = verify_response.json()
-                esewa_transaction_status = verify_data.get("status")
-                esewa_ref = verify_data.get("ref_id", esewa_ref_id)
-            except Exception:
+            # Verifying with eSewa's transaction status API using utility
+            esewa_transaction_status, esewa_ref = verify_esewa_payment_remote(
+                total_amount=payment.total_amount,
+                transaction_uuid=payment.transaction_uuid,
+            )
+            
+            if esewa_transaction_status is None:
                 # Server-to-server call failed — fall back to HMAC signature verification
                 callback_status = payment_data.get("status")
                 callback_signature = payment_data.get("signature")
@@ -435,43 +417,30 @@ class KhaltiInitiateView(APIView):
 
             # Khalti expects amount in paisa (1 Rs = 100 paisa)
             amount_in_paisa = int(total_amount * 100)
-
-            # Calling Khalti's ePayment initiate API
-            khalti_payload = {
-                "return_url": settings.KHALTI_RETURN_URL,
-                "website_url": settings.KHALTI_WEBSITE_URL,
-                "amount": amount_in_paisa,
-                "purchase_order_id": str(payment.transaction_uuid),
-                "purchase_order_name": f"Consultation - {lawyer.name}",
-                "customer_info": {
-                    "name": user.name,
-                    "email": user.email,
-                    "phone": getattr(user, "phone", "9800000000"),
-                },
+            customer_info = {
+                "name": user.name,
+                "email": user.email,
+                "phone": getattr(user, "phone", "9800000000"),
             }
-
-            khalti_response = requests.post(
-                f"{settings.KHALTI_BASE_URL}/epayment/initiate/",
-                json=khalti_payload,
-                headers={
-                    "Authorization": f"key {settings.KHALTI_SECRET_KEY}",
-                    "Content-Type": "application/json",
-                },
-                timeout=30,
+            purchase_name = f"Consultation - {lawyer.name}"
+            
+            is_ok, khalti_data = initiate_khalti_payment(
+                amount_in_paisa=amount_in_paisa,
+                purchase_order_id=str(payment.transaction_uuid),
+                purchase_order_name=purchase_name,
+                customer_info=customer_info,
             )
 
-            if khalti_response.status_code != 200:
+            if not is_ok:
                 # Khalti API returned an error — mark payment as failed
                 payment.status = Payment.STATUS_FAILED
                 payment.save(update_fields=["status", "updated_at"])
-                error_detail = khalti_response.json() if khalti_response.text else "Unknown Khalti error"
                 return api_response(
                     is_success=False,
-                    error_message={"error": f"Khalti initiation failed: {error_detail}"},
+                    error_message={"error": f"Khalti initiation failed: {khalti_data}"},
                     status_code=status.HTTP_502_BAD_GATEWAY,
                 )
 
-            khalti_data = khalti_response.json()
             khalti_pidx = khalti_data.get("pidx")
             khalti_payment_url = khalti_data.get("payment_url")
 
@@ -586,22 +555,13 @@ class KhaltiVerifyView(APIView):
                     },
                 )
 
-            # Calling Khalti's lookup API to verify the payment
-            try:
-                lookup_response = requests.post(
-                    f"{settings.KHALTI_BASE_URL}/epayment/lookup/",
-                    json={"pidx": pidx},
-                    headers={
-                        "Authorization": f"key {settings.KHALTI_SECRET_KEY}",
-                        "Content-Type": "application/json",
-                    },
-                    timeout=15,
-                )
-                lookup_data = lookup_response.json()
-            except Exception:
+            # Calling Khalti's lookup API using utility
+            is_ok, lookup_data = verify_khalti_payment(pidx)
+            
+            if not is_ok:
                 return api_response(
                     is_success=False,
-                    error_message={"error": "Khalti verification service unreachable."},
+                    error_message={"error": f"Khalti verification failed: {lookup_data}"},
                     status_code=status.HTTP_502_BAD_GATEWAY,
                 )
 
@@ -1868,41 +1828,31 @@ class KhaltiInitiateCasePaymentView(APIView):
             dynamic_return_url = f"http://localhost:5173/client/case/{case_id}"
 
             # Calling Khalti's ePayment initiate API (EXACT same as appointment)
-            khalti_payload = {
-                "return_url": dynamic_return_url,
-                "website_url": settings.KHALTI_WEBSITE_URL,
-                "amount": amount_in_paisa,
-                "purchase_order_id": str(payment.transaction_uuid),
-                "purchase_order_name": f"Case: {payment_request.case.case_title}",
-                "customer_info": {
-                    "name": user.name,
-                    "email": user.email,
-                    "phone": getattr(user, "phone", "9800000000"),
-                },
+            # Calling Khalti's ePayment initiate API using utility
+            customer_info = {
+                "name": user.name,
+                "email": user.email,
+                "phone": getattr(user, "phone", "9800000000"),
             }
-
-            khalti_response = requests.post(
-                f"{settings.KHALTI_BASE_URL}/epayment/initiate/",
-                json=khalti_payload,
-                headers={
-                    "Authorization": f"key {settings.KHALTI_SECRET_KEY}",
-                    "Content-Type": "application/json",
-                },
-                timeout=30,
+            purchase_name = f"Case: {payment_request.case.case_title}"
+            
+            is_ok, khalti_data = initiate_khalti_payment(
+                amount_in_paisa=amount_in_paisa,
+                purchase_order_id=str(payment.transaction_uuid),
+                purchase_order_name=purchase_name,
+                customer_info=customer_info,
             )
 
-            if khalti_response.status_code != 200:
+            if not is_ok:
                 # Khalti API returned an error — mark payment as failed
                 payment.status = Payment.STATUS_FAILED
                 payment.save(update_fields=["status", "updated_at"])
-                error_detail = khalti_response.json() if khalti_response.text else "Unknown Khalti error"
                 return api_response(
                     is_success=False,
-                    error_message={"error": f"Khalti initiation failed: {error_detail}"},
+                    error_message={"error": f"Khalti initiation failed: {khalti_data}"},
                     status_code=status.HTTP_502_BAD_GATEWAY,
                 )
 
-            khalti_data = khalti_response.json()
             khalti_pidx = khalti_data.get("pidx")
             khalti_payment_url = khalti_data.get("payment_url")
 

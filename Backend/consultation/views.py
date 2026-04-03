@@ -106,14 +106,78 @@ class ConsultationAcceptView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    def _get_next_weekday(self, weekday_name):
+        """Helper to get the next calendar date for a given weekday name (e.g., 'Mon')"""
+        if not weekday_name:
+            return None
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        try:
+            # Match the first 3 letters case-insensitively
+            target_weekday = days.index(weekday_name[:3].capitalize())
+        except (ValueError, IndexError):
+            return None
+        
+        from datetime import date, timedelta
+        today = date.today()
+        days_ahead = target_weekday - today.weekday()
+        if days_ahead <= 0: # Target day already happened this week or is today
+            days_ahead += 7
+        return today + timedelta(days_ahead)
+
+    def _parse_flexible_time(self, time_str):
+        """Helper to parse various time formats like '14:00', '2:00 PM', or '02:00PM'"""
+        if not time_str:
+            return None
+        from datetime import datetime
+        # Strip extra whitespace and try common formats
+        ts = time_str.strip().upper()
+        for fmt in ("%H:%M:%S", "%H:%M", "%I:%M %p", "%I:%M%p"):
+            try:
+                return datetime.strptime(ts, fmt).time()
+            except ValueError:
+                continue
+        return None
+
     def post(self, request, pk):
         consultation = get_object_or_404(Consultation, pk=pk)
 
         if consultation.lawyer != request.user:
             return Response({"detail": "Only the assigned lawyer can accept."}, status=status.HTTP_403_FORBIDDEN)
 
+        # If scheduled fields aren't already set (by a PATCH from frontend), calculate them now
+        # This allows simplified 'one-click' acceptance from the lawyer.
+        updated_self_fields = ["status", "updated_at"]
+        
+        # Capture meeting fields if provided in the accept request
+        meeting_link = request.data.get("meeting_link")
+        if meeting_link:
+            consultation.meeting_link = meeting_link
+            updated_self_fields.append("meeting_link")
+
+        meeting_location = request.data.get("meeting_location")
+        if meeting_location:
+            consultation.meeting_location = meeting_location
+            updated_self_fields.append("meeting_location")
+
+        phone_number = request.data.get("phone_number")
+        if phone_number:
+            consultation.phone_number = phone_number
+            updated_self_fields.append("phone_number")
+
+        if not consultation.scheduled_date and consultation.requested_day:
+            next_date = self._get_next_weekday(consultation.requested_day)
+            if next_date:
+                consultation.scheduled_date = next_date.isoformat()
+                updated_self_fields.append("scheduled_date")
+
+        if not consultation.scheduled_time and consultation.requested_time:
+            parsed_time = self._parse_flexible_time(consultation.requested_time)
+            if parsed_time:
+                consultation.scheduled_time = parsed_time.strftime("%H:%M:%S")
+                updated_self_fields.append("scheduled_time")
+
         consultation.status = Consultation.STATUS_ACCEPTED
-        consultation.save(update_fields=["status", "updated_at"])
+        consultation.save(update_fields=updated_self_fields)
 
         appointment_defaults = {}
         if consultation.scheduled_date:

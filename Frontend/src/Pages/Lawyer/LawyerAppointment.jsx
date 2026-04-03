@@ -400,41 +400,19 @@ const LawyerAppointment = () => {
 
     setProcessingId(selectedConsultation.id);
     try {
-      // Update the scheduled details - include all required fields from existing consultation
-      const data = {
-        title: selectedConsultation.title,
-        lawyer_id: selectedConsultation.lawyer?.id,
-        mode: selectedConsultation.mode,
-        meeting_location: selectedConsultation.meeting_location || "",
-        phone_number: selectedConsultation.phone_number || "",
-        requested_day: selectedConsultation.requested_day,
-        requested_time: selectedConsultation.requested_time,
-        scheduled_date: values.scheduled_date,
-        scheduled_time: values.scheduled_time,
-      };
-
-      // Add case_id if exists
-      if (selectedConsultation.case?.id) {
-        data.case_id = selectedConsultation.case.id;
-      }
-
-      // Add meeting link only for video consultations
-      if (selectedConsultation.mode === "video") {
-        data.meeting_link = values.meeting_link;
-      }
-
-      console.log("Data being sent to backend:", data);
-      await axiosInstance.patch(`/consultations/${selectedConsultation.id}/`, data);
-      
-      // Then accept the consultation
-      await axiosInstance.post(`/consultations/${selectedConsultation.id}/accept/`);
+      // Direct call to accept endpoint. 
+      // The backend handles automatic date calculation but also accepts meeting fields in the body.
+      await axiosInstance.post(`/consultations/${selectedConsultation.id}/accept/`, {
+        meeting_link: values?.meeting_link,
+        meeting_location: values?.meeting_location,
+        phone_number: values?.phone_number
+      });
       dispatch(fetchMyConsultations());
       setShowAcceptModal(false);
       setSelectedConsultation(null);
     } catch (error) {
       console.error("Error accepting consultation:", error.response?.data || error.message);
-      console.error("Full error details:", error.response?.data?.ErrorMessage || error.response?.data);
-      alert("Error: " + JSON.stringify(error.response?.data?.ErrorMessage || error.response?.data || error.message));
+      alert("Error: " + (error.response?.data?.detail || error.message));
     } finally {
       setProcessingId(null);
     }
@@ -483,7 +461,7 @@ const LawyerAppointment = () => {
                 <p className="text-sm text-slate-500 font-medium tracking-tight">Manage both consultation requests and case-related appointments from clients.</p>
               </div>
               
-{/* Tabs and Type Filter */}
+              {/* Tabs and Type Filter */}
               <div className="flex gap-4 items-center">
                 {/* Tabs */}
                 <div className="bg-slate-100/80 p-1.5 rounded-2xl flex-1 flex">
@@ -623,133 +601,113 @@ const LawyerAppointment = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <Formik
             initialValues={{
-              scheduled_date: selectedConsultation.requested_day || "",
-              scheduled_time: selectedConsultation.requested_time || "",
-              meeting_link: ""
+              meeting_link: selectedConsultation.meeting_link || "",
+              meeting_location: selectedConsultation.meeting_location || "",
+              phone_number: selectedConsultation.phone_number || ""
             }}
             validationSchema={acceptConsultationSchema}
             context={{ mode: selectedConsultation.mode }}
             onSubmit={handleSubmitAccept}
           >
             {({ errors, touched, isSubmitting }) => (
-              <Form className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-100 max-h-[85vh] overflow-hidden flex flex-col">
-                {/* Header */}
-                <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-white">{t('lawyerAppointment.acceptConsultation')}</h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAcceptModal(false);
-                      setSelectedConsultation(null);
-                    }}
-                    className="p-1 hover:bg-white/10 rounded-full text-white transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
+              <Form className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-100 max-h-[85vh] overflow-hidden flex flex-col p-6 animate-in fade-in zoom-in duration-300">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-green-100 rounded-full">
+                  <Check className="text-green-600" size={24} />
                 </div>
-
-                {/* Content - Scrollable */}
-                <div className="p-6 overflow-y-auto flex-1">
+                
+                <h3 className="text-lg font-bold text-center text-slate-900 mb-2">Accept Consultation?</h3>
+                
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-6 text-sm">
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Client Info - Full Width */}
-                    <div className="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">{t('lawyerAppointment.client')}</label>
-                      <div className="flex items-center gap-3">
-                        <img 
-                          src={getImageUrl(selectedConsultation.client?.profile_image, selectedConsultation.client?.name)}
-                          alt={selectedConsultation.client?.name || "Client"}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                        />
-                        <div>
-                          <p className="font-bold text-slate-900">{selectedConsultation.client?.name || "Client"}</p>
-                          <p className="text-xs text-slate-500 font-medium">{selectedConsultation.title}</p>
-                        </div>
-                      </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Client</p>
+                      <p className="font-semibold text-slate-900">{selectedConsultation.client?.name}</p>
                     </div>
-
-                    {/* Mode */}
-                    <div className="col-span-2 bg-white rounded-xl p-4 border border-slate-200">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">{t('lawyerAppointment.mode')}</label>
-                      <div className="flex items-center gap-2">
-                        {getModeIcon(selectedConsultation.mode)}
-                        <span className="font-semibold text-sm text-slate-700">{getModeLabel(selectedConsultation.mode)}</span>
-                      </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Requested Time</p>
+                      <p className="font-semibold text-slate-900">{selectedConsultation.requested_day} at {selectedConsultation.requested_time}</p>
                     </div>
-
-                    {/* Scheduled Date - Read Only */}
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
-                        {t('lawyerAppointment.date')}
-                      </label>
-                      <div className="w-full px-3 py-2 border rounded-lg text-sm font-semibold text-slate-900 bg-white border-slate-300">
-                        {selectedConsultation.requested_day || "Not specified"}
-                      </div>
-                    </div>
-
-                    {/* Scheduled Time - Read Only */}
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
-                        {t('lawyerAppointment.time')}
-                      </label>
-                      <div className="w-full px-3 py-2 border rounded-lg text-sm font-semibold text-slate-900 bg-white border-slate-300">
-                        {selectedConsultation.requested_time || "Not specified"}
-                      </div>
-                    </div>
-
-                    {/* Meeting Link - Only for Video */}
-                    {selectedConsultation.mode === "video" && (
-                      <div className="col-span-2 bg-green-50 rounded-xl p-4 border border-green-200">
-                        <label className="text-xs font-bold text-green-700 uppercase tracking-wide block mb-2">
-                          {t('lawyerAppointment.meetingLink')} <span className="text-red-500">*</span>
-                        </label>
-                        <Field
-                          type="url"
-                          name="meeting_link"
-                          placeholder="https://meet.google.com/..."
-                          className={`w-full px-3 py-2 border rounded-lg text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                            errors.meeting_link && touched.meeting_link
-                              ? "border-red-500"
-                              : "border-green-300"
-                          }`}
-                        />
-                        <ErrorMessage
-                          name="meeting_link"
-                          component="div"
-                          className="text-red-500 text-xs mt-1 font-medium"
-                        />
-                      </div>
-                    )}
-
-                    {/* Info message based on mode */}
-                    {selectedConsultation.mode === "in_person" && (
-                      <div className="col-span-2 bg-blue-50 rounded-xl p-3 border border-blue-200">
-                        <p className="text-xs text-blue-700 font-semibold">Client will visit you in person at the scheduled time.</p>
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* Footer */}
-                <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+                {selectedConsultation.mode === "video" ? (
+                  <div className="mb-6">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
+                       Meeting Link <span className="text-red-500">*</span>
+                    </label>
+                    <Field
+                      type="url"
+                      name="meeting_link"
+                      placeholder="https://meet.google.com/..."
+                      className={`w-full px-4 py-2.5 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 ${
+                        errors.meeting_link && touched.meeting_link
+                          ? "border-red-500 focus:ring-red-100"
+                          : "border-slate-200 focus:ring-green-500/20"
+                      }`}
+                    />
+                    <ErrorMessage name="meeting_link" component="div" className="text-red-500 text-xs mt-1 font-medium" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
+                        Meeting Location <span className="text-red-500">*</span>
+                      </label>
+                      <Field
+                        type="text"
+                        name="meeting_location"
+                        placeholder="e.g. My Office, Court Gate"
+                        className={`w-full px-4 py-2.5 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 ${
+                          errors.meeting_location && touched.meeting_location
+                            ? "border-red-500 focus:ring-red-100"
+                            : "border-slate-200 focus:ring-green-500/20"
+                        }`}
+                      />
+                      <ErrorMessage name="meeting_location" component="div" className="text-red-500 text-xs mt-1 font-medium" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
+                        Phone Number <span className="text-red-500">*</span>
+                      </label>
+                      <Field
+                        type="text"
+                        name="phone_number"
+                        placeholder="e.g. +977 980..."
+                        className={`w-full px-4 py-2.5 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 ${
+                          errors.phone_number && touched.phone_number
+                            ? "border-red-500 focus:ring-red-100"
+                            : "border-slate-200 focus:ring-green-500/20"
+                        }`}
+                      />
+                      <ErrorMessage name="phone_number" component="div" className="text-red-500 text-xs mt-1 font-medium" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || processingId === selectedConsultation.id}
+                    className="w-full py-3 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isSubmitting || processingId === selectedConsultation.id ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Accepting...
+                      </>
+                    ) : (
+                      "Yes, Accept Request"
+                    )}
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
                       setShowAcceptModal(false);
                       setSelectedConsultation(null);
                     }}
-                    className="px-6 py-2 bg-slate-100 text-slate-900 rounded-lg font-semibold text-sm hover:bg-slate-200 transition-colors"
+                    className="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
                   >
                     Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={processingId === selectedConsultation.id || isSubmitting}
-                    className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
-                  >
-                    {(processingId === selectedConsultation.id || isSubmitting) && (
-                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    )}
-                    {(processingId === selectedConsultation.id || isSubmitting) ? "Accepting..." : "Accept"}
                   </button>
                 </div>
               </Form>

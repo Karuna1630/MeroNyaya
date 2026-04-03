@@ -57,17 +57,25 @@ export const consultationValidationSchema = Yup.object().shape({
 });
 
 export const acceptConsultationSchema = Yup.object().shape({
-  scheduled_date: Yup.date()
-    .required("Date is required")
-    .min(new Date().toISOString().split('T')[0], "Date cannot be in the past"),
-  scheduled_time: Yup.string()
-    .required("Time is required")
-    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   meeting_link: Yup.string()
     .url("Must be a valid URL")
     .when('$mode', {
       is: 'video',
       then: (schema) => schema.required("Meeting link is required for video consultations"),
       otherwise: (schema) => schema.notRequired()
-    })
+    }),
+  meeting_location: Yup.string()
+    .trim()
+    .when('$mode', {
+      is: 'in_person',
+      then: (schema) => schema.required("Meeting location is required"),
+      otherwise: (schema) => schema.notRequired()
+    }),
+  phone_number: Yup.string()
+    .trim()
+    .when('$mode', {
+      is: 'in_person',
+      then: (schema) => schema.required("Phone number is required"),
+      otherwise: (schema) => schema.notRequired()
+    }),
 });
