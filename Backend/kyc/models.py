@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from authentication.models import User
+from meronaya.storage_backends import raw_file_storage
 
 
 class LawyerKYC(models.Model):
@@ -49,12 +50,12 @@ class LawyerKYC(models.Model):
     khalti_number = models.CharField(max_length=20, blank=True, null=True, help_text='Khalti wallet number for receiving payouts')
     
     # Identity Documents
-    citizenship_front = models.FileField(upload_to='kyc/documents/citizenship/')
-    citizenship_back = models.FileField(upload_to='kyc/documents/citizenship/')
-    lawyer_license = models.FileField(upload_to='kyc/documents/license/')
-    passport_photo = models.FileField(upload_to='kyc/documents/photos/')
-    law_degree = models.FileField(upload_to='kyc/documents/degrees/')
-    experience_certificate = models.FileField(upload_to='kyc/documents/experience/')
+    citizenship_front = models.FileField(upload_to='kyc/documents/citizenship/', storage=raw_file_storage)
+    citizenship_back = models.FileField(upload_to='kyc/documents/citizenship/', storage=raw_file_storage)
+    lawyer_license = models.FileField(upload_to='kyc/documents/license/', storage=raw_file_storage)
+    passport_photo = models.FileField(upload_to='kyc/documents/photos/', storage=raw_file_storage)
+    law_degree = models.FileField(upload_to='kyc/documents/degrees/', storage=raw_file_storage)
+    experience_certificate = models.FileField(upload_to='kyc/documents/experience/', storage=raw_file_storage)
     
     # Declaration
     confirm_accuracy = models.BooleanField(default=False)

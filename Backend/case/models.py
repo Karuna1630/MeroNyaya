@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from authentication.models import User
+from meronaya.storage_backends import raw_file_storage
 
 
 class Case(models.Model):
@@ -279,6 +280,7 @@ class CaseDocument(models.Model):
     )
     file = models.FileField(
         upload_to='case/documents/%Y/%m/%d/',
+        storage=raw_file_storage,
         help_text="Uploaded document file"
     )
     file_name = models.CharField(

@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from authentication.models import User
 from case.models import Case
+from meronaya.storage_backends import voice_audio_storage
 
 
 class Conversation(models.Model):
@@ -60,6 +61,7 @@ class Message(models.Model):
     )
     audio = models.FileField(
         upload_to='chat_audio/%Y/%m/%d/',
+        storage=voice_audio_storage,
         blank=True,
         null=True,
         help_text="Audio file for voice messages"

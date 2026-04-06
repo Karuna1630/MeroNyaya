@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 
 from .managers import CustomUserManager
+from meronaya.storage_backends import profile_image_storage
 
 # Creating a custom user model to support both lawyers and clients with email as the unique identifier.
 
@@ -19,7 +20,7 @@ class User(AbstractUser):
     # Common fields
     name = models.CharField(max_length=255, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    profile_image = models.ImageField(upload_to='profile_images/', blank=True, null=True)
+    profile_image = models.ImageField(upload_to='profile_images/', storage=profile_image_storage, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     district = models.CharField(max_length=100, blank=True, null=True)
