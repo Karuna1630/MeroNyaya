@@ -5,14 +5,12 @@ from consultation.models import Consultation
 class Appointment(models.Model):
 	STATUS_PENDING = "pending"
 	STATUS_CONFIRMED = "confirmed"
-	STATUS_RESCHEDULED = "rescheduled"
 	STATUS_COMPLETED = "completed"
 	STATUS_CANCELLED = "cancelled"
 
 	STATUS_CHOICES = [
 		(STATUS_PENDING, "Pending"),
 		(STATUS_CONFIRMED, "Confirmed"),
-		(STATUS_RESCHEDULED, "Rescheduled"),
 		(STATUS_COMPLETED, "Completed"),
 		(STATUS_CANCELLED, "Cancelled"),
 	]

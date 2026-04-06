@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useFormik } from "formik";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle, CheckCircle, MapPin, Video, X } from "lucide-react";
+import { AlertCircle, MapPin, Video, X } from "lucide-react";
 import { toast } from "react-toastify";
 import AuthGate from "../utils/AuthGate.jsx";
 import { createConsultation } from "../slices/consultationSlice.js";
@@ -252,34 +252,6 @@ const Consultationrequest = ({ lawyer, user }) => {
             </p>
           </div>
 
-          {/* Help Card */}
-          <div className="bg-white border border-slate-200 rounded-lg p-6">
-            <h3 className="font-semibold text-slate-900 mb-2">Need Help?</h3>
-            <p className="text-sm text-slate-600 mb-4">
-              Send a message to get more information about the lawyer's services.
-            </p>
-            <AuthGate>
-              <button
-                type="button"
-                className="w-full px-4 py-2 rounded-lg text-sm font-semibold border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
-              >
-                Send Message
-              </button>
-            </AuthGate>
-          </div>
-
-          {/* Verification Banner */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <CheckCircle size={18} className="text-blue-600 fill-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-blue-900 text-sm mb-1">Verified Lawyer</p>
-                <p className="text-xs text-blue-700">
-                  All information and credentials have been verified by our team.
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

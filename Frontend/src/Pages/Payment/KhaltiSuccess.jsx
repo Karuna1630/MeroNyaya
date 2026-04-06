@@ -12,25 +12,52 @@ const KhaltiSuccess = () => {
   const dispatch = useDispatch();
   const { verifying, verifyError, verifiedPayment } = useSelector((state) => state.payment);
   const [verified, setVerified] = useState(false);
+  const [resolvedType, setResolvedType] = useState(searchParams.get('type') || null);
 
   useEffect(() => {
     const pidx = searchParams.get('pidx');
     const transaction_id = searchParams.get('transaction_id');
     const purchase_order_id = searchParams.get('purchase_order_id');
     const type = searchParams.get('type');
-    
-    if (pidx && !verified) {
-      const verifyThunk = type === 'case' ? verifyKhaltiCasePayment : verifyKhaltiPayment;
-      dispatch(verifyThunk({ pidx, transaction_id, purchase_order_id })).then((res) => {
-        if (!res.error) {
-          setVerified(true);
+
+    const verifyPayment = async () => {
+      if (!pidx || verified) return;
+
+      const payload = { pidx, transaction_id, purchase_order_id };
+
+      try {
+        if (type === 'case') {
+          await dispatch(verifyKhaltiCasePayment(payload)).unwrap();
+          setResolvedType('case');
+        } else if (type === 'appointment') {
+          await dispatch(verifyKhaltiPayment(payload)).unwrap();
+          setResolvedType('appointment');
+        } else {
+          try {
+            await dispatch(verifyKhaltiPayment(payload)).unwrap();
+            setResolvedType('appointment');
+          } catch {
+            await dispatch(verifyKhaltiCasePayment(payload)).unwrap();
+            setResolvedType('case');
+          }
         }
-      });
-    }
+
+        setVerified(true);
+      } catch {
+        // Error state is already set in Redux slice.
+      }
+    };
+
+    verifyPayment();
+  }, [dispatch, searchParams, verified]);
+
+  useEffect(() => {
     return () => {
       dispatch(clearVerifiedPayment());
     };
-  }, [dispatch, searchParams, verified]);
+  }, [dispatch]);
+
+  const isCasePayment = resolvedType === 'case';
 
   return (
     <>
@@ -61,7 +88,7 @@ const KhaltiSuccess = () => {
                 ? 'Please wait while we confirm your payment with Khalti.'
                 : verifyError
                 ? verifyError
-                : searchParams.get('type') === 'case'
+                : isCasePayment
                 ? 'Your case payment has been confirmed and the case is now completed.'
                 : 'Your consultation appointment has been confirmed.'}
             </p>
@@ -97,9 +124,9 @@ const KhaltiSuccess = () => {
 
           {/* Actions */}
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex gap-3">
-            {searchParams.get('type') === 'case' ? (
+            {isCasePayment ? (
               <button
-                onClick={() => navigate('/client/cases')}
+                onClick={() => navigate('/clientcase')}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#0F1A3D] text-white rounded-xl font-semibold text-sm hover:bg-blue-950 transition-colors"
               >
                 <FileText size={16} />

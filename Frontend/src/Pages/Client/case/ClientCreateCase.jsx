@@ -174,6 +174,8 @@ const ClientCreateCase = () => {
                   urgencyLevel: caseDetails.urgency_level || 'Medium',
                   lawyerSelection: caseDetails.lawyer_selection || 'public',
                   selectedLawyerIds: caseDetails.preferred_lawyers || [],
+                  privacyConfirmed: true,
+                  termsAccepted: true,
                 } : CreateCaseInitialValues}
                 validationSchema={CreateCaseValidationSchema}
                 onSubmit={handleSubmit}
@@ -182,7 +184,7 @@ const ClientCreateCase = () => {
                 enableReinitialize={isEditMode}
                 innerRef={formikRef}
               >
-                {({ values, isSubmitting, resetForm, setFieldValue, setFieldError, setFieldTouched }) => {
+                {({ values, isSubmitting, setFieldValue, setFieldError, setFieldTouched }) => {
                   const selectedIds = Array.isArray(values.selectedLawyerIds)
                     ? values.selectedLawyerIds.map(String)
                     : [];
@@ -546,6 +548,22 @@ const ClientCreateCase = () => {
                 </label>
                 <ErrorMessage
                   name="privacyConfirmed"
+                  component="p"
+                  className="text-red-500 text-xs mt-1"
+                />
+
+                <label className="flex items-start cursor-pointer mt-4">
+                  <Field
+                    type="checkbox"
+                    name="termsAccepted"
+                    className="w-4 h-4 mt-0.5 text-[#0F1A3D] focus:ring-[#0F1A3D] rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    I agree to the Privacy Policy and Terms of Service.
+                  </span>
+                </label>
+                <ErrorMessage
+                  name="termsAccepted"
                   component="p"
                   className="text-red-500 text-xs mt-1"
                 />

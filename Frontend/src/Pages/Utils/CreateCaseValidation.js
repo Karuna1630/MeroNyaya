@@ -9,6 +9,7 @@ export const CreateCaseInitialValues = {
   lawyerSelection: 'public',
   selectedLawyerIds: [],
   privacyConfirmed: false,
+  termsAccepted: false,
 };
 
 export const CreateCaseValidationSchema = Yup.object().shape({
@@ -45,4 +46,8 @@ export const CreateCaseValidationSchema = Yup.object().shape({
   privacyConfirmed: Yup.boolean()
     .oneOf([true], 'You must confirm that the information is accurate')
     .required('Privacy confirmation is required'),
+
+  termsAccepted: Yup.boolean()
+    .oneOf([true], 'You must agree to the terms and conditions')
+    .required('Terms acceptance is required'),
 });

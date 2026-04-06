@@ -13,7 +13,8 @@ import {
   Clock,
   Play,
   DollarSign,
-  X
+  X,
+  Star
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyAppointments } from "../slices/appointmentSlice";
@@ -21,17 +22,26 @@ import { initiateEsewaPayment, initiateKhaltiPayment } from "../slices/paymentSl
 import { redirectToEsewa } from "../../utils/esewaRedirect";
 import { fetchCaseAppointments } from "../slices/caseSlice";
 import { getImageUrl } from '../../utils/imageUrl';
+import RatingModal from "../../components/RatingModal";
+import { createReview } from "../../axios/reviewAPI";
+import { toast } from "react-toastify";
 
 const ClientAppointment = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState(t('appointments.upcoming'));
+  const dispatch = useDispatch();
+  
+  const [activeTab, setActiveTab] = useState("Upcoming");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [appointmentToPay, setAppointmentToPay] = useState(null);
   const [paymentError, setPaymentError] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("esewa");
-  const dispatch = useDispatch();
+  
+  // Rating State
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingContext, setRatingContext] = useState(null);
+
   const { appointments = [], appointmentsLoading, appointmentsError } = useSelector(
     (state) => state.appointment || {} 
   );
@@ -52,19 +62,19 @@ const ClientAppointment = () => {
 
   // Merge consultation appointments and case appointments
   const allAppointments = useMemo(() => {
-    const consultationAppts = appointments.map(appt => {
-      const hasCaseReference = Boolean(appt?.consultation_details?.case_reference);
-      return {
-        ...appt,
-        appointmentType: hasCaseReference ? 'case' : 'consultation'
-      };
-    });
+    const consultationAppts = appointments.map(appt => ({
+      ...appt,
+      appointmentType: appt?.consultation_details?.case_reference ? 'case' : 'consultation'
+    }));
+    
     const caseAppts = caseAppointments.map(appt => ({
       ...appt,
       appointmentType: 'case',
-      // Transform case appointment structure to match consultation structure
+      is_rated: appt.is_rated, // Keep is_rated at top level for Star icon
+      caseId: appt.case,       // Keep caseId at top level for handleRateClick
       consultation_details: {
         lawyer: {
+          id: appt.lawyer,
           name: appt.lawyer_name,
           profile_image: appt.lawyer_profile_image
         },
@@ -79,17 +89,18 @@ const ClientAppointment = () => {
         phone_number: appt.phone_number,
         meeting_link: appt.meeting_link,
         requested_day: appt.preferred_day,
-        requested_time: appt.preferred_time
+        requested_time: appt.preferred_time,
       },
       scheduled_date: appt.scheduled_date,
       scheduled_time: appt.scheduled_time,
-      payment_status: 'paid' // Case appointments don't require payment
+      payment_status: 'paid'
     }));
+    
     return [...consultationAppts, ...caseAppts];
   }, [appointments, caseAppointments]);
 
   const upcomingAppointments = useMemo(() => {
-    return allAppointments.filter((item) => ["pending", "confirmed", "rescheduled"].includes(item.status));
+    return allAppointments.filter((item) => ["pending", "confirmed"].includes(item.status));
   }, [allAppointments]);
 
   const completedAppointments = useMemo(() => {
@@ -98,50 +109,70 @@ const ClientAppointment = () => {
 
   const displayAppointments = activeTab === "Upcoming" ? upcomingAppointments : completedAppointments;
 
+  const totalCount = allAppointments.length;
+  const caseCount = allAppointments.filter(item => item.appointmentType === 'case').length;
+  const consultationCount = allAppointments.filter(item => item.appointmentType === 'consultation').length;
+
+  const handleRateClick = (item) => {
+    if (item.is_rated) return;
+    
+    // For appointment ratings, only send appointment_id (not caseId)
+    setRatingContext({
+      appointmentId: item.appointmentType === 'consultation' ? item.id : null,
+      lawyerId: item.consultation_details?.lawyer?.id,
+      lawyerName: item.consultation_details?.lawyer?.name,
+      caseId: item.appointmentType === 'case' ? item.caseId : null
+    });
+    setShowRatingModal(true);
+  };
+
+  const handleRatingSubmit = async (ratingData) => {
+    try {
+      await createReview(
+        ratingContext.lawyerId,
+        ratingData.rating,
+        ratingData.comment,
+        null, // No Title
+        ratingContext.appointmentId,
+        ratingContext.caseId
+      );
+      
+      toast.success("Thank you for your rating!");
+      setShowRatingModal(false);
+      setRatingContext(null);
+      
+      // Refresh data to update is_rated status
+      dispatch(fetchMyAppointments());
+      dispatch(fetchCaseAppointments());
+    } catch (error) {
+      // reviewAPI.js wraps backend errors in new Error(), so use .message
+      const errorMessage = error.message || "Failed to submit rating";
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
   const getModeIcon = (mode) => {
     switch (mode) {
-      case "video":
-        return <Video size={16} className="text-blue-500" />;
-      case "phone":
-        return <Phone size={16} className="text-teal-500" />;
-      case "in_person":
-        return <MapPin size={16} className="text-indigo-500" />;
-      default:
-        return <Clock size={16} className="text-gray-500" />;
+      case "video": return <Video size={16} className="text-blue-500" />;
+      case "phone": return <Phone size={16} className="text-teal-500" />;
+      case "in_person": return <MapPin size={16} className="text-indigo-500" />;
+      default: return <Clock size={16} className="text-gray-500" />;
     }
   };
 
   const getModeLabel = (mode) => {
     switch (mode) {
-      case "video":
-        return "Video Call";
-      case "phone":
-        return "Phone Call";
-      case "in_person":
-        return "In-Person";
-      default:
-        return "N/A";
+      case "video": return "Video Call";
+      case "phone": return "Phone Call";
+      case "in_person": return "In-Person";
+      default: return "N/A";
     }
   };
 
   const getStatusLabel = (item) => {
-    if (item.status === "completed" || item.status === "cancelled") {
-      return item.status.charAt(0).toUpperCase() + item.status.slice(1);
-    }
-    
-    const dateStr = item.scheduled_date || item.consultation_details?.requested_day;
-    const timeStr = item.scheduled_time || item.consultation_details?.requested_time;
-    
-    if (dateStr) {
-      const apptDate = new Date(`${dateStr}T${timeStr || '00:00:00'}`);
-      if (apptDate > new Date()) {
-        return "Upcoming";
-      }
-    }
-    
-    if (item.status === "pending" || item.status === "confirmed") return "Confirmed";
-    if (item.status === "rescheduled") return "Rescheduled";
-    
+    if (item.status === "completed") return "Completed";
+    if (item.status === "cancelled") return "Cancelled";
     return "Confirmed";
   };
 
@@ -152,84 +183,94 @@ const ClientAppointment = () => {
     setShowPaymentModal(true);
   };
 
+  const handleJoinMeeting = (meetingLink) => {
+    if (!meetingLink) {
+      toast.error("Meeting link is not available yet.");
+      return;
+    }
+
+    try {
+      const parsedUrl = new URL(meetingLink);
+      window.open(parsedUrl.toString(), "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error("Invalid meeting link.");
+    }
+  };
+
   const handleConfirmPayment = () => {
     if (!appointmentToPay?.id) return;
     setPaymentLoading(true);
-    setPaymentError("");
-
-    if (selectedPaymentMethod === "khalti") {
-      dispatch(initiateKhaltiPayment(appointmentToPay.id)).then((res) => {
-        setPaymentLoading(false);
-        if (!res?.error) {
-          const { khalti_payment_url } = res.payload;
-          setShowPaymentModal(false);
-          setAppointmentToPay(null);
-          // Khalti uses a simple redirect (GET) to their payment page
-          window.location.href = khalti_payment_url;
+    
+    const action = selectedPaymentMethod === "khalti" ? initiateKhaltiPayment : initiateEsewaPayment;
+    
+    dispatch(action(appointmentToPay.id)).then((res) => {
+      setPaymentLoading(false);
+      if (!res?.error) {
+        setShowPaymentModal(false);
+        if (selectedPaymentMethod === "khalti") {
+          window.location.href = res.payload.khalti_payment_url;
         } else {
-          setPaymentError(res?.payload || "Khalti payment initiation failed. Please try again.");
+          redirectToEsewa(res.payload.esewa_url, res.payload.params);
         }
-      });
-    } else {
-      dispatch(initiateEsewaPayment(appointmentToPay.id)).then((res) => {
-        setPaymentLoading(false);
-        if (!res?.error) {
-          // Redirect to eSewa payment page
-          const { esewa_url, params } = res.payload;
-          setShowPaymentModal(false);
-          setAppointmentToPay(null);
-          redirectToEsewa(esewa_url, params);
-        } else {
-          setPaymentError(res?.payload || "Payment initiation failed. Please try again.");
-        }
-      });
-    }
+      } else {
+        setPaymentError(res?.payload || "Payment initiation failed.");
+      }
+    });
   };
 
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
-
       <main className="flex-1 flex flex-col overflow-hidden">
-        <DashHeader 
-          title="Appointments" 
-          subtitle="Your confirmed consultation appointments" 
-        />
+        <DashHeader title="Appointments" subtitle="Your consultation history" />
 
         <div className="flex-1 p-8 overflow-y-auto">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-emerald-500 to-emerald-600 ring-1 ring-emerald-500/20 flex flex-col items-center justify-center text-center">
+          {/* Stat Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Total Appointments */}
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-indigo-500 to-purple-600 ring-1 ring-indigo-500/20">
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
               <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
-              <span className="relative z-10 text-4xl font-extrabold mb-1">{upcomingAppointments.length}</span>
-              <span className="relative z-10 text-sm font-medium text-white/70 uppercase tracking-wider">Upcoming</span>
+              <div className="relative z-10 flex flex-col items-center justify-center text-center">
+                <span className="text-4xl font-extrabold mb-1">{totalCount}</span>
+                <span className="text-sm font-medium text-white/70 uppercase tracking-wider">Total Appointments</span>
+              </div>
             </div>
-            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-blue-500 to-blue-600 ring-1 ring-blue-500/20 flex flex-col items-center justify-center text-center">
+
+            {/* Case Related */}
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-amber-500 to-orange-500 ring-1 ring-amber-500/20">
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
               <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
-              <span className="relative z-10 text-4xl font-extrabold mb-1">{completedAppointments.length}</span>
-              <span className="relative z-10 text-sm font-medium text-white/70 uppercase tracking-wider">Completed</span>
+              <div className="relative z-10 flex flex-col items-center justify-center text-center">
+                <span className="text-4xl font-extrabold mb-1">{caseCount}</span>
+                <span className="text-sm font-medium text-white/70 uppercase tracking-wider">Case Related</span>
+              </div>
+            </div>
+
+            {/* Consultations */}
+            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-emerald-500 to-teal-600 ring-1 ring-emerald-500/20">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
+              <div className="relative z-10 flex flex-col items-center justify-center text-center">
+                <span className="text-4xl font-extrabold mb-1">{consultationCount}</span>
+                <span className="text-sm font-medium text-white/70 uppercase tracking-wider">Direct Consults</span>
+              </div>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="mb-6">
-            <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
-              {["Upcoming", "Completed"].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-8 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                    activeTab === tab
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
+          <div className="mb-6 flex bg-slate-100 p-1 rounded-xl w-fit">
+            {["Upcoming", "Completed"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-8 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
 
           {/* Table */}
@@ -238,149 +279,90 @@ const ClientAppointment = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Lawyer</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Case/Title</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date & Time</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Mode</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Payment</th>
-                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Type</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Lawyer</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Topic</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Date/Time</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Mode</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Status</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {(appointmentsLoading || caseAppointmentsLoading) && (
-                    <tr>
-                      <td colSpan="8" className="px-6 py-12 text-center text-slate-500">
-                        Loading appointments...
-                      </td>
-                    </tr>
-                  )}
-                  {!appointmentsLoading && !caseAppointmentsLoading && appointmentsError && (
-                    <tr>
-                      <td colSpan="8" className="px-6 py-12 text-center text-red-500">
-                        {appointmentsError}
-                      </td>
-                    </tr>
-                  )}
-                  {!appointmentsLoading && !caseAppointmentsLoading && !appointmentsError && displayAppointments.map((item) => {
+                  {displayAppointments.map((item) => {
                     const consultation = item.consultation_details || {};
                     const lawyer = consultation.lawyer || {};
-                    const caseRef = consultation.case_reference || {};
-                    const dateValue = item.scheduled_date || consultation.requested_day;
-                    const timeValue = item.scheduled_time || consultation.requested_time;
-                    const modeValue = consultation.mode;
-                    const meetingLink = consultation.meeting_link;
-                    const isConfirmed = item.status === 'confirmed';
-                    const isCaseAppointment = item.appointmentType === 'case';
+                    const meetingLink = item.meeting_link || consultation.meeting_link;
+                    const canJoinNow =
+                      activeTab === "Upcoming" &&
+                      consultation.mode === "video" &&
+                      item.status === "confirmed" &&
+                      Boolean(meetingLink);
                     return (
-                      <tr key={`${item.appointmentType}-${item.id}`} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-6 py-5">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${
-                          isCaseAppointment
-                            ? "bg-purple-50 text-purple-600 border-purple-100"
-                            : "bg-blue-50 text-blue-600 border-blue-100"
-                        }`}>
-                          {isCaseAppointment ? "Case" : "Consult"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <img 
-                              src={getImageUrl(lawyer.profile_image, lawyer.name)} 
-                              alt={lawyer.name || "Lawyer"} 
-                            className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm"
-                          />
-                            <span className="font-semibold text-slate-900 text-sm tracking-tight">{lawyer.name || "Lawyer"}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-[#0F1A3D]">{isCaseAppointment ? (caseRef.category || consultation.title) : (consultation.title || "Appointment")}</span>
-                            <span className="text-xs text-slate-500 font-medium">{isCaseAppointment ? caseRef.title : consultation.title}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-700">
-                            {dateValue ? new Date(dateValue).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A"}
+                      <tr key={`${item.appointmentType}-${item.id}`} className="hover:bg-slate-50/50">
+                        <td className="px-6 py-5">
+                          <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase border ${
+                            item.appointmentType === 'case' ? "bg-purple-50 text-purple-600 border-purple-100" : "bg-blue-50 text-blue-600 border-blue-100"
+                          }`}>
+                            {item.appointmentType}
                           </span>
-                          <span className="text-xs font-medium text-slate-500 mt-0.5">
-                            {timeValue || "N/A"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                            {getModeIcon(modeValue)}
-                            <span className="text-sm font-bold text-slate-700">{getModeLabel(modeValue)}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span 
-                          className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${
-                              item.status === "pending" || item.status === "confirmed" || item.status === "rescheduled"
-                              ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                              : "bg-slate-100 text-slate-600 border-slate-200"
-                          }`}
-                        >
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <img src={getImageUrl(lawyer.profile_image, lawyer.name)} className="w-8 h-8 rounded-full object-cover" alt="" />
+                            <span className="text-sm font-semibold">{lawyer.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-sm font-medium line-clamp-1">{consultation.title}</span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="text-sm font-medium">{item.scheduled_date || consultation.requested_day}</div>
+                          <div className="text-xs text-slate-500">{item.scheduled_time || consultation.requested_time}</div>
+                        </td>
+                        <td className="px-6 py-5">{getModeIcon(consultation.mode)}</td>
+                        <td className="px-6 py-5">
+                          <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold uppercase">
                             {getStatusLabel(item)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        {modeValue === "in_person" ? (
-                          <span className="bg-amber-50 text-amber-600 border border-amber-100 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">
-                            In Hand
                           </span>
-                        ) : item.payment_status === "paid" ? (
-                          <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">
-                            Paid
-                          </span>
-                        ) : (
-                          <span className="bg-rose-50 text-rose-600 border border-rose-100 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">
-                            Pending
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={() => setSelectedAppointment(item)}
-                            className="px-4 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold hover:bg-slate-200 transition shadow-sm whitespace-nowrap"
-                          >
-                            View
-                          </button>
-                            {modeValue === "video" && meetingLink && activeTab === "Upcoming" && isConfirmed && item.payment_status === "paid" && (
-                              <a
-                                href={meetingLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-4 py-1.5 bg-[#0F1A3D] text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition shadow-sm whitespace-nowrap flex items-center gap-1.5"
-                              >
-                                <Video size={14} /> Join Call
-                              </a>
-                            )}
-                            {modeValue === "video" && activeTab === "Upcoming" && !isCaseAppointment && item.payment_status !== "paid" && (
+                        </td>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center justify-end gap-2">
+                            {activeTab === "Completed" && (
                               <button
-                                type="button"
-                                onClick={() => handleOpenPayment(item)}
-                                className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition shadow-sm whitespace-nowrap flex items-center gap-1"
+                                onClick={() => handleRateClick(item)}
+                                className={`p-2 rounded-full transition ${
+                                  item.is_rated 
+                                    ? "text-amber-400 cursor-default" 
+                                    : "text-slate-300 hover:text-amber-400 hover:bg-amber-50"
+                                }`}
+                                title={item.is_rated ? "Rated" : "Rate Lawyer"}
                               >
-                                <DollarSign size={14} /> Pay
+                                <Star size={20} fill={item.is_rated ? "currentColor" : "none"} />
                               </button>
                             )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
+                            <button onClick={() => setSelectedAppointment(item)} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+                              <Eye size={18} />
+                            </button>
+                            {canJoinNow && (
+                              <button
+                                onClick={() => handleJoinMeeting(meetingLink)}
+                                className="p-2 hover:bg-blue-50 rounded-full text-blue-600 transition"
+                                title="Join Meeting"
+                              >
+                                <Play size={18} />
+                              </button>
+                            )}
+                            {activeTab === "Upcoming" && item.payment_status !== "paid" && item.appointmentType !== 'case' && (
+                              <button onClick={() => handleOpenPayment(item)} className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">
+                                Pay
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
                   })}
-                  {!appointmentsLoading && !caseAppointmentsLoading && !appointmentsError && displayAppointments.length === 0 && (
-                    <tr>
-                      <td colSpan="8" className="px-6 py-12 text-center text-slate-500">
-                        No {activeTab.toLowerCase()} appointments found.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
@@ -388,269 +370,93 @@ const ClientAppointment = () => {
         </div>
       </main>
 
-      {/* Appointment Details Modal */}
+      {/* Modals */}
       {selectedAppointment && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-100 max-h-[85vh] overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Appointment Details</h2>
-              <button
-                onClick={() => setSelectedAppointment(null)}
-                className="p-1 hover:bg-white/10 rounded-full text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Content - Scrollable */}
-            <div className="p-6 overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Appointment Type Badge */}
-                <div className="col-span-2">
-                  <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                    selectedAppointment.appointmentType === 'case'
-                      ? "bg-purple-50 text-purple-600 border border-purple-200"
-                      : "bg-blue-50 text-blue-600 border border-blue-200"
-                  }`}>
-                    {selectedAppointment.appointmentType === 'case' ? 'Case Appointment' : 'Consultation Appointment'}
-                  </span>
-                </div>
-
-                {/* Lawyer Info - Full Width */}
-                <div className="col-span-2 bg-slate-50 rounded-xl p-4 border border-slate-200">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-3">Lawyer</label>
-                  <div className="flex items-center gap-3">
-                    <img 
-                      src={getImageUrl(selectedAppointment.consultation_details?.lawyer?.profile_image, selectedAppointment.consultation_details?.lawyer?.name)} 
-                      alt={selectedAppointment.consultation_details?.lawyer?.name || "Lawyer"} 
-                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
-                    />
-                    <div>
-                      <p className="font-bold text-slate-900">{selectedAppointment.consultation_details?.lawyer?.name || "Lawyer"}</p>
-                      <p className="text-xs text-slate-500 font-medium">{selectedAppointment.consultation_details?.title || "Consultation"}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Date */}
-                <div className="bg-white rounded-xl p-4 border border-slate-200">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Date</label>
-                  <div className="flex items-center gap-2 text-slate-700">
-                    <Calendar size={16} className="text-[#0F1A3D]" />
-                    <span className="font-semibold text-sm">
-                      {selectedAppointment.scheduled_date || selectedAppointment.consultation_details?.requested_day || "N/A"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Time */}
-                <div className="bg-white rounded-xl p-4 border border-slate-200">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Time</label>
-                  <div className="flex items-center gap-2 text-slate-700">
-                    <Clock size={16} className="text-[#0F1A3D]" />
-                    <span className="font-semibold text-sm">
-                      {selectedAppointment.scheduled_time || selectedAppointment.consultation_details?.requested_time || "N/A"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Mode */}
-                <div className="bg-white rounded-xl p-4 border border-slate-200">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Mode</label>
-                  <div className="flex items-center gap-2">
-                    {getModeIcon(selectedAppointment.consultation_details?.mode)}
-                    <span className="font-semibold text-sm text-slate-700">{getModeLabel(selectedAppointment.consultation_details?.mode)}</span>
-                  </div>
-                </div>
-
-                {/* Payment Status */}
-                <div className="bg-white rounded-xl p-4 border border-slate-200">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Payment</label>
-                  {selectedAppointment.appointmentType === 'case' ? (
-                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-600 border border-purple-200">
-                      No Payment
-                    </span>
-                  ) : selectedAppointment.consultation_details?.mode === "in_person" ? (
-                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200">
-                      In Hand
-                    </span>
-                  ) : selectedAppointment.payment_status === "paid" ? (
-                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                      Paid
-                    </span>
-                  ) : (
-                    <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-600 border border-rose-200">
-                      Pending
-                    </span>
-                  )}
-                </div>
-
-                {/* Meeting Location - Only for In-Person */}
-                {selectedAppointment.consultation_details?.mode === "in_person" && (
-                  <div className="col-span-2 bg-blue-50 rounded-xl p-4 border border-blue-200">
-                    <label className="text-xs font-bold text-blue-700 uppercase tracking-wide block mb-2">Meeting Location</label>
-                    <div className="flex items-center gap-2 text-blue-900">
-                      <MapPin size={16} className="text-blue-600" />
-                      <span className="font-semibold text-sm">
-                        {selectedAppointment.consultation_details?.meeting_location || "Not specified"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-blue-900 mt-2">
-                      <Phone size={16} className="text-blue-600" />
-                      <span className="font-semibold text-sm">
-                        {selectedAppointment.consultation_details?.phone_number || "Not provided"}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Meeting Link for paid video appointments */}
-                {selectedAppointment.status === 'confirmed' && 
-                 selectedAppointment.payment_status === 'paid' &&
-                 selectedAppointment.consultation_details?.mode === 'video' && 
-                 selectedAppointment.consultation_details?.meeting_link && (
-                  <div className="col-span-2 bg-emerald-50 rounded-xl p-4 border border-emerald-200">
-                    <label className="text-xs font-bold text-emerald-700 uppercase tracking-wide block mb-2">Meeting Link</label>
-                    <a
-                      href={selectedAppointment.consultation_details.meeting_link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm font-semibold text-emerald-700 hover:text-emerald-900 underline break-all"
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden">
+             <div className="bg-[#0F1A3D] p-4 text-white flex justify-between items-center">
+                <h2 className="font-bold">Appointment Details</h2>
+                <button onClick={() => setSelectedAppointment(null)}><X size={20}/></button>
+             </div>
+             <div className="p-6 space-y-4">
+                {(selectedAppointment.meeting_link || selectedAppointment.consultation_details?.meeting_link) &&
+                  selectedAppointment.consultation_details?.mode === "video" && (
+                  <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                    <p className="text-xs font-bold text-blue-700 uppercase">Meeting Link</p>
+                    <button
+                      onClick={() => handleJoinMeeting(selectedAppointment.meeting_link || selectedAppointment.consultation_details?.meeting_link)}
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold flex items-center gap-2"
                     >
-                      {selectedAppointment.consultation_details.meeting_link}
-                    </a>
+                      <Play size={16} />
+                      Join Meeting
+                    </button>
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
-              {selectedAppointment.status === 'confirmed' && 
-               selectedAppointment.payment_status === 'paid' &&
-               selectedAppointment.consultation_details?.mode === 'video' && 
-               selectedAppointment.consultation_details?.meeting_link && (
-                <a
-                  href={selectedAppointment.consultation_details.meeting_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-6 py-2 bg-[#0F1A3D] text-white rounded-lg font-semibold text-sm hover:bg-blue-950 transition-colors shadow-md flex items-center gap-2"
-                >
-                  <Play size={16} fill="white" />
-                  Join Meeting
-                </a>
-              )}
-              <button
-                onClick={() => setSelectedAppointment(null)}
-                className="px-6 py-2 bg-slate-900 text-white rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors shadow-md"
-              >
-                Close
-              </button>
-            </div>
+                <div className="flex items-center gap-4">
+                   <img src={getImageUrl(selectedAppointment.consultation_details?.lawyer?.profile_image)} className="w-16 h-16 rounded-full" alt=""/>
+                   <div>
+                      <h3 className="font-bold text-lg">{selectedAppointment.consultation_details?.lawyer?.name}</h3>
+                      <p className="text-slate-500">{selectedAppointment.consultation_details?.title}</p>
+                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="p-3 bg-slate-50 rounded-xl">
+                      <p className="text-xs font-bold text-slate-500 uppercase">Date</p>
+                      <p className="font-semibold">{selectedAppointment.scheduled_date || selectedAppointment.consultation_details?.requested_day}</p>
+                   </div>
+                   <div className="p-3 bg-slate-50 rounded-xl">
+                      <p className="text-xs font-bold text-slate-500 uppercase">Time</p>
+                      <p className="font-semibold">{selectedAppointment.scheduled_time || selectedAppointment.consultation_details?.requested_time}</p>
+                   </div>
+                </div>
+             </div>
+             <div className="p-4 bg-slate-50 border-t flex justify-end">
+                <button onClick={() => setSelectedAppointment(null)} className="px-6 py-2 bg-slate-900 text-white rounded-lg font-bold text-sm">Close</button>
+             </div>
           </div>
         </div>
       )}
 
-      {/* Payment Confirmation Modal */}
+      {showRatingModal && ratingContext && (
+        <RatingModal
+          isOpen={showRatingModal}
+          lawyerName={ratingContext.lawyerName}
+          lawyerId={ratingContext.lawyerId}
+          onClose={() => setShowRatingModal(false)}
+          onSubmit={handleRatingSubmit}
+        />
+      )}
+
       {showPaymentModal && appointmentToPay && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-100 overflow-hidden flex flex-col">
-            <div className="bg-[#0F1A3D] px-6 py-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">Pay for Consultation</h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setAppointmentToPay(null);
-                  setPaymentError("");
-                }}
-                className="p-1 hover:bg-white/10 rounded-full text-white transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {paymentError && (
-                <div className="mb-4 flex items-start gap-3 rounded-lg bg-red-50 p-4 border border-red-200">
-                  <span className="text-sm text-red-700 font-semibold">{paymentError}</span>
-                </div>
-              )}
-
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Lawyer</p>
-                <p className="text-base font-semibold text-slate-900 mt-1">
-                  {appointmentToPay.consultation_details?.lawyer?.name || "Lawyer"}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {appointmentToPay.consultation_details?.title || "Consultation"}
-                </p>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Confirm Payment</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between font-medium">
+                <span>Consulation Fee</span>
+                <span>Rs. {appointmentToPay.consultation_details?.lawyer?.consultation_fee}</span>
               </div>
-              <div className="mt-4 bg-white rounded-xl p-4 border border-slate-200">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Amount</p>
-                <p className="text-lg font-bold text-slate-900 mt-1">
-                  Rs. {appointmentToPay.consultation_details?.lawyer?.consultation_fee?.toLocaleString() || "0"}
-                </p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setSelectedPaymentMethod("esewa")}
+                  className={`flex-1 p-3 border-2 rounded-xl transition ${selectedPaymentMethod === "esewa" ? "border-green-500 bg-green-50" : "border-slate-100"}`}
+                >
+                  eSewa
+                </button>
+                <button 
+                  onClick={() => setSelectedPaymentMethod("khalti")}
+                  className={`flex-1 p-3 border-2 rounded-xl transition ${selectedPaymentMethod === "khalti" ? "border-purple-500 bg-purple-50" : "border-slate-100"}`}
+                >
+                  Khalti
+                </button>
               </div>
-
-              {/* Payment Method Selection */}
-              <div className="mt-4">
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Payment Method</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaymentMethod("esewa")}
-                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
-                      selectedPaymentMethod === "esewa"
-                        ? "border-green-500 bg-green-50 text-green-700 ring-2 ring-green-200"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    eSewa
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaymentMethod("khalti")}
-                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all border-2 ${
-                      selectedPaymentMethod === "khalti"
-                        ? "border-purple-500 bg-purple-50 text-purple-700 ring-2 ring-purple-200"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                    Khalti
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowPaymentModal(false);
-                  setAppointmentToPay(null);
-                  setPaymentError("");
-                }}
-                className="px-6 py-2 bg-slate-100 text-slate-900 rounded-lg font-semibold text-sm hover:bg-slate-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
+              {paymentError && <p className="text-red-500 text-sm">{paymentError}</p>}
+              <button 
                 onClick={handleConfirmPayment}
                 disabled={paymentLoading}
-                className={`px-6 py-2 text-white rounded-lg font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
-                  selectedPaymentMethod === "khalti"
-                    ? "bg-purple-600 hover:bg-purple-700"
-                    : "bg-emerald-600 hover:bg-emerald-700"
-                }`}
+                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold disabled:opacity-50"
               >
-                {paymentLoading || esewaInitiating || khaltiInitiating
-                  ? `Redirecting to ${selectedPaymentMethod === "khalti" ? "Khalti" : "eSewa"}...`
-                  : `Pay with ${selectedPaymentMethod === "khalti" ? "Khalti" : "eSewa"}`}
+                {paymentLoading ? "Processing..." : "Confirm Payment"}
               </button>
             </div>
           </div>

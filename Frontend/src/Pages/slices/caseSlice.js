@@ -195,7 +195,12 @@ export const scheduleCaseAppointment = createAsyncThunk(
 			const response = await axiosInstance.post(`/cases/${caseId}/schedule_meeting/`, data);
 			return { caseId, appointment: response.data };
 		} catch (error) {
-			return rejectWithValue(error.response?.data?.message || 'Failed to schedule case appointment');
+			return rejectWithValue(
+				error.response?.data?.error ||
+				error.response?.data?.detail ||
+				error.response?.data?.message ||
+				'Failed to schedule case appointment'
+			);
 		}
 	}
 );

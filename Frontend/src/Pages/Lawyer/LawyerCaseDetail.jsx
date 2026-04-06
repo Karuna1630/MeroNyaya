@@ -40,6 +40,7 @@ const LawyerCaseDetail = () => {
 
   const { cases, casesLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
+  const hasAssignedClient = Boolean(caseData?.client_id || caseData?.client || caseData?.client_name);
 
   const [formData, setFormData] = useState({
     caseNumber: "",
@@ -233,8 +234,15 @@ const LawyerCaseDetail = () => {
                   {caseData.urgency_level} priority
                 </span>
                 <button
-                  onClick={() => navigate(`/lawyermessage`, { state: { caseId: caseData.id } })}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition text-sm font-medium"
+                  onClick={() => {
+                    if (!hasAssignedClient) {
+                      return;
+                    }
+                    navigate(`/lawyermessage`, { state: { caseId: caseData.id } });
+                  }}
+                  disabled={!hasAssignedClient}
+                  title={hasAssignedClient ? 'Message the client' : 'Chat unavailable until a client is assigned'}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-black transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <MessageSquare size={16} />
                   Message Client
@@ -614,8 +622,15 @@ const LawyerCaseDetail = () => {
 
                 <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
                   <button
-                    onClick={() => navigate(`/lawyermessage`, { state: { caseId: caseData.id } })}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+                    onClick={() => {
+                      if (!hasAssignedClient) {
+                        return;
+                      }
+                      navigate(`/lawyermessage`, { state: { caseId: caseData.id } });
+                    }}
+                    disabled={!hasAssignedClient}
+                    title={hasAssignedClient ? 'Message the client' : 'Chat unavailable until a client is assigned'}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <MessageSquare size={16} />
                     Message

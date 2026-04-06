@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DollarSign, Calendar, Clock, CheckCircle, AlertCircle, XCircle, CreditCard, ArrowRight } from "lucide-react";
+import { DollarSign, Calendar, Clock, CheckCircle, AlertCircle, XCircle } from "lucide-react";
 import { respondToCasePayment, initiateEsewaPayment, initiateKhaltiPayment } from "../../axios/casePaymentAPI";
 import { redirectToEsewa } from "../../utils/esewaRedirect";
 import { getImageUrl } from "../../utils/imageUrl";
@@ -81,7 +81,7 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
         const { esewa_url, params } = response.data.Result;
         redirectToEsewa(esewa_url, params);
       }
-    } catch (error) {
+    } catch {
       toast.error(t("casePayment.errorInitiatingEsewa"));
     } finally {
       setLoadingEsewa(false);
@@ -96,7 +96,7 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
         const { khalti_payment_url } = response.data.Result;
         window.location.href = khalti_payment_url;
       }
-    } catch (error) {
+    } catch {
       toast.error(t("casePayment.errorInitiatingKhalti"));
     } finally {
       setLoadingKhalti(false);
@@ -106,80 +106,77 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
   if (!paymentRequest) return null;
 
   return (
-    <div className="bg-white rounded-xl shadow-md border-2 border-blue-500 overflow-hidden max-w-2xl mx-auto font-sans">
-      {/* Simple Header */}
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+    <div className="w-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <DollarSign className="w-6 h-6 text-blue-600" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+            <DollarSign className="w-5 h-5 text-blue-600" />
+          </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900">
+            <h3 className="text-lg font-bold text-slate-900">
               {t("casePayment.paymentRequest")}
             </h3>
-            <p className="text-sm text-gray-500">{paymentRequest.case_title}</p>
+            <p className="text-sm text-slate-500">{paymentRequest.case_title}</p>
           </div>
         </div>
-        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
           {statusConfig.icon}
           <span>{statusConfig.label}</span>
         </div>
       </div>
 
-      <div className="p-6 space-y-8">
-        {/* Simple Amount Hero */}
-        <div className="text-center py-4 bg-gray-50 rounded-xl border border-gray-100">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+      <div className="p-6 space-y-6">
+        <div className="text-center py-5 bg-linear-to-br from-slate-50 to-blue-50/40 rounded-2xl border border-slate-200">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
             {t("casePayment.requestedAmount")}
           </p>
-          <p className="text-4xl font-black text-blue-600">
+          <p className="text-4xl font-black text-[#0F1A3D]">
             {formatCurrency(paymentRequest.proposed_amount)}
           </p>
         </div>
 
-        {/* Improved Parties Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-          <div className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
             <img
               src={getImageUrl(paymentRequest.lawyer_profile_image, paymentRequest.lawyer_name)}
               alt={paymentRequest.lawyer_name}
               className="w-12 h-12 rounded-full object-cover shadow-sm"
             />
             <div className="min-w-0">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-tighter">{t("casePayment.lawyer")}</p>
-              <p className="text-sm font-bold text-gray-900 truncate">{paymentRequest.lawyer_name}</p>
-              <p className="text-[11px] text-gray-500 truncate">{paymentRequest.lawyer_email}</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-tighter">{t("casePayment.lawyer")}</p>
+              <p className="text-sm font-bold text-slate-900 truncate">{paymentRequest.lawyer_name}</p>
+              <p className="text-[11px] text-slate-500 truncate">{paymentRequest.lawyer_email}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-lg">
+          <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
             <img
               src={getImageUrl(paymentRequest.client_profile_image, paymentRequest.client_name)}
               alt={paymentRequest.client_name}
               className="w-12 h-12 rounded-full object-cover shadow-sm"
             />
             <div className="min-w-0">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-tighter">{t("casePayment.client")}</p>
-              <p className="text-sm font-bold text-gray-900 truncate">{paymentRequest.client_name}</p>
-              <p className="text-[11px] text-gray-500 truncate">{paymentRequest.client_email}</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-tighter">{t("casePayment.client")}</p>
+              <p className="text-sm font-bold text-slate-900 truncate">{paymentRequest.client_name}</p>
+              <p className="text-[11px] text-slate-500 truncate">{paymentRequest.client_email}</p>
             </div>
           </div>
         </div>
 
-        {/* Description */}
         {paymentRequest.description && (
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase mb-2">{t("casePayment.notes")}</p>
-            <p className="text-sm text-gray-700 italic">"{paymentRequest.description}"</p>
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <p className="text-xs font-bold text-slate-500 uppercase mb-2">{t("casePayment.notes")}</p>
+            <p className="text-sm text-slate-700 italic">"{paymentRequest.description}"</p>
           </div>
         )}
 
-        {/* Metadata */}
-        <div className="flex justify-between items-center text-[11px] font-bold text-gray-400 uppercase pt-4 border-t border-gray-50">
-          <div className="flex items-center gap-1.5">
-            <Calendar size={14} />
+        <div className="flex flex-wrap justify-between items-center gap-3 text-[11px] font-bold text-slate-500 uppercase pt-4 border-t border-slate-100">
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            <Calendar size={14} className="text-slate-500" />
             <span>{t("casePayment.requested")}: {new Date(paymentRequest.created_at).toLocaleDateString()}</span>
           </div>
           {paymentRequest.status === 'paid' && paymentRequest.paid_at && (
-            <div className="flex items-center gap-1.5 text-emerald-600">
+            <div className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
               <CheckCircle size={14} />
               <span>{t("casePayment.paidOn")}: {new Date(paymentRequest.paid_at).toLocaleDateString()}</span>
             </div>
@@ -190,7 +187,7 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
         <div className="pt-2">
           {isClient && paymentRequest.status === "pending" && (
             <div className="space-y-4">
-              <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex gap-2">
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex gap-2">
                 <AlertCircle className="w-5 h-5 text-blue-600 shrink-0" />
                 <p className="text-xs font-medium text-blue-800">
                   {t("casePayment.pleaseConfirmInfo")}
@@ -199,7 +196,7 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
               <button
                 onClick={handleAccept}
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-lg shadow-sm transition-all"
+                className="w-full bg-[#0F1A3D] hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold py-3.5 rounded-xl shadow-sm transition-all"
               >
                 {loading ? t("casePayment.loading") : t("casePayment.confirmAndProceed")}
               </button>
@@ -207,8 +204,8 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
           )}
 
           {isLawyer && paymentRequest.status === "pending" && (
-            <div className="p-4 bg-gray-50 border border-gray-100 rounded-lg text-center">
-              <p className="text-xs font-bold text-gray-500 uppercase flex items-center justify-center gap-2">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center">
+              <p className="text-xs font-bold text-slate-500 uppercase flex items-center justify-center gap-2">
                 <Clock size={14} /> {t("casePayment.waitingForClient")}
               </p>
             </div>
@@ -216,7 +213,7 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
 
           {paymentRequest.status === "agreed" && (
             <div className="space-y-4 text-center">
-              <p className="text-sm font-bold text-emerald-700 bg-emerald-50 py-2 rounded-lg border border-emerald-100 uppercase tracking-tighter">
+              <p className="text-sm font-bold text-emerald-700 bg-emerald-50 py-2.5 rounded-xl border border-emerald-100 uppercase tracking-tighter">
                 {t("casePayment.amountConfirmed")}
               </p>
               {isClient && (
@@ -224,7 +221,7 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
                   <button
                     onClick={handleEsewaPayment}
                     disabled={loadingEsewa || loadingKhalti}
-                    className="flex flex-col items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-[#60bb46] text-[#60bb46] py-3 rounded-lg font-bold transition-all"
+                    className="flex flex-col items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-[#60bb46] text-[#60bb46] py-3 rounded-xl font-bold transition-all"
                   >
                     <img src="https://esewa.com.np/common/images/esewa_logo.png" alt="eSewa" className="h-6" />
                     <span className="text-[10px] uppercase">{t("casePayment.payWithEsewa")}</span>
@@ -232,7 +229,7 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
                   <button
                     onClick={handleKhaltiPayment}
                     disabled={loadingEsewa || loadingKhalti}
-                    className="flex flex-col items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-[#5d2e8e] text-[#5d2e8e] py-3 rounded-lg font-bold transition-all"
+                    className="flex flex-col items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-[#5d2e8e] text-[#5d2e8e] py-3 rounded-xl font-bold transition-all"
                   >
                     <img src="https://khalti.com/static/img/logo1.png" alt="Khalti" className="h-6" />
                     <span className="text-[10px] uppercase">{t("casePayment.payWithKhalti")}</span>

@@ -42,13 +42,17 @@ export const checkCanRateLawyer = async (lawyerId) => {
 };
 
 // Create a new review/rating for a lawyer
-export const createReview = (lawyerId, rating, comment = "", title = "") => {
-  return axiosInstance.post("/reviews/", {
+export const createReview = (lawyerId, rating, comment = "", title = "", appointmentId = null, caseId = null) => {
+  const payload = {
     lawyer_id: lawyerId,
     rating: rating,
     comment: comment,
-    title: title,
-  }).catch(error => {
+    appointment_id: appointmentId,
+    case_id: caseId,
+  };
+  console.log("DEBUG: Posting review to backend:", payload);
+
+  return axiosInstance.post("/reviews/submit_review/", payload).catch(error => {
     // Extract error message from backend
     if (error.response?.data?.error) {
       throw new Error(error.response.data.error);

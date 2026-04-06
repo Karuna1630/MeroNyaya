@@ -111,6 +111,10 @@ class Case(models.Model):
         default=0,
         help_text="Number of proposals received from lawyers"
     )
+    is_rated = models.BooleanField(
+        default=False, 
+        help_text="Whether this case has been rated by the client"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -203,14 +207,12 @@ class CaseAppointment(models.Model):
 
     STATUS_PENDING = "pending"
     STATUS_CONFIRMED = "confirmed"
-    STATUS_RESCHEDULED = "rescheduled"
     STATUS_COMPLETED = "completed"
     STATUS_CANCELLED = "cancelled"
 
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
         (STATUS_CONFIRMED, "Confirmed"),
-        (STATUS_RESCHEDULED, "Rescheduled"),
         (STATUS_COMPLETED, "Completed"),
         (STATUS_CANCELLED, "Cancelled"),
     ]

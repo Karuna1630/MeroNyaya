@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   MapPin,
   Star,
   Clock,
-  CheckCircle,
   Briefcase,
   ArrowRight,
   AlertCircle,
@@ -15,7 +14,7 @@ import Header from "../../components/Header.jsx";
 import Footer from "../../components/Footer.jsx";
 import { getImageUrl } from '../../utils/imageUrl';
 import { fetchLawyerDetails } from "../slices/lawyerSlice.js";
-import { getLawyerReviews } from "../slices/reviewSlice.js";
+import { getLawyerReviews, getLawyerReviewSummary } from "../slices/reviewSlice.js";
 import Consultationrequest from "./Consultationrequest.jsx";
 
 const IndividualLawyer = () => {
@@ -30,6 +29,8 @@ const IndividualLawyer = () => {
   const { user } = useSelector((state) => state.auth);
   const reviews = useSelector((state) => state.review.reviews);
   const reviewsLoading = useSelector((state) => state.review.reviewsLoading);
+  const reviewSummary = useSelector((state) => state.review.lawyerSummary);
+  const dynamicRating = reviewSummary?.average_rating ?? 0;
 
   const getInitials = (name) => {
     if (!name) return "A";
@@ -53,7 +54,7 @@ const IndividualLawyer = () => {
         location: lawyerData.city || lawyerData.district || "Nepal",
         district: lawyerData.district || "N/A",
         phone: lawyerData.phone || "N/A",
-        rating: 4.5,
+        rating: dynamicRating, // Dynamic rating from review summary
         fee: lawyerData.consultation_fee || 0,
         verified: lawyerData.kyc_status === "approved",
         yearsOfExperience: lawyerData.years_of_experience || 0,
@@ -74,12 +75,13 @@ const IndividualLawyer = () => {
     }
   }, [id, dispatch]);
 
-  // Fetch reviews when lawyer data is available
+  // Fetch reviews and review summary when lawyer data is available
   useEffect(() => {
-    if (lawyer?.id) {
-      dispatch(getLawyerReviews(lawyer.id));
+    if (lawyerData?.id) {
+      dispatch(getLawyerReviews(lawyerData.id));
+      dispatch(getLawyerReviewSummary(lawyerData.id));
     }
-  }, [lawyer?.id, dispatch]);
+  }, [lawyerData?.id, dispatch]);
 
   // Show loading state
   if (loading) {
@@ -180,14 +182,6 @@ const IndividualLawyer = () => {
                           {lawyer?.specialization}
                         </p>
                       </div>
-                      {lawyer?.verified && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-[#0F1A3D] rounded-full text-white">
-                          <CheckCircle size={14} className="text-white fill-[#0F1A3D]" />
-                          <span className="text-xs font-semibold tracking-wide uppercase">
-                            Verified
-                          </span>
-                        </div>
-                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 mt-4">

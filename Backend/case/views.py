@@ -369,21 +369,110 @@ class CaseActionView(APIView):
             return Response(CaseTimelineSerializer(timeline_event).data, status=status.HTTP_201_CREATED)
 
         elif action == 'schedule_meeting':
-            if request.user.role != 'Client':
-                return Response({'error': 'Only clients can schedule case appointments'}, status=status.HTTP_403_FORBIDDEN)
-            if case.client != request.user:
-                return Response({'error': 'You can only schedule appointments for your own cases'}, status=status.HTTP_403_FORBIDDEN)
             if case.status not in ['accepted', 'in_progress']:
-                return Response({'error': f'Case must be accepted or in progress before scheduling appointments.'}, status=status.HTTP_400_BAD_REQUEST)
-            if not case.lawyer:
-                return Response({'error': 'No lawyer has been assigned to this case yet'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': 'Case must be accepted or in progress before scheduling appointments.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            serializer = CaseAppointmentSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            appointment = serializer.save(case=case, client=request.user, lawyer=case.lawyer)
+            if request.user.role == 'Client':
+                if case.client != request.user:
+                    return Response({'error': 'You can only schedule appointments for your own cases'}, status=status.HTTP_403_FORBIDDEN)
+                if not case.lawyer:
+                    return Response({'error': 'No lawyer has been assigned to this case yet'}, status=status.HTTP_400_BAD_REQUEST)
 
-            send_notification(user=case.lawyer, title='New Meeting Request', message=f'{request.user.name} requested a meeting for case "{case.case_title}"', notif_type='appointment', link='/lawyerappointment')
-            return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
+                serializer = CaseAppointmentSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                appointment = serializer.save(case=case, client=request.user, lawyer=case.lawyer)
+
+                send_notification(
+                    user=case.lawyer,
+                    title='New Meeting Request',
+                    message=f'{request.user.name} requested a meeting for case "{case.case_title}"',
+                    notif_type='appointment',
+                    link='/lawyerappointment'
+                )
+                return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
+
+            if request.user.role == 'Lawyer':
+                if case.lawyer != request.user:
+                    return Response({'error': 'You can only schedule appointments for cases assigned to you'}, status=status.HTTP_403_FORBIDDEN)
+                if not case.client:
+                    return Response({'error': 'No client is assigned to this case'}, status=status.HTTP_400_BAD_REQUEST)
+
+                title = (request.data.get('title') or '').strip()
+                mode = request.data.get('mode', CaseAppointment.MODE_VIDEO)
+                scheduled_date_raw = request.data.get('scheduled_date')
+                scheduled_time_raw = request.data.get('scheduled_time')
+                meeting_link = request.data.get('meeting_link')
+                meeting_location = request.data.get('meeting_location')
+                phone_number = request.data.get('phone_number')
+
+                if mode not in [CaseAppointment.MODE_VIDEO, CaseAppointment.MODE_IN_PERSON]:
+                    return Response({'error': 'Invalid mode. Use "video" or "in_person"'}, status=status.HTTP_400_BAD_REQUEST)
+
+                if not title:
+                    return Response({'error': 'title is required'}, status=status.HTTP_400_BAD_REQUEST)
+                if not scheduled_date_raw or not scheduled_time_raw:
+                    return Response({'error': 'scheduled_date and scheduled_time are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+                scheduled_date = parse_date(scheduled_date_raw)
+                scheduled_time = parse_time(scheduled_time_raw)
+
+                if not scheduled_date or not scheduled_time:
+                    return Response({'error': 'Invalid scheduled_date or scheduled_time format'}, status=status.HTTP_400_BAD_REQUEST)
+
+                if mode == CaseAppointment.MODE_IN_PERSON:
+                    if not meeting_location:
+                        return Response({'error': 'meeting_location is required for in-person appointments'}, status=status.HTTP_400_BAD_REQUEST)
+                    if not phone_number:
+                        return Response({'error': 'phone_number is required for in-person appointments'}, status=status.HTTP_400_BAD_REQUEST)
+                elif mode == CaseAppointment.MODE_VIDEO:
+                    if not meeting_link:
+                        return Response({'error': 'meeting_link is required for video appointments'}, status=status.HTTP_400_BAD_REQUEST)
+
+                appointment = CaseAppointment.objects.create(
+                    case=case,
+                    client=case.client,
+                    lawyer=request.user,
+                    title=title,
+                    mode=mode,
+                    preferred_day=scheduled_date.strftime('%a'),
+                    preferred_time=scheduled_time.strftime('%H:%M'),
+                    meeting_location=meeting_location if mode == CaseAppointment.MODE_IN_PERSON else None,
+                    phone_number=phone_number if mode == CaseAppointment.MODE_IN_PERSON else None,
+                    scheduled_date=scheduled_date,
+                    scheduled_time=scheduled_time,
+                    meeting_link=meeting_link if mode == CaseAppointment.MODE_VIDEO else None,
+                    status=CaseAppointment.STATUS_CONFIRMED,
+                )
+
+                CaseTimeline.objects.create(
+                    case=case,
+                    event_type='hearing_scheduled',
+                    title='Appointment Scheduled',
+                    description=f'Lawyer {request.user.name} scheduled an appointment on {scheduled_date.strftime("%Y-%m-%d")} at {scheduled_time.strftime("%H:%M")}',
+                    created_by=request.user,
+                )
+
+                appointment_time_text = scheduled_time.strftime('%I:%M %p').lstrip('0')
+                appointment_date_text = scheduled_date.strftime('%Y-%m-%d')
+
+                send_notification(
+                    user=case.client,
+                    title='Case Appointment Scheduled',
+                    message=f'Lawyer {request.user.name} created an appointment for {appointment_date_text} at {appointment_time_text}. Please be ready.',
+                    notif_type='appointment',
+                    link='/clientappointment'
+                )
+                send_notification(
+                    user=request.user,
+                    title='Appointment Created',
+                    message=f'You scheduled an appointment for case "{case.case_title}" on {appointment_date_text} at {appointment_time_text}.',
+                    notif_type='appointment',
+                    link='/lawyerappointment'
+                )
+
+                return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
+
+            return Response({'error': 'Only clients or assigned lawyers can schedule case appointments'}, status=status.HTTP_403_FORBIDDEN)
 
         return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -442,6 +531,8 @@ class CaseAppointmentActionView(APIView):
 
             if not scheduled_date_raw or not scheduled_time_raw:
                 return Response({'error': 'scheduled_date and scheduled_time are required'}, status=status.HTTP_400_BAD_REQUEST)
+            if appointment.mode == CaseAppointment.MODE_VIDEO and not meeting_link:
+                return Response({'error': 'meeting_link is required for video appointments'}, status=status.HTTP_400_BAD_REQUEST)
 
             appointment.scheduled_date = parse_date(scheduled_date_raw)
             appointment.scheduled_time = parse_time(scheduled_time_raw)

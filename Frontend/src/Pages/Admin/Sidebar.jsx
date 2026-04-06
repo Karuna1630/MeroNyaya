@@ -50,7 +50,7 @@ const Sidebar = () => {
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0F1A3D] text-white flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0F1A3D] text-white flex flex-col transform transition-transform duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:self-start md:inset-y-auto md:left-auto md:translate-x-0 ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       }`}>
         {/* LOGO */}
@@ -73,7 +73,7 @@ const Sidebar = () => {
 
         {/* MENU */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {menuItems.map(({ icon: Icon, label, path }) => (
+          {menuItems.map(({ icon, label, path }) => (
             <div
               key={label}
               onClick={() => handleNavigation(path)}
@@ -83,7 +83,7 @@ const Sidebar = () => {
                   : "hover:bg-blue-800/50"
               }`}
             >
-              <Icon size={18} />
+              {React.createElement(icon, { size: 18 })}
               <span className="text-sm font-medium">{label}</span>
             </div>
           ))}

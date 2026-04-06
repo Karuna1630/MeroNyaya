@@ -7,6 +7,14 @@ class ReviewSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.name', read_only=True)
     lawyer_name = serializers.CharField(source='lawyer.name', read_only=True)
     client_profile_image = serializers.SerializerMethodField()
+    lawyer_id = serializers.IntegerField(write_only=True)
+    appointment_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    case_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    is_verified_consultation = serializers.SerializerMethodField()
+    
+    def get_is_verified_consultation(self, obj):
+        """Auto-calculated: true if linked to appointment or case"""
+        return bool(obj.appointment or obj.case)
     
     def get_client_profile_image(self, obj):
         if obj.client and obj.client.profile_image:
@@ -25,41 +33,33 @@ class ReviewSerializer(serializers.ModelSerializer):
             'client_name',
             'client_profile_image',
             'lawyer',
+            'lawyer_id',
             'lawyer_name',
-            'title',
+            'appointment_id',
+            'case_id',
             'comment',
             'rating',
+            'is_verified_consultation',
             'created_at',
             'updated_at',
-            'is_verified_consultation',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'client', 'lawyer', 'created_at', 'updated_at']
     
     def create(self, validated_data):
-        # Ensure unique review per client-lawyer pair per day
-        client = validated_data.get('client')
-        lawyer = validated_data.get('lawyer')
-        
-        review, created = Review.objects.get_or_create(
-            client=client,
-            lawyer=lawyer,
-            defaults=validated_data
-        )
-        
-        if not created:
-            # Update existing review if already exists
-            for attr, value in validated_data.items():
-                setattr(review, attr, value)
-            review.save()
-        
-        return review
+        # Remove write_only fields
+        validated_data.pop('lawyer_id', None)
+        validated_data.pop('appointment_id', None)
+        validated_data.pop('case_id', None)
+        return Review.objects.create(**validated_data)
 
 
 class LawyerReviewSummarySerializer(serializers.Serializer):
-    """Serializer for lawyer review summary statistics"""
+    """Serializer for lawyer review summary statistics - returns dynamic review data"""
     lawyer_id = serializers.IntegerField()
     lawyer_name = serializers.CharField()
     average_rating = serializers.FloatField()
     total_reviews = serializers.IntegerField()
     rating_distribution = serializers.DictField()  # {1: count, 2: count, etc}
     recent_reviews = ReviewSerializer(many=True)
+    has_reviews = serializers.BooleanField()  # True if there are reviews, False otherwise
+    message = serializers.CharField(required=False)  # Message when no reviews exist

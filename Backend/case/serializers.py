@@ -120,6 +120,7 @@ class CaseSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.name', read_only=True)
     client_email = serializers.CharField(source='client.email', read_only=True)
     lawyer_name = serializers.CharField(source='lawyer.name', read_only=True, allow_null=True)
+    is_rated = serializers.SerializerMethodField()
     preferred_lawyers = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=User.objects.filter(role='Lawyer'),
@@ -135,10 +136,22 @@ class CaseSerializer(serializers.ModelSerializer):
             'urgency_level', 'lawyer_selection', 'request_consultation',
             'status', 'proposal_count', 'rejection_reason', 'notes',
             'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
+            'is_rated',
             'created_at', 'updated_at', 'accepted_at', 'completed_at',
             'documents', 'timeline', 'appointments'
         ]
         read_only_fields = ['id', 'client', 'proposal_count', 'created_at', 'updated_at', 'accepted_at', 'completed_at']
+    
+    def get_is_rated(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated or not obj.lawyer:
+            return False
+        
+        from review.models import Review
+        return Review.objects.filter(
+            client=request.user,
+            case=obj
+        ).exists()
     
     def create(self, validated_data):
         # Set client from request user
@@ -167,6 +180,7 @@ class CaseListSerializer(serializers.ModelSerializer):
     lawyer_email = serializers.CharField(source='lawyer.email', read_only=True, allow_null=True)
     lawyer_phone = serializers.CharField(source='lawyer.phone', read_only=True, allow_null=True)
     lawyer_profile_image = serializers.SerializerMethodField()
+    is_rated = serializers.SerializerMethodField()
     document_count = serializers.SerializerMethodField()
     documents = CaseDocumentSerializer(many=True, read_only=True)
     timeline = CaseTimelineSerializer(many=True, read_only=True)
@@ -180,9 +194,20 @@ class CaseListSerializer(serializers.ModelSerializer):
             'client_name', 'client_email', 'client_profile_image', 
             'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone', 'lawyer_profile_image',
             'proposal_count', 'document_count', 'documents', 'timeline',
-            'case_number', 'court_name', 'opposing_party', 'next_hearing_date',
+            'case_number', 'court_name', 'opposing_party', 'next_hearing_date', 'is_rated',
             'created_at', 'updated_at', 'accepted_at', 'appointments'
         ]
+
+    def get_is_rated(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated or not obj.lawyer:
+            return False
+        
+        from review.models import Review
+        return Review.objects.filter(
+            client=request.user,
+            case=obj
+        ).exists()
     
     def get_document_count(self, obj):
         return obj.documents.count()

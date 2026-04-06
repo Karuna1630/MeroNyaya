@@ -93,9 +93,9 @@ const FindLawyers = () => {
 			case "Price: High to Low":
 				return clone.sort((a, b) => (b.consultation_fee || 0) - (a.consultation_fee || 0));
 			case "Experience":
-				return clone.sort((a, b) => (b.experience || 0) - (a.experience || 0));
+				return clone.sort((a, b) => (b.years_of_experience || 0) - (a.years_of_experience || 0));
 			default:
-				return clone.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+				return clone.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
 		}
 	}, [filteredLawyers, sortBy]);
 

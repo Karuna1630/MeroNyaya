@@ -22,6 +22,7 @@ import {
   X,
   AlertCircle,
   DollarSign,
+  Star,
 } from "lucide-react";
 import { fetchCases, scheduleCaseAppointment } from "../../slices/caseSlice";
 import ClientCaseTimelineCard from "./ClientCaseTimelineCard";
@@ -58,7 +59,7 @@ const ClientCaseDetail = () => {
 
   const { cases, scheduleCaseAppointmentLoading } = useSelector((state) => state.case);
   const caseData = cases?.find((c) => c.id === parseInt(id));
-  const hasAssignedLawyer = Boolean(caseData?.lawyer_name || caseData?.lawyer_id || caseData?.lawyer);
+  const hasAssignedLawyer = Boolean(caseData?.lawyer_name || caseData?.lawyer);
   const canScheduleCaseMeeting =
     (caseData?.status === "accepted" || caseData?.status === "in_progress") &&
     hasAssignedLawyer;
@@ -87,7 +88,7 @@ const ClientCaseDetail = () => {
   // Fetch lawyer availability when case has an assigned lawyer
   useEffect(() => {
     const fetchLawyerAvailability = async () => {
-      const lawyerId = caseData?.lawyer_id || caseData?.lawyer;
+      const lawyerId = caseData?.lawyer;
       if (!lawyerId) {
         // Reset to defaults if no lawyer assigned
         setLawyerAvailability({ days: [], timeSlots: [] });
@@ -156,26 +157,21 @@ const ClientCaseDetail = () => {
     };
 
     fetchLawyerAvailability();
-  }, [caseData?.lawyer_id, caseData?.lawyer]);
+  }, [caseData?.lawyer]);
 
   // Check if case is completed and show rating modal
   useEffect(() => {
-    console.log('DEBUG: Case data:', caseData);
-    console.log('DEBUG: Case status:', caseData?.status);
-    console.log('DEBUG: Case ID:', caseData?.id);
-    console.log('DEBUG: Rated case IDs:', ratedCaseIds);
-    console.log('DEBUG: Lawyer ID:', caseData?.lawyer_id);
-    
     if (
       caseData?.status === "completed" &&
       caseData?.id &&
+      !caseData?.is_rated &&
       !ratedCaseIds.includes(caseData.id) &&
-      caseData?.lawyer_id
+      caseData?.lawyer
     ) {
       console.log('DEBUG: Opening rating modal for completed case');
       setShowRatingModal(true);
     }
-  }, [caseData?.status, caseData?.id, caseData?.lawyer_id, ratedCaseIds]);
+  }, [caseData?.status, caseData?.id, caseData?.is_rated, caseData?.lawyer, ratedCaseIds]);
 
   const loadPaymentRequests = async () => {
     if (!id) return;
@@ -352,20 +348,28 @@ const ClientCaseDetail = () => {
 
   const handleRatingSubmit = async (ratingData) => {
     try {
+      const lawyerId = caseData.lawyer;
       await createReview(
-        ratingData.lawyerId,
+        lawyerId,
         ratingData.rating,
-        ratingData.comment
+        ratingData.comment,
+        null, // No title
+        null, // consultationId
+        caseData.id // caseId
       );
       
-      // Mark this case as rated
-      setRatedCaseIds([...ratedCaseIds, caseData.id]);
+      toast.success("Thank you for your rating!");
       
       // Close modal
       setShowRatingModal(false);
+      
+      // Refresh cases to pick up is_rated status
+      dispatch(fetchCases());
     } catch (error) {
       console.error("Error submitting rating:", error);
-      throw new Error("Failed to submit rating. Please try again.");
+      const errorMessage = error.response?.data?.error || "Failed to submit rating. Please try again.";
+      toast.error(errorMessage);
+      throw error;
     }
   };
 
@@ -413,6 +417,20 @@ const ClientCaseDetail = () => {
                           caseData?.status === 'accepted' ? 'bg-amber-50 text-amber-600' :
                           'bg-gray-50 text-gray-600'
                         }`}>{caseData?.status?.replace(/_/g, ' ') || 'Pending'}</span>
+                        
+                        {caseData?.status === 'completed' && caseData?.lawyer && (
+                          <button
+                            onClick={() => !caseData?.is_rated && setShowRatingModal(true)}
+                            className={`ml-2 p-1 rounded-full transition-all ${
+                              caseData?.is_rated 
+                                ? "text-amber-400 cursor-default" 
+                                : "text-slate-300 hover:text-amber-400 hover:bg-amber-50"
+                            }`}
+                            title={caseData?.is_rated ? "You have rated this lawyer" : "Rate this lawyer"}
+                          >
+                            <Star size={18} fill={caseData?.is_rated ? "currentColor" : "none"} />
+                          </button>
+                        )}
                       </div>
                       <h1 className="text-xl font-semibold text-slate-900 leading-tight mb-1">{caseData?.case_title || 'Case Title'}</h1>
                       <p className="text-sm text-slate-500 font-medium">{caseData?.case_category || 'Category'}</p>
@@ -582,6 +600,9 @@ const ClientCaseDetail = () => {
                 <div className="space-y-3">
                   <button 
                     onClick={() => {
+                      if (!hasAssignedLawyer) {
+                        return;
+                      }
                       navigate('/clientmessage', { 
                         state: { 
                           caseId: caseData.id,
@@ -590,8 +611,14 @@ const ClientCaseDetail = () => {
                         } 
                       });
                     }}
-                    disabled={caseData?.status === 'pending'}
-                    title={caseData?.status === 'pending' ? 'Chat available once lawyer accepts the case' : 'Message the lawyer'}
+                    disabled={!hasAssignedLawyer || caseData?.status === 'pending'}
+                    title={
+                      !hasAssignedLawyer
+                        ? 'Chat unavailable until a lawyer is assigned'
+                        : caseData?.status === 'pending'
+                          ? 'Chat available once lawyer accepts the case'
+                          : 'Message the lawyer'
+                    }
                     className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-transparent rounded-xl hover:bg-slate-800 hover:shadow-md transition-all text-sm font-semibold bg-[#0F1A3D] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <MessageSquare size={16} />
@@ -819,7 +846,7 @@ const ClientCaseDetail = () => {
         <RatingModal
           isOpen={showRatingModal}
           lawyerName={caseData.lawyer_name || "Lawyer"}
-          lawyerId={caseData.lawyer_id}
+          lawyerId={caseData.lawyer}
           onClose={() => setShowRatingModal(false)}
           onSubmit={handleRatingSubmit}
         />

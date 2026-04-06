@@ -30,6 +30,10 @@ import Sidebar from "./sidebar";
 import DashHeader from "./ClientDashHeader";
 import { fetchCases, deleteCase, updateCase } from "../slices/caseSlice";
 import Pagination from "../../components/Pagination";
+import RatingModal from "../../components/RatingModal";
+import { createReview } from "../../axios/reviewAPI";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const ClientCase = () => {
   const { t } = useTranslation();
@@ -47,6 +51,10 @@ const ClientCase = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const casesPerPage = 5;
+
+  // Rating State
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingContext, setRatingContext] = useState(null);
 
   // Save active tab to session storage so we can navigate 'Back' properly
   useEffect(() => {
@@ -102,7 +110,10 @@ const ClientCase = () => {
         title: item.case_title || t('dashboard.untitledCase'),
         category: item.case_category || t('cases.notSpecified'),
         status: formatStatusMemo(item.status),
-        lawyer: item.lawyer_name || t('dashboard.noLawyerAssigned'),
+        rawStatus: item.status, // Original status for logic
+        lawyerName: item.lawyer_name || t('dashboard.noLawyerAssigned'),
+        lawyerId: item.lawyer, // Raw lawyer ID from backend
+        is_rated: item.is_rated, // Pre-calculated rating status
         createdDate,
         proposalCount: item.proposal_count || 0,
       };
@@ -243,6 +254,14 @@ const ClientCase = () => {
         label: t('cases.viewCase'),
         color: "text-blue-600",
       });
+      if (caseItem.lawyerId) {
+        actions.push({
+          icon: Star,
+          label: caseItem.is_rated ? "Rated" : "Rate Lawyer",
+          color: caseItem.is_rated ? "text-amber-400" : "text-slate-300",
+          isRated: caseItem.is_rated
+        });
+      }
     }
 
     return actions;
@@ -533,12 +552,12 @@ const ClientCase = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-900">
-                            {caseItem.lawyer === "Not assigned" ? (
+                            {caseItem.lawyerName === "Not assigned" ? (
                               <span className="text-slate-500">
                                 Not assigned
                               </span>
                             ) : (
-                              caseItem.lawyer
+                              caseItem.lawyerName
                             )}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-700">
@@ -561,6 +580,14 @@ const ClientCase = () => {
                                         navigate(`/client/edit-case/${caseItem.id}`);
                                       } else if (action.label === t('cases.deleteCase') || action.label === "Delete") {
                                         setDeleteConfirm({ isOpen: true, caseId: caseItem.id, caseTitle: caseItem.title });
+                                      } else if (action.label === "Rate Lawyer" || action.label === "Rated") {
+                                        if (caseItem.is_rated) return;
+                                        setRatingContext({
+                                          caseId: caseItem.id,
+                                          lawyerId: caseItem.lawyerId,
+                                          lawyerName: caseItem.lawyerName
+                                        });
+                                        setShowRatingModal(true);
                                       }
                                     }}
                                     className={
@@ -568,6 +595,8 @@ const ClientCase = () => {
                                         ? "px-4 py-1.5 bg-[#0F1A3D] text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition shadow-sm whitespace-nowrap" 
                                         : action.icon === Briefcase
                                         ? "px-4 py-1.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition shadow-sm whitespace-nowrap"
+                                        : action.icon === Star 
+                                        ? `p-2 rounded-lg transition-colors ${action.color} ${action.isRated ? 'cursor-default' : 'hover:bg-amber-50 hover:text-amber-400'}`
                                         : `p-2 rounded-lg hover:bg-slate-100 transition-colors ${action.color}`
                                     }
                                     title={action.label}
@@ -576,6 +605,8 @@ const ClientCase = () => {
                                       "View Case"
                                     ) : action.icon === Briefcase ? (
                                       `View Proposal (${caseItem.proposalCount})`
+                                    ) : action.icon === Star ? (
+                                      <Star size={20} fill={action.isRated ? "currentColor" : "none"} strokeWidth={1.5} />
                                     ) : (
                                       <action.icon size={20} strokeWidth={1.5} />
                                     )}
@@ -688,9 +719,44 @@ const ClientCase = () => {
             </div>
           </div>
         )}
+        <ToastContainer position="bottom-right" />
+        
+        {showRatingModal && ratingContext && (
+          <RatingModal
+            isOpen={showRatingModal}
+            lawyerName={ratingContext.lawyerName}
+            lawyerId={ratingContext.lawyerId}
+            onClose={() => setShowRatingModal(false)}
+            onSubmit={handleRatingSubmit}
+          />
+        )}
       </main>
     </div>
   );
+
+  async function handleRatingSubmit(ratingData) {
+    try {
+      await createReview(
+        ratingContext.lawyerId,
+        ratingData.rating,
+        ratingData.comment,
+        null, // No title
+        null, // consultationId
+        ratingContext.caseId
+      );
+      
+      toast.success("Thank you for your rating!");
+      setShowRatingModal(false);
+      setRatingContext(null);
+      
+      // Refresh case list to show the star as yellow
+      dispatch(fetchCases());
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.message || "Failed to submit rating";
+      toast.error(errorMessage);
+      throw error;
+    }
+  }
 
   async function handleWithdrawAction(action) {
     setWithdrawLoading(true);

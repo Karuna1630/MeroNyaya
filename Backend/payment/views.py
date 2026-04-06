@@ -423,12 +423,16 @@ class KhaltiInitiateView(APIView):
                 "phone": getattr(user, "phone", "9800000000"),
             }
             purchase_name = f"Consultation - {lawyer.name}"
+            khalti_return_url = settings.KHALTI_RETURN_URL
+            separator = "&" if "?" in khalti_return_url else "?"
+            khalti_return_url = f"{khalti_return_url}{separator}type=appointment"
             
             is_ok, khalti_data = initiate_khalti_payment(
                 amount_in_paisa=amount_in_paisa,
                 purchase_order_id=str(payment.transaction_uuid),
                 purchase_order_name=purchase_name,
                 customer_info=customer_info,
+                return_url=khalti_return_url,
             )
 
             if not is_ok:
@@ -525,7 +529,11 @@ class KhaltiVerifyView(APIView):
                         "appointment__consultation",
                         "appointment__consultation__lawyer",
                         "appointment__consultation__client",
-                    ).get(transaction_uuid=purchase_order_id)
+                    ).get(
+                        transaction_uuid=purchase_order_id,
+                        payment_method="khalti",
+                        appointment__isnull=False,
+                    )
                 except Payment.DoesNotExist:
                     pass
 
@@ -536,13 +544,24 @@ class KhaltiVerifyView(APIView):
                         "appointment__consultation",
                         "appointment__consultation__lawyer",
                         "appointment__consultation__client",
-                    ).get(esewa_ref_id=pidx, payment_method="khalti")
+                    ).get(
+                        esewa_ref_id=pidx,
+                        payment_method="khalti",
+                        appointment__isnull=False,
+                    )
                 except Payment.DoesNotExist:
                     return api_response(
                         is_success=False,
                         error_message={"error": "Payment record not found."},
                         status_code=status.HTTP_404_NOT_FOUND,
                     )
+
+            if not payment.appointment:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "Invalid appointment payment record."},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
 
             # If already completed, return success without re-verifying
             if payment.status == Payment.STATUS_COMPLETED:
@@ -1167,7 +1186,7 @@ class CreateCasePaymentRequestView(APIView):
                 title="Payment Request",
                 message=f"Lawyer {case.lawyer.name} requested Rs. {proposed_amount} for case: {case.case_title}",
                 notif_type="payment",
-                link=f"/case/{case.id}/payment",
+                link=f"/client/case/{case.id}",
             )
 
             from .serializers import CasePaymentRequestSerializer as CPRSerializer
@@ -1264,7 +1283,7 @@ class RespondToCasePaymentView(APIView):
                 title="Payment Accepted",
                 message=f"Client accepted your payment request of Rs. {payment_request.proposed_amount}",
                 notif_type="payment",
-                link=f"/case/{payment_request.case.id}/payment",
+                link=f"/lawyercase/{payment_request.case.id}",
             )
 
             from .serializers import CasePaymentRequestSerializer as CPRSerializer
@@ -1687,7 +1706,7 @@ class EsewaVerifyCasePaymentView(APIView):
                     title="Case Payment Received",
                     message=f"Client paid Rs. {payment.amount} for case: {case.case_title}. The case is now marked as completed.",
                     notif_type="payment",
-                    link=f"/case/{case.id}/payment",
+                    link=f"/lawyercase/{case.id}",
                 )
                 
                 # Notify client
@@ -1696,7 +1715,7 @@ class EsewaVerifyCasePaymentView(APIView):
                     title="Payment Successful",
                     message=f"Your payment of Rs. {payment.total_amount} for case '{case.case_title}' was successful. The case is now completed.",
                     notif_type="payment",
-                    link=f"/case/{case.id}/payment",
+                    link=f"/client/case/{case.id}",
                 )
 
                 return api_response(
@@ -1823,9 +1842,9 @@ class KhaltiInitiateCasePaymentView(APIView):
             # Khalti expects amount in paisa (1 Rs = 100 paisa)
             amount_in_paisa = int(amount * 100)
 
-            # Dynamic return URL - user will return to the case detail page
-            case_id = payment_request.case.id
-            dynamic_return_url = f"http://localhost:5173/client/case/{case_id}"
+            khalti_return_url = settings.KHALTI_RETURN_URL
+            separator = "&" if "?" in khalti_return_url else "?"
+            khalti_return_url = f"{khalti_return_url}{separator}type=case"
 
             # Calling Khalti's ePayment initiate API (EXACT same as appointment)
             # Calling Khalti's ePayment initiate API using utility
@@ -1841,6 +1860,7 @@ class KhaltiInitiateCasePaymentView(APIView):
                 purchase_order_id=str(payment.transaction_uuid),
                 purchase_order_name=purchase_name,
                 customer_info=customer_info,
+                return_url=khalti_return_url,
             )
 
             if not is_ok:
@@ -1932,7 +1952,11 @@ class KhaltiVerifyCasePaymentView(APIView):
                 try:
                     payment = Payment.objects.select_related(
                         'case_payment_request', 'case_payment_request__case'
-                    ).get(transaction_uuid=purchase_order_id)
+                    ).get(
+                        transaction_uuid=purchase_order_id,
+                        payment_method="khalti",
+                        case_payment_request__isnull=False,
+                    )
                 except Payment.DoesNotExist:
                     pass
 
@@ -1940,13 +1964,24 @@ class KhaltiVerifyCasePaymentView(APIView):
                 try:
                     payment = Payment.objects.select_related(
                         'case_payment_request', 'case_payment_request__case'
-                    ).get(esewa_ref_id=pidx, payment_method="khalti")
+                    ).get(
+                        esewa_ref_id=pidx,
+                        payment_method="khalti",
+                        case_payment_request__isnull=False,
+                    )
                 except Payment.DoesNotExist:
                     return api_response(
                         is_success=False,
                         error_message={"error": "Payment record not found."},
                         status_code=status.HTTP_404_NOT_FOUND,
                     )
+
+            if not payment.case_payment_request:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "Invalid case payment record."},
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
 
             # If already completed
             if payment.status == Payment.STATUS_COMPLETED:
@@ -1999,7 +2034,7 @@ class KhaltiVerifyCasePaymentView(APIView):
                         title="Case Payment Received",
                         message=f"Client paid Rs. {payment.amount} for case: {case.case_title}. The case is now completed.",
                         notif_type="payment",
-                        link=f"/case/{case.id}/payment",
+                        link=f"/lawyercase/{case.id}",
                     )
                     
                     # Notify client
@@ -2008,7 +2043,7 @@ class KhaltiVerifyCasePaymentView(APIView):
                         title="Payment Successful",
                         message=f"Your payment for case '{case.case_title}' was successful. The case is now completed.",
                         notif_type="payment",
-                        link=f"/case/{case.id}/payment",
+                        link=f"/client/case/{case.id}",
                     )
 
                     return api_response(

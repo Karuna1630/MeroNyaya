@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -21,7 +22,8 @@ import {
   Edit2,
   CheckCircle,
 } from "lucide-react";
-import { fetchCases, updateCaseDetails, updateCaseStatus } from "../../slices/caseSlice.js";
+import { fetchCases, fetchCaseAppointments, scheduleCaseAppointment, updateCaseDetails, updateCaseStatus } from "../../slices/caseSlice.js";
+import { lawercaseappointmentverification } from "../../utils/lawercaseappointmentverification.js";
 import { getCasePaymentRequests } from "../../../axios/casePaymentAPI";
 import LawyerCaseTimlineCard from "./LawyerCaseTimelineCard.jsx";
 import LawyerCaseDocumentCard from "./LawyerCaseDocumentCard.jsx";
@@ -46,11 +48,14 @@ const LawyerCaseDetail = () => {
   });
   const [paymentRequests, setPaymentRequests] = useState([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   // Select necessary state from Redux store
   const { cases, casesLoading } = useSelector((state) => state.case);
   const { user } = useSelector((state) => state.auth);
   const caseData = cases?.find((c) => c.id === parseInt(id));
+  const hasAssignedClient = Boolean(caseData?.client_id || caseData?.client || caseData?.client_name);
+  const hasAssignedLawyer = Boolean(caseData?.lawyer_id || caseData?.lawyer || caseData?.lawyer_name);
   
   // Check if the current lawyer is assigned to this case
   const isAssignedLawyer = caseData?.lawyer === user?.id || caseData?.lawyer_id === user?.id;
@@ -64,7 +69,7 @@ const LawyerCaseDetail = () => {
   }, [dispatch]);
 
   // Fetch payment requests
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     if (!id) {
       console.log("No case ID, skipping payment fetch");
       return;
@@ -92,7 +97,7 @@ const LawyerCaseDetail = () => {
     } finally {
       setLoadingPayments(false);
     }
-  };
+  }, [id]);
 
   // Handle marking case as complete after payment
   const handleMarkCaseComplete = async () => {
@@ -116,7 +121,7 @@ const LawyerCaseDetail = () => {
     if (activeTab === "Payment") {
       fetchPayments();
     }
-  }, [activeTab, id]);
+  }, [activeTab, fetchPayments]);
 
   // Initialize edit form data when caseData changes
   useEffect(() => {
@@ -178,7 +183,50 @@ const LawyerCaseDetail = () => {
       toast.error("Only accepted cases assigned to you can create appointments.");
       return;
     }
-    navigate("/lawyerappointment");
+    setShowScheduleModal(true);
+  };
+
+  const handleSubmitSchedule = async (values, { setSubmitting, setStatus, resetForm }) => {
+    if (!caseData?.id) {
+      setStatus("Case information is not available.");
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        title: values.title.trim(),
+        mode: values.mode,
+        scheduled_date: values.scheduled_date,
+        scheduled_time: values.scheduled_time,
+        meeting_link: values.mode === "video" ? values.meeting_link : "",
+        meeting_location: values.mode === "in_person" ? values.meeting_location : "",
+        phone_number: values.mode === "in_person" ? values.phone_number : "",
+      };
+
+      await dispatch(
+        scheduleCaseAppointment({
+          caseId: caseData.id,
+          data: payload,
+        })
+      ).unwrap();
+
+      toast.success("Appointment created successfully.");
+      setShowScheduleModal(false);
+      resetForm();
+
+      dispatch(fetchCaseAppointments());
+      dispatch(fetchCases());
+    } catch (error) {
+      const errorText =
+        error?.error ||
+        error?.detail ||
+        (typeof error === "string" ? error : null) ||
+        "Failed to create appointment.";
+      setStatus(errorText);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -250,6 +298,15 @@ const LawyerCaseDetail = () => {
 
   const statusBadge = getStatusBadge(caseData.status);
   const priorityBadge = getPriorityBadge(caseData.urgency_level);
+  const scheduleInitialValues = {
+    title: "",
+    mode: "video",
+    scheduled_date: "",
+    scheduled_time: "",
+    meeting_link: "",
+    meeting_location: "",
+    phone_number: "",
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -280,27 +337,6 @@ const LawyerCaseDetail = () => {
                 <p className="text-sm text-gray-600">Case ID: CASE-2024-{String(id).padStart(3, "0")}</p>
               </div>
               <div className="flex gap-2">
-                <button 
-                  onClick={() => {
-                    if (caseData?.status === 'pending') {
-                      toast.error('Chat is available once you accept this case');
-                      return;
-                    }
-                    navigate('/lawyermessage', { 
-                      state: { 
-                        caseId: caseData.id,
-                        recipientId: caseData.client_id || caseData.client,
-                        recipientName: caseData.client_name
-                      } 
-                    });
-                  }}
-                  disabled={caseData?.status === 'pending'}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={caseData?.status === 'pending' ? 'Chat available once you accept the case' : 'Message the client'}
-                >
-                  <MessageSquare size={16} />
-                  Message Client
-                </button>
                 {isAssignedLawyer && (
                   <button
                     onClick={() => {
@@ -523,14 +559,30 @@ const LawyerCaseDetail = () => {
 
                     <div className="flex gap-2 mt-4">
                       <button 
-                        onClick={() => navigate('/lawyermessage', { 
-                          state: { 
-                            caseId: caseData.id,
-                            recipientId: caseData.client_id || caseData.client,
-                            recipientName: caseData.client_name
-                          } 
-                        })}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                        onClick={() => {
+                          if (!isAssignedLawyer) {
+                            return;
+                          }
+                          if (!hasAssignedClient) {
+                            return;
+                          }
+                          navigate('/lawyermessage', { 
+                            state: { 
+                              caseId: caseData.id,
+                              recipientId: caseData.client_id || caseData.client,
+                              recipientName: caseData.client_name
+                            } 
+                          });
+                        }}
+                        disabled={!isAssignedLawyer || !hasAssignedClient}
+                        title={
+                          !isAssignedLawyer
+                            ? 'View-only mode: assign this case to message the client'
+                            : hasAssignedClient
+                              ? 'Message the client'
+                              : 'Chat unavailable until a client is assigned'
+                        }
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                         <MessageSquare size={16} />
                         Message
                       </button>
@@ -599,8 +651,15 @@ const LawyerCaseDetail = () => {
 
                     <div className="flex gap-2 mt-4">
                       <button 
-                        onClick={() => navigate('/clientmessage', { state: { caseId: caseData.id } })}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2">
+                        onClick={() => {
+                          if (!hasAssignedLawyer) {
+                            return;
+                          }
+                          navigate('/clientmessage', { state: { caseId: caseData.id } });
+                        }}
+                        disabled={!hasAssignedLawyer}
+                        title={hasAssignedLawyer ? 'Message the lawyer' : 'Chat unavailable until a lawyer is assigned'}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                         <MessageSquare size={16} />
                         Message
                       </button>
@@ -625,6 +684,141 @@ const LawyerCaseDetail = () => {
           </div>
         </div>
       </main>
+
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Formik
+            initialValues={scheduleInitialValues}
+            validationSchema={lawercaseappointmentverification}
+            onSubmit={handleSubmitSchedule}
+            enableReinitialize
+          >
+            {({ values, isSubmitting, status }) => (
+              <Form className="bg-white rounded-2xl w-full max-w-xl border border-slate-200 shadow-2xl">
+                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-slate-900">Create Case Appointment</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowScheduleModal(false)}
+                    className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  {status && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                      {status}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Title</label>
+                    <Field
+                      name="title"
+                      type="text"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      placeholder="Appointment title"
+                    />
+                    <ErrorMessage name="title" component="p" className="text-red-500 text-xs mt-1" />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Meeting Mode</label>
+                    <Field
+                      as="select"
+                      name="mode"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+                    >
+                      <option value="video">Video</option>
+                      <option value="in_person">In-Person</option>
+                    </Field>
+                    <ErrorMessage name="mode" component="p" className="text-red-500 text-xs mt-1" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Date</label>
+                      <Field
+                        name="scheduled_date"
+                        type="date"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      />
+                      <ErrorMessage name="scheduled_date" component="p" className="text-red-500 text-xs mt-1" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Time</label>
+                      <Field
+                        name="scheduled_time"
+                        type="time"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                      />
+                      <ErrorMessage name="scheduled_time" component="p" className="text-red-500 text-xs mt-1" />
+                    </div>
+                  </div>
+
+                  {values.mode === "video" && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Meeting Link</label>
+                      <Field
+                        name="meeting_link"
+                        type="url"
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        placeholder="https://..."
+                      />
+                      <ErrorMessage name="meeting_link" component="p" className="text-red-500 text-xs mt-1" />
+                    </div>
+                  )}
+
+                  {values.mode === "in_person" && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Location</label>
+                        <Field
+                          name="meeting_location"
+                          type="text"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                          placeholder="Meeting location"
+                        />
+                        <ErrorMessage name="meeting_location" component="p" className="text-red-500 text-xs mt-1" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Phone Number</label>
+                        <Field
+                          name="phone_number"
+                          type="text"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                          placeholder="Phone number"
+                        />
+                        <ErrorMessage name="phone_number" component="p" className="text-red-500 text-xs mt-1" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowScheduleModal(false)}
+                    className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? "Creating..." : "Create Appointment"}
+                  </button>
+                </div>
+              </Form>
+            )}
+          </Formik>
+        </div>
+      )}
+
       <ToastContainer />
     </div>
   );

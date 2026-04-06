@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { User, LogOut, Bell, Menu } from "lucide-react";
+import { User, LogOut, Menu } from "lucide-react";
 import { fetchUserProfile } from "../slices/profileSlice";
 import { logoutUser } from "../slices/auth";
 import { getImageUrl } from '../../utils/imageUrl';
+import NotificationDropdown from "../../components/Notification.jsx";
 import { useSidebar } from "../../context/SidebarContext";
 
 const AdminDashHeader = ({ title, subtitle }) => {
@@ -71,12 +72,7 @@ const AdminDashHeader = ({ title, subtitle }) => {
 
         <div className="flex items-center gap-4">
           {/* Notification Bell */}
-          <button className="relative p-2 hover:bg-gray-100 rounded-full transition">
-            <Bell size={24} className="text-gray-600" />
-            <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              3
-            </span>
-          </button>
+          <NotificationDropdown role="admin" />
 
           {/* Profile Avatar with Dropdown */}
           <div className="relative">

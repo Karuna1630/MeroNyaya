@@ -3,6 +3,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from authentication.models import User
 from kyc.models import LawyerKYC
+from appointment.models import Appointment
+from case.models import Case
 
 
 class Review(models.Model):
@@ -13,8 +15,11 @@ class Review(models.Model):
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_given', limit_choices_to={'role': 'Client'})
     lawyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_received', limit_choices_to={'role': 'Lawyer'})
     
-    # Review Content
-    title = models.CharField(max_length=255, blank=True, null=True)
+    # Link to appointment or case (one must be present)
+    appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, blank=True, null=True, related_name='reviews')
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, blank=True, null=True, related_name='reviews')
+    
+    # Review Content (ONLY comment and rating - no title)
     comment = models.TextField(help_text="Client's detailed review comment")
     rating = models.IntegerField(
         default=5,
@@ -25,19 +30,21 @@ class Review(models.Model):
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_verified_consultation = models.BooleanField(
-        default=False,
-        help_text="Whether this review is from a verified consultation"
-    )
     
     class Meta:
         ordering = ['-created_at']
         verbose_name = _('Review')
         verbose_name_plural = _('Reviews')
-        unique_together = ['client', 'lawyer', 'created_at']
+        # Independent rating per interaction
+        # handled by View validation
     
     def __str__(self):
         return f"Review by {self.client.name} for {self.lawyer.name} - {self.rating} stars"
+    
+    @property
+    def is_verified_consultation(self):
+        """Auto-verify: true if linked to an appointment or case"""
+        return bool(self.appointment or self.case)
     
     @property
     def average_rating(self):

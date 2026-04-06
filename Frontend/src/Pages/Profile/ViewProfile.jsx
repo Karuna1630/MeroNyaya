@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { ArrowLeft, User, Mail, Phone, MapPin, CheckCircle } from "lucide-react";
+import { ArrowLeft, User, Mail, Phone, MapPin } from "lucide-react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { fetchUserProfile } from "../slices/profileSlice";
@@ -67,22 +67,18 @@ const ViewProfile = () => {
               <img
                 src={getImageUrl(profile.profile_image, profile?.name)}
                 alt={profile?.name || "User"}
-                className="w-24 h-24 rounded-full object-cover flex-shrink-0 border-2 border-[#0F1A3D]"
+                className="w-24 h-24 rounded-full object-cover shrink-0 border-2 border-[#0F1A3D]"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-[#0F1A3D] text-white flex items-center justify-center font-bold text-3xl flex-shrink-0">
+              <div className="w-24 h-24 rounded-full bg-[#0F1A3D] text-white flex items-center justify-center font-bold text-3xl shrink-0">
                 {profile?.name?.charAt(0) || "U"}
               </div>
             )}
 
             {/* User Info */}
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="mb-2">
                 <h3 className="text-2xl font-bold text-gray-900">{profile?.name || "User"}</h3>
-                <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
-                  <CheckCircle size={14} />
-                  {profile?.is_verified ? "Verified" : "Unverified"}
-                </span>
               </div>
               <p className="text-gray-600 mb-3">{profile?.role || "User"}</p>
               <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">

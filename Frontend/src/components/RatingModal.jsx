@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Star, X, AlertCircle } from 'lucide-react';
-import { toast } from 'react-toastify';
 import './RatingModal.css';
 
 const RatingModal = ({ isOpen, lawyerName, lawyerId, onClose, onSubmit }) => {
@@ -35,11 +34,12 @@ const RatingModal = ({ isOpen, lawyerName, lawyerId, onClose, onSubmit }) => {
       setRating(0);
       setComment('');
       setError('');
-      toast.success('Thank you! Your rating has been submitted.');
+      // Don't show toast here - let parent component handle it
       onClose();
     } catch (err) {
+      // Set error message in modal for display
       setError(err.message || 'Failed to submit rating');
-      toast.error('Failed to submit rating');
+      // Don't show toast here - let parent component handle it
     } finally {
       setIsSubmitting(false);
     }

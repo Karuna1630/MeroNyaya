@@ -48,6 +48,38 @@ const colorMap = {
 // WebSocket URL — picks ws:// or wss:// based on current protocol
 const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
 
+const normalizeRole = (user) => {
+  if (!user) return null;
+  if (user.is_superuser || user.is_staff) return "admin";
+
+  const raw = user.user_type || user.role || user.type;
+  if (typeof raw === "string") {
+    const lowered = raw.toLowerCase();
+    if (lowered.includes("admin") || lowered.includes("super")) return "admin";
+    return lowered;
+  }
+  return null;
+};
+
+const normalizeNotificationLink = (link, role) => {
+  if (!link || typeof link !== "string") return null;
+
+  // Backward compatibility for old payment notification links.
+  const legacyPaymentLink = link.match(/^\/case\/(\d+)\/payment\/?$/);
+  if (legacyPaymentLink) {
+    const caseId = legacyPaymentLink[1];
+    return role === "lawyer" ? `/lawyercase/${caseId}` : `/client/case/${caseId}`;
+  }
+
+  const legacyCaseLink = link.match(/^\/case\/(\d+)\/?$/);
+  if (legacyCaseLink) {
+    const caseId = legacyCaseLink[1];
+    return role === "lawyer" ? `/lawyercase/${caseId}` : `/client/case/${caseId}`;
+  }
+
+  return link;
+};
+
 
 const NotificationDropdown = () => {
   const [open, setOpen] = useState(false);
@@ -58,6 +90,8 @@ const NotificationDropdown = () => {
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
+  const authUser = useSelector((state) => state.auth?.user);
+  const userRole = normalizeRole(authUser);
   const { notifications, unreadCount, notificationsLoading } = useSelector(
     (state) => state.notifications
   );
@@ -162,8 +196,9 @@ const NotificationDropdown = () => {
       dispatch(markNotificationRead(n.id));
     }
     setOpen(false);
-    if (n.link) {
-      navigate(n.link);
+    const targetLink = normalizeNotificationLink(n.link, userRole);
+    if (targetLink) {
+      navigate(targetLink);
     }
   };
 

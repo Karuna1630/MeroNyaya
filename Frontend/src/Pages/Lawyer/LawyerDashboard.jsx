@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './Sidebar';
 import StatCard from './Statcard.jsx';
 import DashHeader from './LawyerDashHeader';
-import { Briefcase, DollarSign, Calendar, MessageSquare, Star, Gavel, Trophy, GraduationCap, ArrowRight, AlertCircle, X, Clock, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
+import { Briefcase, Calendar, ArrowRight, AlertCircle, X, Clock, AlertTriangle, FileText, Wallet } from 'lucide-react';
 import KYC from '../KYC/KYC';
 import { getImageUrl } from '../../utils/imageUrl';
 import { fetchUserProfile } from '../slices/profileSlice';
@@ -15,6 +15,7 @@ import { fetchKycStatus } from '../slices/kycSlice';
 import { fetchCases } from '../slices/caseSlice';
 import { fetchProposals } from '../slices/proposalSlice';
 import { fetchMyConsultations } from '../slices/consultationSlice';
+import { fetchLawyerEarnings } from '../slices/paymentSlice';
 
 const LawyerDashboard = () => {
   const { t } = useTranslation();
@@ -24,12 +25,14 @@ const LawyerDashboard = () => {
   const authUser = useSelector((state) => state.auth.user);
   const { status } = useSelector((state) => state.kyc);
   const { cases = [], casesLoading } = useSelector((state) => state.case || {});
-  const { proposals = [] } = useSelector((state) => state.proposal || {});
-  const { consultations = [] } = useSelector((state) => state.consultation || {});
+  const { proposals = [], proposalsLoading } = useSelector((state) => state.proposal || {});
+  const { consultations = [], consultationsLoading } = useSelector((state) => state.consultation || {});
+  const { earnings = null, earningsLoading } = useSelector((state) => state.payment || {});
   const [showKycModal, setShowKycModal] = useState(false);
   const initialFetchDoneRef = useRef(false);
 
   const profile = userProfile || authUser;
+  const currentLawyerId = profile?.id;
 
   // on initial load fetch profile, kyc status, cases, and proposals
   useEffect(() => {
@@ -40,13 +43,19 @@ const LawyerDashboard = () => {
       dispatch(fetchCases());
       dispatch(fetchProposals());
       dispatch(fetchMyConsultations());
+      dispatch(fetchLawyerEarnings());
     }
   }, [dispatch]);
 
 // using memo for calcultaing stats 
+  const assignedCases = useMemo(() => {
+    if (!Array.isArray(cases) || !currentLawyerId) return [];
+    return cases.filter((c) => Number(c.lawyer) === Number(currentLawyerId));
+  }, [cases, currentLawyerId]);
+
   const activeCases = useMemo(() => {
-    return cases.filter(c => ['accepted', 'in_progress'].includes(c.status)).length;
-  }, [cases]);
+    return assignedCases.filter((c) => !['completed', 'cancelled', 'rejected'].includes(c.status)).length;
+  }, [assignedCases]);
 
   const pendingProposals = useMemo(() => {
     return proposals.filter(p => p.status === 'pending').length;
@@ -56,16 +65,29 @@ const LawyerDashboard = () => {
     return proposals.filter(p => p.status === 'accepted').length;
   }, [proposals]);
 
-  const rejectedProposals = useMemo(() => {
-    return proposals.filter(p => p.status === 'rejected').length;
-  }, [proposals]);
+  const totalAppointments = useMemo(() => {
+    return consultations.filter((c) => c.status === 'requested' || c.status === 'accepted').length;
+  }, [consultations]);
+
+  const upcomingAppointmentsCount = useMemo(() => {
+    const now = new Date();
+    return consultations.filter((c) => {
+      if (c.status !== 'accepted' || !c.scheduled_date || !c.scheduled_time) return false;
+      const apptDate = new Date(`${c.scheduled_date}T${c.scheduled_time}`);
+      return !Number.isNaN(apptDate.getTime()) && apptDate > now;
+    }).length;
+  }, [consultations]);
+
+  const pendingPaymentsCount = useMemo(() => {
+    const value = earnings?.summary?.pending_count;
+    return Number.isFinite(value) ? value : parseInt(value || 0, 10) || 0;
+  }, [earnings]);
 
   const recentCases = useMemo(() => {
-    return [...cases]
-      .filter(c => ['accepted', 'in_progress'].includes(c.status))
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    return [...assignedCases]
+      .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
       .slice(0, 5);
-  }, [cases]);
+  }, [assignedCases]);
 
   // Helper function to format date strings into a more readable format for display in the dashboard
   const formatDate = (dateString) => {
@@ -131,7 +153,7 @@ const LawyerDashboard = () => {
 
     toast.success(t('lawyerDashboard.kycApproved'));
     localStorage.setItem('kycApprovedToastShown', '1');
-  }, [isKycApproved]);
+  }, [isKycApproved, t]);
 
   // Prevent background scrolling when KYC modal is open by toggling overflow style on the body element
   useEffect(() => {
@@ -177,45 +199,75 @@ const LawyerDashboard = () => {
     {
       icon: <Briefcase size={20} />,
       title: t('lawyerDashboard.activeCases'),
-      value: activeCases.toString(),
+      value: casesLoading ? '...' : activeCases.toString(),
       subtitle: `${acceptedProposals} ${t('cases.accepted')}`,
       color: 'blue',
     },
     {
       icon: <FileText size={20} />,
       title: t('cases.pending'),
-      value: pendingProposals.toString(),
+      value: proposalsLoading ? '...' : pendingProposals.toString(),
       subtitle: t('lawyerDashboard.awaiting'),
       color: 'amber',
     },
     {
       icon: <Calendar size={20} />,
       title: t('navigation.appointments'),
-      value: '0',
-      subtitle: t('dashboard.comingSoon'),
+      value: consultationsLoading ? '...' : totalAppointments.toString(),
+      subtitle: consultationsLoading
+        ? t('common.loading')
+        : `${upcomingAppointmentsCount} ${t('lawyerDashboard.upcoming')}`,
       color: 'violet',
     },
     {
-      icon: <AlertCircle size={20} />,
-      title: t('cases.rejected'),
-      value: rejectedProposals.toString(),
+      icon: <Wallet size={20} />,
+      title: t('lawyerDashboard.pendingPayments'),
+      value: earningsLoading ? '...' : pendingPaymentsCount.toString(),
       subtitle: t('lawyerDashboard.awaiting'),
-      color: 'rose',
+      color: 'emerald',
     },
   ];
 
   // Upcoming appointments from real data
   const todaySchedule = useMemo(() => {
-    return consultations
-      .filter((apt) => apt.status === "requested" || apt.status === "accepted")
+    const now = new Date();
+
+    const acceptedUpcoming = consultations
+      .filter((apt) => apt.status === "accepted" && apt.scheduled_date && apt.scheduled_time)
+      .map((apt) => {
+        const dateTime = new Date(`${apt.scheduled_date}T${apt.scheduled_time}`);
+        return {
+          ...apt,
+          _dateTime: dateTime,
+        };
+      })
+      .filter((apt) => !Number.isNaN(apt._dateTime.getTime()) && apt._dateTime > now)
+      .sort((a, b) => a._dateTime - b._dateTime)
       .slice(0, 4)
       .map((apt) => ({
         id: apt.id,
         name: apt.client?.name || "Client",
         avatar: apt.client?.name?.charAt(0) || "C",
         type: apt.mode === "in_person" ? "In-Person Consultation" : "Video Consultation",
-        time: apt.status === "accepted" && apt.scheduled_time ? apt.scheduled_time : apt.requested_time,
-        status: apt.status === "accepted" ? "Confirmed" : "Pending",
+        time: apt.scheduled_time,
+        status: "Upcoming",
+      }));
+
+    if (acceptedUpcoming.length > 0) {
+      return acceptedUpcoming;
+    }
+
+    // Fallback: show latest pending requests when no upcoming confirmed appointments exist.
+    return consultations
+      .filter((apt) => apt.status === "requested")
+      .slice(0, 4)
+      .map((apt) => ({
+        id: apt.id,
+        name: apt.client?.name || "Client",
+        avatar: apt.client?.name?.charAt(0) || "C",
+        type: apt.mode === "in_person" ? "In-Person Consultation" : "Video Consultation",
+        time: apt.requested_time,
+        status: "Pending",
       }));
   }, [consultations]);
 
@@ -414,7 +466,12 @@ const LawyerDashboard = () => {
                     </button>
                   </div>
                   
-                  {todaySchedule.length > 0 ? (
+                  {consultationsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="text-sm text-slate-500 mt-2">{t('common.loading')}</p>
+                    </div>
+                  ) : todaySchedule.length > 0 ? (
                     <div className="space-y-4">
                       {todaySchedule.map((appointment) => (
                         <div 

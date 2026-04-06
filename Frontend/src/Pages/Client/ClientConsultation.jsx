@@ -1,136 +1,64 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from "./sidebar";
 import DashHeader from "./ClientDashHeader";
-import StatCard from "./statcard";
 import { useDispatch, useSelector } from "react-redux";
-import { useTranslation } from "react-i18next";
 import { fetchMyConsultations } from "../slices/consultationSlice";
-import { fetchMyAppointments } from "../slices/appointmentSlice";
 import { 
   Calendar, 
   Video, 
   Phone,
   MessageCircle,
   MapPin, 
-  Eye, 
   X, 
-  Search,
-  Filter,
-  MoreVertical,
-  ChevronRight,
   Clock,
   AlertCircle,
   Trash2
 } from "lucide-react";
 import axiosInstance from "../../axios/axiosinstance";
 import { getImageUrl } from '../../utils/imageUrl';
-import RatingModal from "../../components/RatingModal";
-import { createReview } from "../../axios/reviewAPI";
 
 const ClientConsultation = () => {
-  const { t } = useTranslation();
   const dispatch = useDispatch();
-  const [activeTab, setActiveTab] = useState(t('consultations.requests'));
+  
+  // Get data from Redux store
+  const { consultations = [] } = useSelector((state) => state.consultation || {});
+  
+  const [activeTab, setActiveTab] = useState('Requests');
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [consultationToDelete, setConsultationToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-  const [showRatingModal, setShowRatingModal] = useState(false);
-  const [completedConsultation, setCompletedConsultation] = useState(null);
-  const [ratedConsultationIds, setRatedConsultationIds] = useState([]);
-  const { consultations = [] } = useSelector((state) => state.consultation || {});
-  const { appointments = [], appointmentsLoading } = useSelector(
-    (state) => state.appointment || {}
-  );
 
+  // Auto-refresh consultation data
   useEffect(() => {
     dispatch(fetchMyConsultations());
   }, [dispatch]);
 
-  useEffect(() => {
-    dispatch(fetchMyAppointments());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (activeTab === "Appointments") {
-      dispatch(fetchMyAppointments());
-    }
-  }, [activeTab, dispatch]);
-
-  // Auto-refresh data every 10 seconds to catch completed consultations
+  // Auto-refresh data every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       dispatch(fetchMyConsultations());
-      dispatch(fetchMyAppointments());
     }, 10000);
 
     return () => clearInterval(interval);
   }, [dispatch]);
 
-  // Check for completed consultations/appointments that need rating
-  useEffect(() => {
-    const completedItems = [
-      ...consultations.filter(c => c.status === "completed"),
-      ...appointments
-        .filter(a => a.status === "completed" && a.consultation_details)
-        .map(a => a.consultation_details)
-    ];
 
-    console.log('DEBUG: All consultations:', consultations);
-    console.log('DEBUG: Completed items:', completedItems);
-    console.log('DEBUG: Rated IDs:', ratedConsultationIds);
-
-    // Find the first completed item that hasn't been rated yet
-    const unratedCompleted = completedItems.find(
-      item => !ratedConsultationIds.includes(item.id)
-    );
-
-    console.log('DEBUG: Unrated completed item:', unratedCompleted);
-
-    if (unratedCompleted) {
-      console.log('DEBUG: Opening rating modal for:', unratedCompleted.lawyer?.name);
-      setCompletedConsultation(unratedCompleted);
-      setShowRatingModal(true);
-    }
-  }, [consultations, appointments, ratedConsultationIds]);
 
   const pendingCount = useMemo(() => {
     return consultations.filter((item) => item.status === "requested").length;
   }, [consultations]);
 
-  const appointmentCount = useMemo(() => {
-    return appointments.length;
-  }, [appointments]);
-
   const cancelledCount = useMemo(() => {
-    const cancelledConsultations = consultations.filter((item) => item.status === "rejected").length;
-    const cancelledAppointments = appointments.filter((item) => item.status === "cancelled").length;
-    return cancelledConsultations + cancelledAppointments;
-  }, [consultations, appointments]);
+    return consultations.filter((item) => item.status === "rejected").length;
+  }, [consultations]);
 
-  const displayConsultations = useMemo(() => {
+  const tableRows = useMemo(() => {
     if (activeTab === "Requests") {
       return consultations.filter((item) => item.status === "requested");
     }
-    if (activeTab === "Appointments") {
-      return [];
-    }
     return consultations.filter((item) => item.status === "rejected");
   }, [activeTab, consultations]);
-
-  const cancelledAppointments = useMemo(() => {
-    return appointments.filter((item) => item.status === "cancelled");
-  }, [appointments]);
-
-  const displayAppointments = useMemo(() => {
-    return appointments;
-  }, [appointments]);
-
-  const tableRows = useMemo(() => {
-    if (activeTab === "Appointments") return displayAppointments;
-    if (activeTab === "Cancelled") return [...displayConsultations, ...cancelledAppointments];
-    return displayConsultations;
-  }, [activeTab, displayAppointments, displayConsultations, cancelledAppointments]);
 
   const getModeIcon = (mode) => {
     switch (mode) {
@@ -183,30 +111,6 @@ const ClientConsultation = () => {
     }
   };
 
-  const handleRatingSubmit = async (ratingData) => {
-    try {
-      await createReview(
-        ratingData.lawyerId,
-        ratingData.rating,
-        ratingData.comment
-      );
-      
-      // Mark this consultation as rated
-      setRatedConsultationIds([...ratedConsultationIds, completedConsultation.id]);
-      
-      // Close modal and reset
-      setShowRatingModal(false);
-      setCompletedConsultation(null);
-      
-      // Refresh consultations to ensure data is current
-      dispatch(fetchMyConsultations());
-      dispatch(fetchMyAppointments());
-    } catch (error) {
-      console.error("Error submitting rating:", error);
-      throw new Error("Failed to submit rating. Please try again.");
-    }
-  };
-
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
@@ -219,18 +123,12 @@ const ClientConsultation = () => {
 
         <div className="flex-1 p-8 overflow-y-auto">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-amber-500 to-orange-500 ring-1 ring-amber-500/20 flex flex-col items-center justify-center text-center">
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
               <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
               <span className="relative z-10 text-4xl font-extrabold mb-1">{pendingCount}</span>
               <span className="relative z-10 text-sm font-medium text-white/70 uppercase tracking-wider">Requests</span>
-            </div>
-            <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-emerald-500 to-emerald-600 ring-1 ring-emerald-500/20 flex flex-col items-center justify-center text-center">
-              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-              <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5" />
-              <span className="relative z-10 text-4xl font-extrabold mb-1">{appointmentCount}</span>
-              <span className="relative z-10 text-sm font-medium text-white/70 uppercase tracking-wider">Appointments</span>
             </div>
             <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br from-rose-500 to-pink-600 ring-1 ring-rose-500/20 flex flex-col items-center justify-center text-center">
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
@@ -243,7 +141,7 @@ const ClientConsultation = () => {
           {/* Filters and Tabs */}
           <div className="mb-6">
             <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
-              {["Requests", "Appointments", "Cancelled"].map((tab) => (
+              {["Requests", "Cancelled"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -275,13 +173,12 @@ const ClientConsultation = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {tableRows.map((item) => {
-                    const consultation = item.consultation_details || item;
-                    const isAppointment = Boolean(item.consultation_details);
-                    const dateValue = isAppointment ? (item.scheduled_date || consultation.requested_day) : consultation.requested_day;
-                    const timeValue = isAppointment ? (item.scheduled_time || consultation.requested_time) : consultation.requested_time;
-                    const statusValue = isAppointment ? item.status : consultation.status;
+                    const consultation = item;
+                    const dateValue = consultation.requested_day;
+                    const timeValue = consultation.requested_time;
+                    const statusValue = consultation.status;
                     return (
-                      <tr key={isAppointment ? `appt-${item.id}` : item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-3">
                           <img 
@@ -355,7 +252,7 @@ const ClientConsultation = () => {
                           >
                             View
                           </button>
-                            {!isAppointment && consultation.status !== "rejected" && (
+                            {consultation.status !== "rejected" && (
                             <button 
                               onClick={() => handleDeleteClick(consultation)}
                               className="p-2 hover:bg-red-50 rounded-full text-red-500 hover:text-red-600 transition-all duration-200"
@@ -372,9 +269,7 @@ const ClientConsultation = () => {
                   {tableRows.length === 0 && (
                     <tr>
                       <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
-                        {activeTab === "Appointments" && appointmentsLoading
-                          ? "Loading appointments..."
-                          : `No ${activeTab.toLowerCase()} found.`}
+                        {`No ${activeTab.toLowerCase()} found.`}
                       </td>
                     </tr>
                   )}
@@ -539,19 +434,7 @@ const ClientConsultation = () => {
         </div>
       )}
 
-      {/* Rating Modal */}
-      {completedConsultation && (
-        <RatingModal
-          isOpen={showRatingModal}
-          lawyerName={completedConsultation.lawyer?.name || "Lawyer"}
-          lawyerId={completedConsultation.lawyer?.id || completedConsultation.lawyer_id}
-          onClose={() => {
-            setShowRatingModal(false);
-            setCompletedConsultation(null);
-          }}
-          onSubmit={handleRatingSubmit}
-        />
-      )}
+
     </div>
   );
 };
