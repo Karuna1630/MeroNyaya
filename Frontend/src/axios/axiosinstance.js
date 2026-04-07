@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL for the API, can be set via environment variable or defaults to localhost
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://meronyaya.onrender.com/api';
 
 // Flag to prevent multiple concurrent refresh attempts
 let isRefreshing = false;

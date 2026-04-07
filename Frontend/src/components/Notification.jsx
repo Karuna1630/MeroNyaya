@@ -46,7 +46,7 @@ const colorMap = {
 
 
 // WebSocket URL — picks ws:// or wss:// based on current protocol
-const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const WS_BASE = import.meta.env.VITE_WS_URL || 'wss://meronyaya.onrender.com';
 
 const normalizeRole = (user) => {
   if (!user) return null;

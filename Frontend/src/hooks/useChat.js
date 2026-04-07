@@ -32,7 +32,7 @@ export const useChat = (userId, token) => {
 
     const connectWebSocket = () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://meronyaya.onrender.com/api';
         const wsProtocol = apiUrl.includes('https') ? 'wss:' : 'ws:';
         const wsHost = apiUrl.replace(/^https?:\/\//, '').replace(/\/api$/, '');
         const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/user/${userId}/?token=${token}`;

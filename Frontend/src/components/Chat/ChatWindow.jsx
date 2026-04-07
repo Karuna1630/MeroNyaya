@@ -18,7 +18,7 @@ const VoiceMessage = ({ audioUrl }) => {
   const getAbsoluteUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace('/api', '');
+    const baseUrl = (import.meta.env.VITE_API_URL || 'https://meronyaya.onrender.com/api').replace('/api', '');
     return `${baseUrl}${url}`;
   };
 
