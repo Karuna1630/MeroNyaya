@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { WS_BASE_URL } from '../utils/runtimeConfig';
 
 /**
  * Custom hook for WebSocket chat functionality
@@ -12,7 +13,7 @@ export const useChat = (userId, token) => {
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [connectionLoading, setConnectionLoading] = useState(true);
   const [otherUserOnline, setOtherUserOnline] = useState(false);
   const wsRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
@@ -26,16 +27,12 @@ export const useChat = (userId, token) => {
    */
   useEffect(() => {
     if (!userId || !token) {
-      setIsLoading(false);
       return;
     }
 
     const connectWebSocket = () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://meronyaya.onrender.com/api';
-        const wsProtocol = apiUrl.includes('https') ? 'wss:' : 'ws:';
-        const wsHost = apiUrl.replace(/^https?:\/\//, '').replace(/\/api$/, '');
-        const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/user/${userId}/?token=${token}`;
+        const wsUrl = `${WS_BASE_URL}/ws/chat/user/${userId}/?token=${token}`;
 
         const websocket = new WebSocket(wsUrl);
 
@@ -43,7 +40,7 @@ export const useChat = (userId, token) => {
           console.log('Chat WebSocket connected');
           setIsConnected(true);
           setError(null);
-          setIsLoading(false);
+          setConnectionLoading(false);
           reconnectAttemptsRef.current = 0;
         };
 
@@ -104,7 +101,7 @@ export const useChat = (userId, token) => {
       } catch (err) {
         console.error('WebSocket connection error:', err);
         setError('Failed to connect to chat');
-        setIsLoading(false);
+        setConnectionLoading(false);
       }
     };
 
@@ -135,6 +132,8 @@ export const useChat = (userId, token) => {
       }
     };
   }, [userId, token]);
+
+  const isLoading = userId && token ? connectionLoading : false;
 
   /**
    * Send message via WebSocket

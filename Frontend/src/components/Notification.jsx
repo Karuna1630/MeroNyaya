@@ -22,6 +22,7 @@ import {
   deleteNotification,
   addNotification,
 } from "../Pages/slices/notificationSlice";
+import { WS_BASE_URL } from "../utils/runtimeConfig";
 
 
 // Icon map for notification types
@@ -44,9 +45,6 @@ const colorMap = {
   system:      { bg: "bg-slate-100",   icon: "text-slate-500",   dot: "bg-slate-400"   },
 };
 
-
-// WebSocket URL — picks ws:// or wss:// based on current protocol
-const WS_BASE = import.meta.env.VITE_WS_URL || 'wss://meronyaya.onrender.com';
 
 const normalizeRole = (user) => {
   if (!user) return null;
@@ -119,7 +117,7 @@ const NotificationDropdown = () => {
       const token = localStorage.getItem("access_token");
       if (!token || !mounted) return;
 
-      const wsUrl = `${WS_BASE}/ws/notifications/?token=${token}`;
+      const wsUrl = `${WS_BASE_URL}/ws/notifications/?token=${token}`;
       const socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {

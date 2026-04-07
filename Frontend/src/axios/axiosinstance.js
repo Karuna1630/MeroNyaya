@@ -1,7 +1,5 @@
 import axios from 'axios';
-
-// Base URL for the API, can be set via environment variable or defaults to localhost
-const API_URL = import.meta.env.VITE_API_URL || 'https://meronyaya.onrender.com/api';
+import { API_BASE_URL } from '../utils/runtimeConfig';
 
 // Flag to prevent multiple concurrent refresh attempts
 let isRefreshing = false;
@@ -31,7 +29,7 @@ const getRefreshToken = () => {
 
 // Creating reusable axios instance with base URL and default headers. 
 const axiosInstance = axios.create({
-  baseURL: API_URL,
+    baseURL: API_BASE_URL,
   // setting default headers for JSON content type data 
   headers: {
     'Content-Type': 'application/json',
@@ -100,7 +98,7 @@ axiosInstance.interceptors.response.use(
                 isRefreshing = true;
 
                 // Attempt to refresh the access token using axios directly to avoid infinite loops
-                const response = await axios.post(`${API_URL}/authentications/token/refresh/`, {
+                const response = await axios.post(`${API_BASE_URL}/authentications/token/refresh/`, {
                     refresh: refreshToken,
                 }, {
                     headers: {

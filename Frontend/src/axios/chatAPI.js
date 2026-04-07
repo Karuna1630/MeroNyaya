@@ -1,7 +1,5 @@
 import axios from 'axios';
-
-// Base URL for the API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://meronyaya.onrender.com/api';
+import { API_BASE_URL } from '../utils/runtimeConfig';
 
 // Create axios instance for chat API
 const chatAPI = axios.create({

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send, AlertCircle, Loader, Mic, Square, Play, Download, Pause } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useChat } from '../../hooks/useChat';
+import { BACKEND_BASE_URL } from '../../utils/runtimeConfig';
 import './ChatWindow.css';
 
 /**
@@ -18,8 +19,7 @@ const VoiceMessage = ({ audioUrl }) => {
   const getAbsoluteUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    const baseUrl = (import.meta.env.VITE_API_URL || 'https://meronyaya.onrender.com/api').replace('/api', '');
-    return `${baseUrl}${url}`;
+    return `${BACKEND_BASE_URL}${url}`;
   };
 
   const finalAudioUrl = getAbsoluteUrl(audioUrl);

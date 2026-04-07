@@ -1,4 +1,4 @@
-const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://meronyaya.onrender.com';
+import { BACKEND_BASE_URL } from './runtimeConfig';
 
 /**
  * Normalize a profile image URL and provide a fallback avatar.
@@ -14,5 +14,5 @@ export const getImageUrl = (imageUrl, name = 'User') => {
     return imageUrl;
   }
   // Relative path – prepend backend origin
-  return `${BACKEND_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+  return `${BACKEND_BASE_URL}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
 };
