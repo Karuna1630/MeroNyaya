@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -28,6 +28,7 @@ const Earning = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const { earnings, earningsLoading, earningsError } = useSelector((state) => state.payment);
+  const [historyTypeFilter, setHistoryTypeFilter] = useState('all');
 
   useEffect(() => {
     dispatch(fetchLawyerEarnings());
@@ -68,6 +69,11 @@ const Earning = () => {
       new Date(b.date) - new Date(a.date)
     );
   }, [payments, caseRequests]);
+
+  const filteredHistory = useMemo(() => {
+    if (historyTypeFilter === 'all') return allHistory;
+    return allHistory.filter((item) => item.type === historyTypeFilter);
+  }, [allHistory, historyTypeFilter]);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -146,7 +152,9 @@ const Earning = () => {
       <Sidebar />
 
       <main className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <DashHeader title={t('navigation.earnings')} subtitle={t('lawyerEarnings.subtitle')} />
+        <div className="sticky top-0 z-30 bg-white">
+          <DashHeader title={t('navigation.earnings')} subtitle={t('lawyerEarnings.subtitle')} />
+        </div>
 
         <div className="flex-1 p-8 overflow-y-auto">
           {earningsLoading && (
@@ -199,16 +207,27 @@ const Earning = () => {
 
               {/* Payment History */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-bold text-gray-900">{t('lawyerEarnings.paymentHistory')}</h2>
                     <p className="text-sm text-gray-400 mt-0.5">{t('lawyerEarnings.allPayments')}</p>
                   </div>
-                  {allHistory.length > 0 && (
-                    <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">
-                      {allHistory.length} transaction{allHistory.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={historyTypeFilter}
+                      onChange={(e) => setHistoryTypeFilter(e.target.value)}
+                      className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="appointment">Consultation</option>
+                      <option value="case">Case</option>
+                    </select>
+                    {filteredHistory.length > 0 && (
+                      <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full whitespace-nowrap">
+                        {filteredHistory.length} transaction{filteredHistory.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {payments.length === 0 ? (
@@ -233,11 +252,11 @@ const Earning = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {allHistory.map((item, idx) => (
+                        {filteredHistory.map((item, idx) => (
                           <tr
                             key={`${item.type}-${item.id}`}
                             className={`group transition-colors hover:bg-emerald-50/40 ${
-                              idx !== allHistory.length - 1 ? 'border-b border-gray-100' : ''
+                              idx !== filteredHistory.length - 1 ? 'border-b border-gray-100' : ''
                             }`}
                           >
                             <td className="py-4 px-5">

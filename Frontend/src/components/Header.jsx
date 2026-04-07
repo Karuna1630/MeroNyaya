@@ -12,6 +12,7 @@ const Header = () => {
   const [open, setOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const profileFetchedRef = useRef(false);
+  const dropdownRef = useRef(null);
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { userProfile } = useSelector((state) => state.profile);
@@ -26,16 +27,49 @@ const Header = () => {
     }
   }, [dispatch, isAuthenticated]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
   const handleLogout = () => {
+    setOpen(false);
     dispatch(logoutUser());
     navigate("/login");
   };
 
   const handleProfile = () => {
+    setOpen(false);
     const userRole = (user?.user_type || user?.role || "").toLowerCase();
     if (userRole === "client") navigate("/clientdashboard");
     if (userRole === "lawyer") navigate("/lawyerdashboard");
     if (userRole === "admin" || user?.is_superuser) navigate("/admindashboard");
+  };
+
+  const handleViewProfile = () => {
+    setOpen(false);
+    navigate("/viewprofile");
   };
 
   const handleNavigation = (path) => {
@@ -108,7 +142,7 @@ const Header = () => {
               </div>
             ) : (
               /* AFTER LOGIN */
-              <div className="relative">
+              <div ref={dropdownRef} className="relative">
                 {/* Avatar */}
                 <button
                   onClick={() => setOpen(!open)}
@@ -148,7 +182,7 @@ const Header = () => {
                     </button>
 
                     <button
-                      onClick={handleProfile}
+                      onClick={handleViewProfile}
                       className="flex items-center gap-2 w-full px-4 py-3 text-sm text-gray-200 hover:bg-slate-800 transition border-t border-slate-700"
                     >
                       <User size={16} />
@@ -183,7 +217,7 @@ const Header = () => {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#0F1A3D] border-t border-slate-800 absolute top-20 left-0 w-full shadow-xl z-[90] animate-in slide-in-from-top duration-300">
+        <div className="md:hidden bg-[#0F1A3D] border-t border-slate-800 absolute top-20 left-0 w-full shadow-xl z-90 animate-in slide-in-from-top duration-300">
           <nav className="flex flex-col p-6 gap-4">
             <Link 
               to="/findlawyers" 

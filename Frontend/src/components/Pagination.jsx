@@ -96,7 +96,7 @@ const Pagination = ({
                   onClick={() => handlePageClick(page)}
                   className={`px-3 py-1 rounded-lg transition-colors ${
                     currentPage === page
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-yellow-500 text-[#0F1A3D] border border-yellow-500 font-semibold'
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
                   }`}
                 >

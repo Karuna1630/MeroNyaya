@@ -65,8 +65,8 @@ const LawyerDashboard = () => {
     return proposals.filter(p => p.status === 'accepted').length;
   }, [proposals]);
 
-  const totalAppointments = useMemo(() => {
-    return consultations.filter((c) => c.status === 'requested' || c.status === 'accepted').length;
+  const acceptedAppointmentsCount = useMemo(() => {
+    return consultations.filter((c) => c.status === 'accepted').length;
   }, [consultations]);
 
   const upcomingAppointmentsCount = useMemo(() => {
@@ -184,6 +184,7 @@ const LawyerDashboard = () => {
   const getScheduleStatusClasses = (status) => {
     switch (status) {
       case 'Confirmed':
+      case 'Accepted':
         return 'bg-emerald-100 text-emerald-700';
       case 'Pending':
         return 'bg-amber-100 text-amber-700';
@@ -205,15 +206,15 @@ const LawyerDashboard = () => {
     },
     {
       icon: <FileText size={20} />,
-      title: t('cases.pending'),
+      title: t('navigation.caseRequests'),
       value: proposalsLoading ? '...' : pendingProposals.toString(),
-      subtitle: t('lawyerDashboard.awaiting'),
+      subtitle: t('lawyerDashboard.proposalCases'),
       color: 'amber',
     },
     {
       icon: <Calendar size={20} />,
-      title: t('navigation.appointments'),
-      value: consultationsLoading ? '...' : totalAppointments.toString(),
+      title: t('lawyerDashboard.acceptedAppointments'),
+      value: consultationsLoading ? '...' : acceptedAppointmentsCount.toString(),
       subtitle: consultationsLoading
         ? t('common.loading')
         : `${upcomingAppointmentsCount} ${t('lawyerDashboard.upcoming')}`,
@@ -221,27 +222,28 @@ const LawyerDashboard = () => {
     },
     {
       icon: <Wallet size={20} />,
-      title: t('lawyerDashboard.pendingPayments'),
-      value: earningsLoading ? '...' : pendingPaymentsCount.toString(),
-      subtitle: t('lawyerDashboard.awaiting'),
+      title: t('lawyerDashboard.totalEarnings'),
+      value: earningsLoading ? '...' : `Rs. ${parseFloat(earnings?.summary?.total_earned || 0).toLocaleString()}`,
+      subtitle: t('dashboard.allTime'),
       color: 'emerald',
     },
   ];
 
-  // Upcoming appointments from real data
   const todaySchedule = useMemo(() => {
-    const now = new Date();
-
-    const acceptedUpcoming = consultations
-      .filter((apt) => apt.status === "accepted" && apt.scheduled_date && apt.scheduled_time)
+    return consultations
+      .filter((apt) => !['requested', 'pending', 'completed', 'cancelled', 'rejected'].includes(apt.status))
       .map((apt) => {
-        const dateTime = new Date(`${apt.scheduled_date}T${apt.scheduled_time}`);
+        let dateTime = new Date(0);
+        if (apt.scheduled_date && apt.scheduled_time) {
+          dateTime = new Date(`${apt.scheduled_date}T${apt.scheduled_time}`);
+        } else if (apt.requested_day && apt.requested_time) {
+          dateTime = new Date(`${apt.requested_day}T${apt.requested_time}`);
+        }
         return {
           ...apt,
           _dateTime: dateTime,
         };
       })
-      .filter((apt) => !Number.isNaN(apt._dateTime.getTime()) && apt._dateTime > now)
       .sort((a, b) => a._dateTime - b._dateTime)
       .slice(0, 4)
       .map((apt) => ({
@@ -249,25 +251,8 @@ const LawyerDashboard = () => {
         name: apt.client?.name || "Client",
         avatar: apt.client?.name?.charAt(0) || "C",
         type: apt.mode === "in_person" ? "In-Person Consultation" : "Video Consultation",
-        time: apt.scheduled_time,
-        status: "Upcoming",
-      }));
-
-    if (acceptedUpcoming.length > 0) {
-      return acceptedUpcoming;
-    }
-
-    // Fallback: show latest pending requests when no upcoming confirmed appointments exist.
-    return consultations
-      .filter((apt) => apt.status === "requested")
-      .slice(0, 4)
-      .map((apt) => ({
-        id: apt.id,
-        name: apt.client?.name || "Client",
-        avatar: apt.client?.name?.charAt(0) || "C",
-        type: apt.mode === "in_person" ? "In-Person Consultation" : "Video Consultation",
-        time: apt.requested_time,
-        status: "Pending",
+        time: apt.scheduled_time || apt.requested_time || "N/A",
+        status: "Accepted",
       }));
   }, [consultations]);
 
@@ -521,6 +506,13 @@ const LawyerDashboard = () => {
                     >
                       <FileText size={16} />
                       View Proposals ({pendingProposals})
+                    </button>
+                    <button
+                      onClick={() => navigate('/lawyerearning')}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-lg hover:bg-emerald-50 hover:shadow-md text-sm font-medium transition text-emerald-700 border-emerald-200"
+                    >
+                      <Wallet size={16} />
+                      View Earnings
                     </button>
                   </div>
                 </div>

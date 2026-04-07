@@ -24,7 +24,7 @@ import { fetchMyConsultations } from "../slices/consultationSlice";
 import { fetchCaseAppointments, fetchCases } from "../slices/caseSlice";
 import axiosInstance from "../../axios/axiosinstance";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { acceptConsultationSchema } from "../utils/consultationValidation";
+import { getAcceptConsultationSchema } from "../utils/consultationValidation";
 import { getImageUrl } from '../../utils/imageUrl';
 import Pagination from "../../components/Pagination";
 
@@ -379,7 +379,7 @@ const LawyerAppointment = () => {
       };
 
       if (selectedCaseAppointment.mode === "video") {
-        data.meeting_link = values.meeting_link;
+        data.meeting_link = values.meeting_link?.trim();
       }
 
       await axiosInstance.post(`/cases/appointments/${selectedCaseAppointment.id}/confirm/`, data);
@@ -403,7 +403,7 @@ const LawyerAppointment = () => {
       // Direct call to accept endpoint. 
       // The backend handles automatic date calculation but also accepts meeting fields in the body.
       await axiosInstance.post(`/consultations/${selectedConsultation.id}/accept/`, {
-        meeting_link: values?.meeting_link,
+        meeting_link: values?.meeting_link?.trim(),
         meeting_location: values?.meeting_location,
         phone_number: values?.phone_number
       });
@@ -605,8 +605,7 @@ const LawyerAppointment = () => {
               meeting_location: selectedConsultation.meeting_location || "",
               phone_number: selectedConsultation.phone_number || ""
             }}
-            validationSchema={acceptConsultationSchema}
-            context={{ mode: selectedConsultation.mode }}
+            validationSchema={getAcceptConsultationSchema(selectedConsultation.mode)}
             onSubmit={handleSubmitAccept}
           >
             {({ errors, touched, isSubmitting }) => (
@@ -1080,8 +1079,7 @@ const LawyerAppointment = () => {
               scheduled_time: "",
               meeting_link: "",
             }}
-            validationSchema={acceptConsultationSchema}
-            context={{ mode: selectedCaseAppointment.mode }}
+            validationSchema={getAcceptConsultationSchema(selectedCaseAppointment.mode, { requireSchedule: true })}
             onSubmit={handleSubmitCaseAccept}
           >
             {({ errors, touched, isSubmitting }) => (

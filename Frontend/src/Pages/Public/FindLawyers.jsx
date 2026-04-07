@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Search, ShieldCheck, Star, Briefcase, Calendar, CheckCircle2, MapPin } from "lucide-react";
+import { Search, Star, Briefcase, CheckCircle2, MapPin } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header.jsx";
@@ -27,7 +27,7 @@ const FindLawyers = () => {
 	
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedSpec, setSelectedSpec] = useState("All Specializations");
-	const [feeCap, setFeeCap] = useState(5000);
+	const [feeCap, setFeeCap] = useState(null);
 	const [sortBy, setSortBy] = useState("Top Rated");
 
 	const getSpecializationText = (lawyer) => {
@@ -36,6 +36,12 @@ const FindLawyers = () => {
 		if (Array.isArray(raw)) return raw.join(", ") || "General Practice";
 		if (typeof raw === "string" && raw.trim()) return raw;
 		return "General Practice";
+	};
+
+	const formatRating = (rating) => {
+		const value = Number(rating || 0);
+		if (value <= 0) return "No reviews";
+		return value.toFixed(2).replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
 	};
 
 	useEffect(() => {
@@ -48,6 +54,7 @@ const FindLawyers = () => {
 			return {
 				...lawyer,
 				specializationText,
+				isVerified: lawyer.is_kyc_verified === true || lawyer.kyc_status === "approved",
 			};
 		});
 	}, [verifiedLawyers]);
@@ -59,11 +66,15 @@ const FindLawyers = () => {
 		return fees.length ? Math.max(...fees) : 5000;
 	}, [normalizedLawyers]);
 
-	useEffect(() => {
-		if (maxFee > 0) {
-			setFeeCap(maxFee);
-		}
-	}, [maxFee]);
+	const maxSelectableFee = useMemo(
+		() => Math.max(5000, Math.ceil(maxFee / 100) * 100),
+		[maxFee]
+	);
+
+	const effectiveFeeCap = useMemo(() => {
+		if (feeCap === null) return maxSelectableFee;
+		return Math.min(feeCap, maxSelectableFee);
+	}, [feeCap, maxSelectableFee]);
 
 	const filteredLawyers = useMemo(() => {
 		const loweredSearch = searchTerm.toLowerCase();
@@ -74,7 +85,7 @@ const FindLawyers = () => {
 			const matchesSpec =
 				selectedSpec === "All Specializations" ||
 				specializationText.toLowerCase().includes(loweredSpec);
-			const matchesFee = (Number(lawyer.consultation_fee || 0) || 0) <= feeCap;
+			const matchesFee = (Number(lawyer.consultation_fee || 0) || 0) <= effectiveFeeCap;
 			const matchesSearch =
 				(lawyer.name || "").toLowerCase().includes(loweredSearch) ||
 				specializationText.toLowerCase().includes(loweredSearch) ||
@@ -82,7 +93,7 @@ const FindLawyers = () => {
 
 			return matchesSpec && matchesFee && matchesSearch;
 		});
-	}, [searchTerm, selectedSpec, feeCap, normalizedLawyers]);
+	}, [searchTerm, selectedSpec, effectiveFeeCap, normalizedLawyers]);
 
 	const sortedLawyers = useMemo(() => {
 		const clone = [...filteredLawyers];
@@ -158,20 +169,20 @@ const FindLawyers = () => {
 							<div className="space-y-4">
 								<div className="flex items-center justify-between text-sm font-semibold text-[#0F1A3D]">
 									<span>Consultation Fee</span>
-									<span className="text-xs font-medium text-slate-500">Rs. {feeCap}</span>
+									<span className="text-xs font-medium text-slate-500">Rs. {effectiveFeeCap}</span>
 								</div>
 								<input
 									type="range"
 									min="0"
-									max={Math.max(5000, Math.ceil(maxFee / 100) * 100)}
+									max={maxSelectableFee}
 									step="100"
-									value={feeCap}
+									value={effectiveFeeCap}
 									onChange={(e) => setFeeCap(Number(e.target.value))}
 									className="w-full accent-[#0F1A3D]"
 								/>
 								<div className="flex justify-between text-xs text-slate-500">
 									<span>Rs. 0</span>
-									<span>Rs. {Math.max(5000, Math.ceil(maxFee / 100) * 100).toLocaleString()}</span>
+									<span>Rs. {maxSelectableFee.toLocaleString()}</span>
 								</div>
 							</div>
 						</aside>
@@ -209,14 +220,16 @@ const FindLawyers = () => {
 													alt={lawyer.name}
 													className="w-20 h-20 rounded-full object-cover border border-gray-100"
 												/>
-												<div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
 											</div>
 											
 											<div className="flex-1">
 												<div className="flex items-center gap-1.5 mb-1.5">
 													<h3 className="font-bold text-[#0F1A3D] text-lg">{lawyer.name}</h3>
-													{lawyer.is_kyc_verified && (
-														<CheckCircle2 size={18} className="text-gray-400" />
+													{lawyer.isVerified && (
+														<span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+															<CheckCircle2 size={14} className="text-emerald-600" />
+															Verified
+														</span>
 													)}
 												</div>
 												
@@ -232,7 +245,7 @@ const FindLawyers = () => {
 													<div className="flex items-center gap-1">
 														<Star size={14} className={lawyer.average_rating > 0 ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
 														<span className="text-gray-700 font-semibold">
-															{lawyer.average_rating > 0 ? lawyer.average_rating.toFixed(1) : "No reviews"}
+															{formatRating(lawyer.average_rating)}
 														</span>
 													</div>
 												</div>

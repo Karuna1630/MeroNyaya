@@ -22,15 +22,35 @@
 
 /* Header */
 .conversation-header {
-  padding: 20px 20px 10px;
+  padding: 20px 20px 0;
   background: white;
+}
+
+.conversation-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .conversation-header h2 {
   margin: 0;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 500;
   color: #111b21; /* WhatsApp dark color */
+}
+
+.conversation-subtitle {
+  margin: 8px 0 10px;
+  font-size: 13px;
+  color: #667781;
+  line-height: 1.4;
+}
+
+.conversation-divider {
+  height: 1px;
+  width: 100%;
+  background: #d8dee5;
 }
 
 .conversation-count {

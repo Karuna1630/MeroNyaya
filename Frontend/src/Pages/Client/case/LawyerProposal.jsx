@@ -242,7 +242,7 @@ const LawyerProposal = () => {
               ))
             )}
 
-            {totalPages > 1 && (
+            {caseProposals.length > 0 && (
               <Pagination 
                 currentPage={currentPage}
                 totalPages={totalPages}

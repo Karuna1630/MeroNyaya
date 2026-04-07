@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import axiosInstance from "../../axios/axiosinstance";
 import { getImageUrl } from '../../utils/imageUrl';
+import Pagination from "../../components/Pagination";
 
 const ClientConsultation = () => {
   const dispatch = useDispatch();
@@ -28,6 +29,14 @@ const ClientConsultation = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [consultationToDelete, setConsultationToDelete] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // matches Pagination component default
+
+  // Reset page when switching tabs
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   // Auto-refresh consultation data
   useEffect(() => {
@@ -59,6 +68,13 @@ const ClientConsultation = () => {
     }
     return consultations.filter((item) => item.status === "rejected");
   }, [activeTab, consultations]);
+
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return tableRows.slice(startIndex, startIndex + itemsPerPage);
+  }, [tableRows, currentPage]);
+
+  const totalPages = Math.ceil(tableRows.length / itemsPerPage);
 
   const getModeIcon = (mode) => {
     switch (mode) {
@@ -172,7 +188,7 @@ const ClientConsultation = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {tableRows.map((item) => {
+                  {paginatedRows.map((item) => {
                     const consultation = item;
                     const dateValue = consultation.requested_day;
                     const timeValue = consultation.requested_time;
@@ -276,6 +292,17 @@ const ClientConsultation = () => {
                 </tbody>
               </table>
             </div>
+            {tableRows.length > 0 && (
+              <div className="p-4 border-t border-slate-200">
+                <Pagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={tableRows.length}
+                />
+              </div>
+            )}
           </div>
         </div>
       </main>

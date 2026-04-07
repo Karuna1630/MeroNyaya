@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
 import Sidebar from "./sidebar";
 import ClientDashHeader from "./ClientDashHeader";
-import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCircle2, MessageSquare, Video, Filter } from "lucide-react";
+import { Search, MapPin, Star, Briefcase, Shield, ChevronDown, Loader, CheckCircle2, MessageSquare, Video } from "lucide-react";
 import { fetchVerifiedLawyers } from "../slices/lawyerSlice";
 import { LAW_CATEGORIES } from "../../utils/lawCategories";
 import LawyerProfileModal from "./LawyerProfileModal";
@@ -33,7 +33,7 @@ const FindLawyers = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
+  const [pageByFilter, setPageByFilter] = useState({});
   const itemsPerPage = 5;
 
   // Fetch verified lawyers on component mount
@@ -115,27 +115,33 @@ const FindLawyers = () => {
     return filtered;
   }, [searchQuery, selectedSpecialization, lawyers, t]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedSpecialization]);
-
   // Sort filtered lawyers
   const sortedLawyers = useMemo(() => {
     // Default: sort by rating (Top Rated)
     return [...filteredLawyers].sort((a, b) => b.rating - a.rating);
   }, [filteredLawyers]);
 
+  const filterKey = useMemo(
+    () => `${searchQuery.trim().toLowerCase()}|${selectedSpecialization}`,
+    [searchQuery, selectedSpecialization]
+  );
+
+  const currentPage = pageByFilter[filterKey] || 1;
+
   // Paginate sorted lawyers
-  const totalPages = Math.ceil(sortedLawyers.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(sortedLawyers.length / itemsPerPage));
+  const effectiveCurrentPage = Math.min(currentPage, totalPages);
   const paginatedLawyers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
+    const startIndex = (effectiveCurrentPage - 1) * itemsPerPage;
     return sortedLawyers.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedLawyers, currentPage, itemsPerPage]);
+  }, [sortedLawyers, effectiveCurrentPage, itemsPerPage]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
+      setPageByFilter((prev) => ({
+        ...prev,
+        [filterKey]: newPage,
+      }));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -181,7 +187,7 @@ const FindLawyers = () => {
                 <select
                   value={selectedSpecialization}
                   onChange={(e) => setSelectedSpecialization(e.target.value)}
-                  className="appearance-none pl-4 pr-10 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0F1A3D] bg-white cursor-pointer text-sm text-gray-600 min-w-[200px]"
+                  className="appearance-none pl-4 pr-10 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#0F1A3D] bg-white cursor-pointer text-sm text-gray-600 min-w-50"
                 >
                   {specializations.map((spec) => (
                     <option key={spec} value={spec}>
@@ -192,11 +198,6 @@ const FindLawyers = () => {
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
 
-              {/* Filters Button */}
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition">
-                <Filter size={16} />
-                <span>Filters</span>
-              </button>
             </div>
           </div>
 
@@ -216,15 +217,10 @@ const FindLawyers = () => {
           )}
 
           {/* Results Count */}
-          {!loading && !error && (
-            <>
-              <p className="text-gray-600 mb-6">Showing {sortedLawyers.length} of {lawyers.length} lawyers</p>
-              {sortedLawyers.length === 0 && lawyers.length > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                  <p className="text-yellow-800">No lawyers match current filters. Total lawyers available: {lawyers.length}</p>
-                </div>
-              )}
-            </>
+          {!loading && !error && sortedLawyers.length === 0 && lawyers.length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <p className="text-yellow-800">No lawyers match current filters. Total lawyers available: {lawyers.length}</p>
+            </div>
           )}
 
           {/* Lawyers Grid */}
@@ -249,10 +245,10 @@ const FindLawyers = () => {
                     <div className="flex items-center gap-2 mb-1.5">
                       <h3 className="font-bold text-[#0F1A3D] text-lg">{lawyer.name}</h3>
                       {lawyer.verified && (
-                        <div className="flex items-center gap-1 px-2.5 py-0.5 bg-[#0F1A3D] rounded-full text-white">
-                          <CheckCircle2 size={12} />
-                          <span className="text-[10px] font-medium tracking-wide uppercase">Verified</span>
-                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 size={14} className="text-emerald-600" />
+                          Verified
+                        </span>
                       )}
                     </div>
                     
@@ -329,9 +325,9 @@ const FindLawyers = () => {
           )}
 
           {/* Pagination Controls */}
-          {!loading && !error && totalPages > 1 && (
+          {!loading && !error && sortedLawyers.length > 0 && (
             <Pagination 
-              currentPage={currentPage}
+              currentPage={effectiveCurrentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
               itemsPerPage={itemsPerPage}

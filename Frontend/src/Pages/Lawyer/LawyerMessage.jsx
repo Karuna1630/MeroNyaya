@@ -72,7 +72,10 @@ const LawyerMessage = () => {
     <div className="flex h-screen bg-slate-100 overflow-hidden">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden">
-        <LawyerDashHeader />
+        <LawyerDashHeader 
+          title={t('messages.title')}
+          subtitle="Manage your case conversations securely" 
+        />
 
         <div className="flex-1 p-0 overflow-hidden">
           <div className="grid grid-cols-[360px_1fr] h-full bg-white shadow-lg overflow-hidden">

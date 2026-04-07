@@ -56,26 +56,39 @@ export const consultationValidationSchema = Yup.object().shape({
     }),
 });
 
-export const acceptConsultationSchema = Yup.object().shape({
-  meeting_link: Yup.string()
-    .url("Must be a valid URL")
-    .when('$mode', {
-      is: 'video',
-      then: (schema) => schema.required("Meeting link is required for video consultations"),
-      otherwise: (schema) => schema.notRequired()
-    }),
-  meeting_location: Yup.string()
-    .trim()
-    .when('$mode', {
-      is: 'in_person',
-      then: (schema) => schema.required("Meeting location is required"),
-      otherwise: (schema) => schema.notRequired()
-    }),
-  phone_number: Yup.string()
-    .trim()
-    .when('$mode', {
-      is: 'in_person',
-      then: (schema) => schema.required("Phone number is required"),
-      otherwise: (schema) => schema.notRequired()
-    }),
-});
+export const getAcceptConsultationSchema = (mode, options = {}) => {
+  const { requireSchedule = false } = options;
+
+  const schemaShape = {
+    meeting_link:
+      mode === "video"
+        ? Yup.string()
+            .transform((value) => (value === "" ? undefined : value))
+            .url("Must be a valid URL")
+            .required("Meeting link is required for video consultations")
+        : Yup.string().notRequired(),
+    meeting_location:
+      mode === "in_person"
+        ? Yup.string().trim().required("Meeting location is required")
+        : Yup.string().notRequired(),
+    phone_number:
+      mode === "in_person"
+        ? Yup.string()
+            .trim()
+            .required("Phone number is required")
+            .matches(
+              /^[0-9+\-\s()]{7,20}$/,
+              "Phone number must be 7-20 digits (can include +, -, spaces, parentheses)"
+            )
+        : Yup.string().notRequired(),
+  };
+
+  if (requireSchedule) {
+    schemaShape.scheduled_date = Yup.string().required("Date is required");
+    schemaShape.scheduled_time = Yup.string().required("Time is required");
+  }
+
+  return Yup.object().shape(schemaShape);
+};
+
+export const acceptConsultationSchema = getAcceptConsultationSchema();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, Loader, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getConversations, markConversationAsRead } from '../../axios/chatAPI';
@@ -18,11 +18,7 @@ const ConversationList = ({ onSelectConversation, selectedUserId, refreshTrigger
   /**
    * Fetch conversations on mount and when refreshTrigger changes
    */
-  useEffect(() => {
-    fetchConversations();
-  }, [refreshTrigger]);
-
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -35,7 +31,11 @@ const ConversationList = ({ onSelectConversation, selectedUserId, refreshTrigger
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations, refreshTrigger]);
 
   /**
    * Handle conversation selection and mark as read
@@ -92,12 +92,7 @@ const ConversationList = ({ onSelectConversation, selectedUserId, refreshTrigger
   }
 
   return (
-    <div className="conversation-list">
-      <div className="conversation-header">
-        <h2>{t('messages.title')}</h2>
-        <span className="conversation-count">{conversations.length}</span>
-      </div>
-
+    <div className="conversation-list border-t border-slate-200">
       <div className="conversations">
         {conversations.map((conversation) => (
           <div

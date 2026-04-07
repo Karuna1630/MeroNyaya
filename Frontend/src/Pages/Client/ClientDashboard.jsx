@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { fetchCases } from "../slices/caseSlice";
 import { fetchMyConsultations } from "../slices/consultationSlice";
+import { getConversations } from "../../axios/chatAPI";
 
 const ClientDashboard = () => {
   const { t } = useTranslation();
@@ -25,11 +26,42 @@ const ClientDashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const { cases = [], casesLoading } = useSelector((state) => state.case || {});
   const { consultations = [] } = useSelector((state) => state.consultation || {});
+  const [messageStats, setMessageStats] = useState({ recentCount: 0, unreadCount: 0 });
   
   useEffect(() => {
     dispatch(fetchCases());
     dispatch(fetchMyConsultations());
   }, [dispatch]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadConversationStats = async () => {
+      try {
+        const response = await getConversations();
+        const conversations = Array.isArray(response.data) ? response.data : [];
+
+        if (!isMounted) return;
+
+        const recentCount = conversations.filter((item) => item?.last_message).length;
+        const unreadCount = conversations.reduce(
+          (sum, item) => sum + (Number(item?.unread_count) || 0),
+          0
+        );
+
+        setMessageStats({ recentCount, unreadCount });
+      } catch {
+        if (!isMounted) return;
+        setMessageStats({ recentCount: 0, unreadCount: 0 });
+      }
+    };
+
+    loadConversationStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Calculate statistics
   const activeCases = useMemo(() => {
@@ -49,25 +81,36 @@ const ClientDashboard = () => {
       .slice(0, 4);
   }, [cases]);
 
-  // Upcoming appointments
-  const upcomingAppointments = useMemo(() => {
+  // Upcoming appointments from real upcoming data (uncapped for stat card)
+  const upcomingAppointmentsAll = useMemo(() => {
     const now = new Date();
-    
+
+    const toAppointmentDateTime = (appointment) => {
+      const aptDate = appointment.scheduled_date || appointment.requested_day;
+      const aptTime = appointment.scheduled_time || appointment.requested_time;
+
+      if (!aptDate || !aptTime) return null;
+
+      const parsed = new Date(`${aptDate} ${aptTime}`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
     return consultations
-      .filter((apt) => apt.status === "accepted")
-      .sort((a, b) => {
-        const aptDateA = a.scheduled_date || a.requested_day;
-        const aptTimeA = a.scheduled_time || a.requested_time;
-        const aptDateB = b.scheduled_date || b.requested_day;
-        const aptTimeB = b.scheduled_time || b.requested_time;
-        
-        const dateA = new Date(`${aptDateA} ${aptTimeA}`);
-        const dateB = new Date(`${aptDateB} ${aptTimeB}`);
-        
-        if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
-        return dateB - dateA; // Sort descending to handle past appointments gracefully, or dateA - dateB for ascending. But typically past is best sorted descending if we show all. Let's sort descending (newest first) to match recent cases.
+      .filter((apt) => ["accepted", "confirmed", "pending"].includes((apt.status || "").toLowerCase()))
+      .filter((apt) => {
+        const appointmentDateTime = toAppointmentDateTime(apt);
+        if (!appointmentDateTime) return true;
+        return appointmentDateTime >= now;
       })
-      .slice(0, 4)
+      .sort((a, b) => {
+        const dateA = toAppointmentDateTime(a);
+        const dateB = toAppointmentDateTime(b);
+
+        if (dateA && dateB) return dateA - dateB;
+        if (dateA) return -1;
+        if (dateB) return 1;
+        return 0;
+      })
       .map((apt) => {
         let reminder = null;
         const aptDate = apt.scheduled_date || apt.requested_day;
@@ -103,6 +146,11 @@ const ClientDashboard = () => {
         };
       });
   }, [consultations]);
+
+  const upcomingAppointments = useMemo(
+    () => upcomingAppointmentsAll.slice(0, 4),
+    [upcomingAppointmentsAll]
+  );
 
   const formatStatus = (status) => {
     const map = {
@@ -179,15 +227,19 @@ const ClientDashboard = () => {
             <StatCard
               icon={<Calendar size={24} />}
               title={t('dashboard.appointments')}
-              value={upcomingAppointments.length}
+              value={upcomingAppointmentsAll.length}
               subtitle={t('dashboard.upcomingCount')}
               color="violet"
             />
             <StatCard
               icon={<MessageSquare size={24} />}
               title={t('dashboard.messagesCard')}
-              value="0"
-              subtitle={t('dashboard.comingSoon')}
+              value={messageStats.recentCount}
+              subtitle={
+                messageStats.unreadCount > 0
+                  ? `${messageStats.unreadCount} ${t('dashboard.unread')}`
+                  : t('dashboard.recentMessages')
+              }
               color="cyan"
             />
             <StatCard
@@ -353,13 +405,6 @@ const ClientDashboard = () => {
                   >
                     <Briefcase size={16} />
                     Find Lawyers
-                  </button>
-                  <button
-                    onClick={() => navigate('/clientappointment')}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 hover:shadow-md text-sm font-medium transition"
-                  >
-                    <Calendar size={16} />
-                    Book Appointments
                   </button>
                 </div>
 

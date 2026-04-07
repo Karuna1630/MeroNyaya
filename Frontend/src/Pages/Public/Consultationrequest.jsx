@@ -159,18 +159,28 @@ const Consultationrequest = ({ lawyer, user }) => {
       <div className="lg:col-span-4">
         <div className="lg:sticky lg:top-24 space-y-6">
           {/* Consultation Booking Card */}
-          <div className="bg-white border border-slate-200 rounded-lg p-8">
-            <div className="mb-6">
+          <div className="bg-white border border-slate-400 rounded-xl p-8 shadow-lg">
+            <div className="mb-6 rounded-xl bg-linear-to-r from-[#0F1A3D] to-[#1E2E5E] p-4 text-white shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-200 mb-1">
+                Consultation
+              </p>
+              <h3 className="text-xl font-bold">Book Your Consultation</h3>
+              <p className="text-xs text-slate-200 mt-1">
+                Choose consultation type, day, and time to send your request.
+              </p>
+            </div>
+
+            <div className="mb-6 rounded-xl border border-slate-300 bg-slate-50 p-4 shadow-sm">
               <p className="text-sm text-slate-600 mb-1">Consultation Fee</p>
-              <p className="text-3xl font-bold text-slate-900">
+              <p className="text-3xl font-bold text-yellow-600">
                 Rs. {lawyer?.fee?.toLocaleString()}
               </p>
             </div>
 
             {/* Consultation Type Selection */}
-            <div className="mb-6 pb-6 border-b border-slate-200">
-              <p className="text-sm font-semibold text-slate-900 mb-3">Consultation Type</p>
-              <div className="grid grid-cols-3 gap-3">
+            <div className="mb-6 pb-6 border-b border-slate-400">
+              <p className="text-sm font-semibold uppercase tracking-wide text-slate-700 mb-3">Consultation Type</p>
+              <div className="grid grid-cols-2 gap-3">
                 {consultationTypes.map((type) => {
                   const Icon = type.icon;
                   const isSelected = selectedConsultationType === type.value;
@@ -194,8 +204,8 @@ const Consultationrequest = ({ lawyer, user }) => {
             </div>
 
             {/* Day Selection */}
-            <div className="mb-6 pb-6 border-b border-slate-200">
-              <p className="text-sm font-semibold text-slate-900 mb-3">Select Day</p>
+            <div className="mb-6 pb-6 border-b border-slate-400">
+              <p className="text-sm font-semibold uppercase tracking-wide text-slate-700 mb-3">Select Day</p>
               <div className="grid grid-cols-5 gap-2">
                 {availableDays.map((day) => (
                   <button
@@ -216,7 +226,7 @@ const Consultationrequest = ({ lawyer, user }) => {
 
             {/* Time Slot Selection */}
             <div className="mb-6">
-              <p className="text-sm font-semibold text-slate-900 mb-3">Available Times</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-slate-700 mb-3">Available Times</p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1">
                 {timeSlots.map((time) => (
                   <button

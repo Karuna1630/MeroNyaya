@@ -22,6 +22,7 @@ import { initiateEsewaPayment, initiateKhaltiPayment } from "../slices/paymentSl
 import { redirectToEsewa } from "../../utils/esewaRedirect";
 import { fetchCaseAppointments } from "../slices/caseSlice";
 import { getImageUrl } from '../../utils/imageUrl';
+import Pagination from "../../components/Pagination";
 import RatingModal from "../../components/RatingModal";
 import { createReview } from "../../axios/reviewAPI";
 import { toast } from "react-toastify";
@@ -38,6 +39,13 @@ const ClientAppointment = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("esewa");
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
   // Rating State
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratingContext, setRatingContext] = useState(null);
@@ -109,6 +117,13 @@ const ClientAppointment = () => {
 
   const displayAppointments = activeTab === "Upcoming" ? upcomingAppointments : completedAppointments;
 
+  const paginatedAppointments = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return displayAppointments.slice(start, start + itemsPerPage);
+  }, [displayAppointments, currentPage]);
+
+  const totalPages = Math.ceil(displayAppointments.length / itemsPerPage);
+
   const totalCount = allAppointments.length;
   const caseCount = allAppointments.filter(item => item.appointmentType === 'case').length;
   const consultationCount = allAppointments.filter(item => item.appointmentType === 'consultation').length;
@@ -170,6 +185,22 @@ const ClientAppointment = () => {
     }
   };
 
+  const formatLocalTime = (timeStr) => {
+    if (!timeStr) return "N/A";
+    try {
+      const [hours, minutes] = timeStr.split(':');
+      if (hours && minutes) {
+        const date = new Date();
+        date.setHours(parseInt(hours, 10));
+        date.setMinutes(parseInt(minutes, 10));
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      return timeStr;
+    } catch {
+      return timeStr;
+    }
+  };
+
   const getStatusLabel = (item) => {
     if (item.status === "completed") return "Completed";
     if (item.status === "cancelled") return "Cancelled";
@@ -197,6 +228,21 @@ const ClientAppointment = () => {
     }
   };
 
+  const getMeetingLink = (appointment) => {
+    const rawLink = appointment?.meeting_link || appointment?.consultation_details?.meeting_link || "";
+    return typeof rawLink === "string" ? rawLink.trim() : rawLink;
+  };
+
+  const normalizePaymentStatus = (status) =>
+    typeof status === "string" ? status.trim().toLowerCase() : "";
+
+  const isPaymentPending = (appointment) =>
+    appointment?.appointmentType !== "case" &&
+    normalizePaymentStatus(appointment?.payment_status) === "pending";
+
+  const isPaymentCompleted = (appointment) =>
+    appointment?.appointmentType === "case" || !isPaymentPending(appointment);
+
   const handleConfirmPayment = () => {
     if (!appointmentToPay?.id) return;
     setPaymentLoading(true);
@@ -217,6 +263,8 @@ const ClientAppointment = () => {
       }
     });
   };
+
+  const actionButtonBaseClass = "h-9 min-w-[96px] px-3 inline-flex items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition shadow-sm whitespace-nowrap";
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -285,19 +333,21 @@ const ClientAppointment = () => {
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Date/Time</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Mode</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Status</th>
+                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Payment</th>
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {displayAppointments.map((item) => {
+                  {paginatedAppointments.map((item) => {
                     const consultation = item.consultation_details || {};
                     const lawyer = consultation.lawyer || {};
-                    const meetingLink = item.meeting_link || consultation.meeting_link;
-                    const canJoinNow =
+                    const meetingLink = getMeetingLink(item);
+                    const paymentLabel = item.appointmentType === "case" || !isPaymentPending(item) ? "Paid" : "Unpaid";
+                    const canShowJoinButton =
                       activeTab === "Upcoming" &&
                       consultation.mode === "video" &&
                       item.status === "confirmed" &&
-                      Boolean(meetingLink);
+                      isPaymentCompleted(item);
                     return (
                       <tr key={`${item.appointmentType}-${item.id}`} className="hover:bg-slate-50/50">
                         <td className="px-6 py-5">
@@ -318,12 +368,29 @@ const ClientAppointment = () => {
                         </td>
                         <td className="px-6 py-5">
                           <div className="text-sm font-medium">{item.scheduled_date || consultation.requested_day}</div>
-                          <div className="text-xs text-slate-500">{item.scheduled_time || consultation.requested_time}</div>
+                          <div className="text-xs text-slate-500 font-semibold mt-0.5">{formatLocalTime(item.scheduled_time || consultation.requested_time)}</div>
                         </td>
                         <td className="px-6 py-5">{getModeIcon(consultation.mode)}</td>
                         <td className="px-6 py-5">
-                          <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-[10px] font-bold uppercase">
+                          <span className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase border ${
+                            item.status === 'completed'
+                              ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                              : item.status === 'confirmed'
+                              ? "bg-blue-50 text-blue-600 border-blue-100"
+                              : item.status === 'cancelled' || item.status === 'rejected'
+                              ? "bg-red-50 text-red-600 border-red-100"
+                              : "bg-amber-50 text-amber-600 border-amber-100"
+                          }`}>
                             {getStatusLabel(item)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase border ${
+                            paymentLabel === "Paid"
+                              ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                              : "bg-amber-50 text-amber-600 border-amber-100"
+                          }`}>
+                            {paymentLabel}
                           </span>
                         </td>
                         <td className="px-6 py-5">
@@ -341,20 +408,31 @@ const ClientAppointment = () => {
                                 <Star size={20} fill={item.is_rated ? "currentColor" : "none"} />
                               </button>
                             )}
-                            <button onClick={() => setSelectedAppointment(item)} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
-                              <Eye size={18} />
+                            <button 
+                              onClick={() => setSelectedAppointment(item)} 
+                              className={`${actionButtonBaseClass} bg-[#0F1A3D] text-white hover:bg-slate-800`}
+                            >
+                              View
                             </button>
-                            {canJoinNow && (
+                            {canShowJoinButton && (
                               <button
                                 onClick={() => handleJoinMeeting(meetingLink)}
-                                className="p-2 hover:bg-blue-50 rounded-full text-blue-600 transition"
-                                title="Join Meeting"
+                                className={`${actionButtonBaseClass} ${
+                                  meetingLink
+                                    ? "bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 shadow-none"
+                                    : "bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200 shadow-none"
+                                }`}
+                                title={meetingLink ? "Join Meeting" : "Waiting for lawyer meeting link"}
                               >
-                                <Play size={18} />
+                                <Play size={14} fill="currentColor" />
+                                Join
                               </button>
                             )}
-                            {activeTab === "Upcoming" && item.payment_status !== "paid" && item.appointmentType !== 'case' && (
-                              <button onClick={() => handleOpenPayment(item)} className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold">
+                            {activeTab === "Upcoming" && isPaymentPending(item) && (
+                              <button
+                                onClick={() => handleOpenPayment(item)}
+                                className={`${actionButtonBaseClass} bg-emerald-600 text-white hover:bg-emerald-700`}
+                              >
                                 Pay
                               </button>
                             )}
@@ -366,6 +444,17 @@ const ClientAppointment = () => {
                 </tbody>
               </table>
             </div>
+            {displayAppointments.length > 0 && (
+              <div className="p-4 border-t border-slate-200">
+                <Pagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={displayAppointments.length}
+                />
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -379,13 +468,20 @@ const ClientAppointment = () => {
                 <button onClick={() => setSelectedAppointment(null)}><X size={20}/></button>
              </div>
              <div className="p-6 space-y-4">
-                {(selectedAppointment.meeting_link || selectedAppointment.consultation_details?.meeting_link) &&
-                  selectedAppointment.consultation_details?.mode === "video" && (
+                {selectedAppointment.consultation_details?.mode === "video" &&
+                  isPaymentCompleted(selectedAppointment) && (
                   <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
                     <p className="text-xs font-bold text-blue-700 uppercase">Meeting Link</p>
+                    {!getMeetingLink(selectedAppointment) && (
+                      <p className="text-xs text-slate-600 mt-1">Lawyer has not shared the meeting link yet.</p>
+                    )}
                     <button
-                      onClick={() => handleJoinMeeting(selectedAppointment.meeting_link || selectedAppointment.consultation_details?.meeting_link)}
-                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold flex items-center gap-2"
+                      onClick={() => handleJoinMeeting(getMeetingLink(selectedAppointment))}
+                      className={`mt-2 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition ${
+                        getMeetingLink(selectedAppointment)
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                      }`}
                     >
                       <Play size={16} />
                       Join Meeting
@@ -428,12 +524,36 @@ const ClientAppointment = () => {
       )}
 
       {showPaymentModal && appointmentToPay && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold mb-4">Confirm Payment</h2>
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            if (!paymentLoading) {
+              setShowPaymentModal(false);
+              setAppointmentToPay(null);
+              setPaymentError("");
+            }
+          }}
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Confirm Payment</h2>
+              <button
+                onClick={() => {
+                  if (!paymentLoading) {
+                    setShowPaymentModal(false);
+                    setAppointmentToPay(null);
+                    setPaymentError("");
+                  }
+                }}
+                className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                aria-label="Close payment modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
             <div className="space-y-4">
               <div className="flex justify-between font-medium">
-                <span>Consulation Fee</span>
+                <span>Consultation Fee</span>
                 <span>Rs. {appointmentToPay.consultation_details?.lawyer?.consultation_fee}</span>
               </div>
               <div className="flex gap-2">
@@ -457,6 +577,17 @@ const ClientAppointment = () => {
                 className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold disabled:opacity-50"
               >
                 {paymentLoading ? "Processing..." : "Confirm Payment"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setAppointmentToPay(null);
+                  setPaymentError("");
+                }}
+                disabled={paymentLoading}
+                className="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition disabled:opacity-50"
+              >
+                Back
               </button>
             </div>
           </div>

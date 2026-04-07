@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useCallback, useMemo } from 'react';
 import { AlertCircle, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getMessages } from '../../axios/chatAPI';
@@ -10,46 +9,19 @@ import DashHeader from './ClientDashHeader';
 
 const ClientMessage = () => {
   const { t } = useTranslation();
-  const location = useLocation();
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [conversation, setConversation] = useState(null);
-  const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [chatError, setChatError] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [refreshConversations, setRefreshConversations] = useState(false);
+  const refreshConversations = false;
 
-  /**
-   * Load current user and token on mount
-   * Also check if a recipient was passed via navigation state
-   */
-  useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    const accessToken = localStorage.getItem('access_token');
-    setCurrentUser(userData);
-    setToken(accessToken);
+  const currentUser = useMemo(
+    () => JSON.parse(localStorage.getItem('user') || '{}'),
+    []
+  );
+  const token = useMemo(() => localStorage.getItem('access_token'), []);
 
-    // If redirected from a case detail, auto-select that user
-    if (location.state?.recipientId) {
-      console.log('Auto-selecting recipient:', location.state.recipientId);
-      setSelectedUserId(location.state.recipientId);
-    }
-  }, [location.state]);
-
-  /**
-   * Load conversation when a user is selected
-   */
-  useEffect(() => {
-    if (!selectedUserId) {
-      setConversation(null);
-      return;
-    }
-
-    loadConversation(selectedUserId);
-  }, [selectedUserId]);
-
-  const loadConversation = async (userId) => {
-    setIsLoadingChat(true);
+  const handleSelectConversation = useCallback(async (userId) => {
+    setSelectedUserId(userId);
     setChatError(null);
 
     try {
@@ -63,23 +35,24 @@ const ClientMessage = () => {
       } else {
         setChatError(t('messages.failedToLoad'));
       }
-    } finally {
-      setIsLoadingChat(false);
     }
-  };
+  }, [t]);
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashHeader />
+        <DashHeader
+          title={t('messages.title')}
+          subtitle={t('messages.chooseConversation')}
+        />
 
         <div className="flex-1 p-0 overflow-hidden">
           <div className="grid grid-cols-[360px_1fr] h-full bg-white shadow-lg overflow-hidden">
             {/* Conversation List */}
             <div className="h-full overflow-y-auto border-r border-slate-200">
               <ConversationList
-                onSelectConversation={setSelectedUserId}
+                onSelectConversation={handleSelectConversation}
                 selectedUserId={selectedUserId}
                 refreshTrigger={refreshConversations}
               />
