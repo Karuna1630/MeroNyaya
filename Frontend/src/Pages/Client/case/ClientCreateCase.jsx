@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '../sidebar';
 import ClientDashHeader from '../ClientDashHeader';
 import { FileText, Users, Upload, AlertCircle, Info } from 'lucide-react';
-import { CreateCaseInitialValues, CreateCaseValidationSchema } from '../../utils/CreateCaseValidation';
+import { CreateCaseInitialValues, CreateCaseValidationSchema } from '../../Utils/CreateCaseValidation';
 import { LAW_CATEGORIES } from '../../../utils/lawCategories';
 import { createCase, updateCase, fetchCaseById } from '../../slices/caseSlice';
 import { fetchVerifiedLawyers } from '../../slices/lawyerSlice';

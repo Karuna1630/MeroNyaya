@@ -10,7 +10,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { clearError, resetPassword } from "../slices/auth";
-import { resetPasswordSchema } from "../utils/ResetPasswordValidation";
+import { resetPasswordSchema } from "../Utils/ResetPasswordValidation";
 
 const ResetPassword = () => {
   const navigate = useNavigate();

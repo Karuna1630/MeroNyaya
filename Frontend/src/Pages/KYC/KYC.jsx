@@ -10,10 +10,10 @@ import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
 import Declaration from "./Declaration";
 import { submitKyc, updateKyc, clearKycState, fetchMyKyc } from "../slices/kycSlice";
-import { PersonalValidationSchema } from "../utils/kyc/PersonalSchema";
-import { ProfessionalValidationSchema } from "../utils/kyc/ProfessionalSchema";
-import { IdentityValidationSchema } from "../utils/kyc/IdentitySchema";
-import { DeclarationValidationSchema } from "../utils/kyc/DeclerationSchema";
+import { PersonalValidationSchema } from "../Utils/kyc/personalSchema";
+import { ProfessionalValidationSchema } from "../Utils/kyc/ProfessionalSchema";
+import { IdentityValidationSchema } from "../Utils/kyc/IdentitySchema";
+import { DeclarationValidationSchema } from "../Utils/kyc/DeclerationSchema";
 
 const tabs = [
   { key: "personal", label: "Personal Information", icon: User2 },

@@ -23,7 +23,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { fetchCases, fetchCaseAppointments, scheduleCaseAppointment, updateCaseDetails, updateCaseStatus } from "../../slices/caseSlice.js";
-import { lawercaseappointmentverification } from "../../utils/lawercaseappointmentverification.js";
+import { lawercaseappointmentverification } from "../../Utils/lawercaseappointmentverification.js";
 import { getCasePaymentRequests } from "../../../axios/casePaymentAPI";
 import LawyerCaseTimlineCard from "./LawyerCaseTimelineCard.jsx";
 import LawyerCaseDocumentCard from "./LawyerCaseDocumentCard.jsx";

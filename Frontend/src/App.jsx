@@ -10,8 +10,8 @@ import { Provider } from 'react-redux';
 import {store} from './Pages/store/store.js'
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
-import ProtectedRoute from './Pages/utils/ProtectedRoute.jsx';
-import LawyerReviewGuard from './Pages/utils/LawyerReviewGuard.jsx';
+import ProtectedRoute from './Pages/Utils/ProtectedRoute.jsx';
+import LawyerReviewGuard from './Pages/Utils/LawyerReviewGuard.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import FindLawyers from './Pages/Public/FindLawyers.jsx';

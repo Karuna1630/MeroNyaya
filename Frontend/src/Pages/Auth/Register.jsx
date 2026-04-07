@@ -13,7 +13,7 @@ import { registerUser, clearError } from "../slices/auth";
 import {
   clientValidationSchema,
   lawyerValidationSchema,
-} from "../utils/RegisterValidation";
+} from "../Utils/RegisterValidation";
 
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";

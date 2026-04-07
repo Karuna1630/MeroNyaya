@@ -9,7 +9,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { clearError, verifyPasswordResetOtp } from "../slices/auth";
-import { forgotPasswordOTPSchema } from "../utils/ForgotPasswordOTPValidation";
+import { forgotPasswordOTPSchema } from "../Utils/ForgotPasswordOTPValidation";
 
 const ForgotPasswordOtp = () => {
   const navigate = useNavigate();

@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { verifyOtp, resendOtp, clearError } from "../slices/auth";
-import { registerOTPSchema } from "../utils/RegisterOTPValidation";
+import { registerOTPSchema } from "../Utils/RegisterOTPValidation";
 
 const VerifyOtp = () => {
   const navigate = useNavigate();

@@ -6,7 +6,7 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import loginImage from "../../assets/login image.jpg";
-import { loginValidationSchema } from "../utils/LoginValidation";
+import { loginValidationSchema } from "../Utils/LoginValidation";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { loginUser, clearError } from "../slices/auth";
 import Header from "../../components/Header";

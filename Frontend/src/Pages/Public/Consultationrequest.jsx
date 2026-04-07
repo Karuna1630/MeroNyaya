@@ -4,9 +4,9 @@ import { useFormik } from "formik";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, MapPin, Video, X } from "lucide-react";
 import { toast } from "react-toastify";
-import AuthGate from "../utils/AuthGate.jsx";
+import AuthGate from "../Utils/AuthGate.jsx";
 import { createConsultation } from "../slices/consultationSlice.js";
-import { getConsultationValidationSchema } from "../utils/consultationValidation.js";
+import { getConsultationValidationSchema } from "../Utils/consultationValidation.js";
 
 const Consultationrequest = ({ lawyer, user }) => {
   const dispatch = useDispatch();

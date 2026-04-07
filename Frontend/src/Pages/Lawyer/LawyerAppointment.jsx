@@ -24,7 +24,7 @@ import { fetchMyConsultations } from "../slices/consultationSlice";
 import { fetchCaseAppointments, fetchCases } from "../slices/caseSlice";
 import axiosInstance from "../../axios/axiosinstance";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { getAcceptConsultationSchema } from "../utils/consultationValidation";
+import { getAcceptConsultationSchema } from "../Utils/consultationValidation";
 import { getImageUrl } from '../../utils/imageUrl';
 import Pagination from "../../components/Pagination";
 
