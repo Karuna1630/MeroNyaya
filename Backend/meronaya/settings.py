@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-xlt627_52lnqpmync@@c7yvskbcjgex!u0tulnd+x%+3_!^hh&'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = ["*"]
 
@@ -71,6 +71,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -179,7 +180,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # Cloudinary configuration for media storage
@@ -199,7 +201,7 @@ STORAGES = {
         'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
     },
     'staticfiles': {
-        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
 
