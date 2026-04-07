@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 from decouple import config
 
 
@@ -129,21 +130,51 @@ CHANNEL_LAYERS = {
 # }
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
-        'OPTIONS': {
-            'sslmode': config('DB_SSLMODE', default='require'),
-        },
-        'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
-        'CONN_HEALTH_CHECKS': True,
+def _env_str(name, default=''):
+    value = config(name, default=default)
+    if isinstance(value, str):
+        return value.strip()
+    return value
+
+
+DATABASE_URL = _env_str('DATABASE_URL', '')
+
+if DATABASE_URL:
+    parsed_db = urlparse(DATABASE_URL)
+    query = parse_qs(parsed_db.query)
+    sslmode = query.get('sslmode', [_env_str('DB_SSLMODE', 'require')])[0]
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': unquote(parsed_db.path.lstrip('/')) or _env_str('DB_NAME', ''),
+            'USER': unquote(parsed_db.username or '') or _env_str('DB_USER', ''),
+            'PASSWORD': unquote(parsed_db.password or '') or _env_str('DB_PASSWORD', ''),
+            'HOST': parsed_db.hostname or _env_str('DB_HOST', ''),
+            'PORT': str(parsed_db.port or _env_str('DB_PORT', '5432')),
+            'OPTIONS': {
+                'sslmode': sslmode,
+            },
+            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+            'CONN_HEALTH_CHECKS': True,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': _env_str('DB_NAME', ''),
+            'USER': _env_str('DB_USER', ''),
+            'PASSWORD': _env_str('DB_PASSWORD', ''),
+            'HOST': _env_str('DB_HOST', _env_str('PGHOST', '')),
+            'PORT': _env_str('DB_PORT', '5432'),
+            'OPTIONS': {
+                'sslmode': _env_str('DB_SSLMODE', 'require'),
+            },
+            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+            'CONN_HEALTH_CHECKS': True,
+        }
+    }
 
 
 # Password validation

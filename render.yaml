@@ -21,5 +21,7 @@ services:
         sync: false
       - key: DB_PORT
         sync: false
+      - key: DATABASE_URL
+        sync: false
       - key: DB_SSLMODE
         value: require
