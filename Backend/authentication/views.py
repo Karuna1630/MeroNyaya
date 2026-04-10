@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -79,6 +80,13 @@ class RegisterUserView(generics.CreateAPIView):
                result={
                    "message": "User registration failed.",
                }
+           )
+
+        except ValidationError as e:
+           return api_response(
+               is_success=False,
+               error_message=e.detail,
+               status_code=status.HTTP_400_BAD_REQUEST,
            )
         
         except Exception as e:
@@ -222,7 +230,14 @@ class ForgotPasswordRequestOTPView(APIView):
                 )
 
             email = serializer.validated_data["email"]
-            create_otp(email)
+            _, email_sent = create_otp(email)
+
+            if not email_sent:
+                return api_response(
+                    is_success=False,
+                    error_message={"error": "Failed to send OTP email. Please try again later."},
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
             request.session["otp_email"] = email
             request.session.set_expiry(1800)

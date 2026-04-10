@@ -101,11 +101,12 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             is_lawyer=validated_data.get('is_lawyer', False),
             is_verified=False
         )
-        #  Sending OTP for email verification
-        try:
-            create_otp(user.email)
-        except Exception as e:
-            print(f"Error sending OTP: {e}")
+        #  Sending OTP for email verification and fail fast if delivery fails.
+        _, email_sent = create_otp(user.email)
+        if not email_sent:
+            raise serializers.ValidationError(
+                {"email": ["Failed to send OTP email. Please try again later."]}
+            )
 
         return user
 
