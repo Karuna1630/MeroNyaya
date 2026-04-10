@@ -81,9 +81,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+BACKEND_URL = config('BACKEND_URL', default='https://meronyaya.onrender.com').rstrip('/')
+FRONTEND_URL = config('FRONTEND_URL', default=BACKEND_URL).rstrip('/')
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    origin.strip()
+    for origin in config('CORS_ALLOWED_ORIGINS', default=FRONTEND_URL).split(',')
+    if origin.strip()
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
@@ -237,8 +241,6 @@ STORAGES = {
     },
 }
 
-BACKEND_URL = config('BACKEND_URL', default='http://127.0.0.1:8000')
-
 # # external setups
 # AUTH_USER_MODEL = "users.User"
 
@@ -293,8 +295,8 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 # eSewa Payment Gateway — Sandbox Configuration (read from .env)
 ESEWA_PRODUCT_CODE = config('ESEWA_PRODUCT_CODE', default='EPAYTEST')
 ESEWA_SECRET_KEY = config('ESEWA_SECRET_KEY', default='8gBm/:&EnhH.1/q')
-ESEWA_SUCCESS_URL = config('ESEWA_SUCCESS_URL', default='http://localhost:5173/payment/esewa-success')
-ESEWA_FAILURE_URL = config('ESEWA_FAILURE_URL', default='http://localhost:5173/payment/esewa-failure')
+ESEWA_SUCCESS_URL = config('ESEWA_SUCCESS_URL', default=f'{FRONTEND_URL}/payment/esewa-success')
+ESEWA_FAILURE_URL = config('ESEWA_FAILURE_URL', default=f'{FRONTEND_URL}/payment/esewa-failure')
 
 # Platform commission — percentage the platform takes from each payment
 PLATFORM_COMMISSION_PERCENT = Decimal(config('PLATFORM_COMMISSION_PERCENT', default='10'))
@@ -306,5 +308,5 @@ ESEWA_VERIFY_URL = config('ESEWA_STATUS_URL', default='https://uat.esewa.com.np/
 # Khalti Payment Gateway — Sandbox Configuration (read from .env)
 KHALTI_SECRET_KEY = config('KHALTI_SECRET_KEY', default='')
 KHALTI_BASE_URL = config('KHALTI_BASE_URL', default='https://dev.khalti.com/api/v2')
-KHALTI_RETURN_URL = config('KHALTI_RETURN_URL', default='http://localhost:5173/payment/khalti-success')
-KHALTI_WEBSITE_URL = config('KHALTI_WEBSITE_URL', default='http://localhost:5173/payment/khalti-success')
+KHALTI_RETURN_URL = config('KHALTI_RETURN_URL', default=f'{FRONTEND_URL}/payment/khalti-success')
+KHALTI_WEBSITE_URL = config('KHALTI_WEBSITE_URL', default=f'{FRONTEND_URL}/payment/khalti-success')

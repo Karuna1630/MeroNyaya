@@ -41,6 +41,6 @@ class MessageSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.audio.url)
             # Fallback for WebSocket context
-            backend_url = getattr(settings, 'BACKEND_URL', 'http://127.0.0.1:8000')
+            backend_url = getattr(settings, 'BACKEND_URL', 'https://meronyaya.onrender.com')
             return f"{backend_url}{obj.audio.url}"
         return None

@@ -28,6 +28,7 @@ export const registerUser = createAsyncThunk(
           email: userData.email,
           name: userData.name,
           userType: userData.userType,
+          otpSentAt: Date.now(),
         })
       );
 
@@ -103,6 +104,20 @@ export const resendOtp = createAsyncThunk(
         "/authentications/resend-otp/",
         payload
       );
+
+      // Keep cooldown in sync after a successful resend.
+      const registeredData = JSON.parse(
+        localStorage.getItem("registeredData") || "{}"
+      );
+      localStorage.setItem(
+        "registeredData",
+        JSON.stringify({
+          ...registeredData,
+          email: payload?.email || registeredData.email,
+          otpSentAt: Date.now(),
+        })
+      );
+
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

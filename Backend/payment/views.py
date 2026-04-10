@@ -1547,8 +1547,9 @@ class EsewaInitiateCasePaymentView(APIView):
 
             # Dynamic return URLs - user will return to the case detail page
             case_id = payment_request.case.id
-            dynamic_success_url = f"http://localhost:5173/client/case/{case_id}"
-            dynamic_failure_url = f"http://localhost:5173/client/case/{case_id}"
+            frontend_base_url = getattr(settings, "FRONTEND_URL", getattr(settings, "BACKEND_URL", "https://meronyaya.onrender.com")).rstrip("/")
+            dynamic_success_url = f"{frontend_base_url}/client/case/{case_id}"
+            dynamic_failure_url = f"{frontend_base_url}/client/case/{case_id}"
 
             # Build eSewa parameters for frontend
             esewa_params = {

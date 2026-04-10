@@ -8,10 +8,24 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { verifyOtp, resendOtp, clearError } from "../slices/auth";
 import { registerOTPSchema } from "../Utils/RegisterOTPValidation";
 
+const RESEND_COOLDOWN_SECONDS = 120;
+
 const VerifyOtp = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [resendCountdown, setResendCountdown] = useState(0);
+  const [resendCountdown, setResendCountdown] = useState(() => {
+    const registeredData = JSON.parse(
+      localStorage.getItem("registeredData") || "{}"
+    );
+    const otpSentAt = Number(registeredData.otpSentAt);
+
+    if (!Number.isFinite(otpSentAt) || otpSentAt <= 0) {
+      return 0;
+    }
+
+    const elapsedSeconds = Math.floor((Date.now() - otpSentAt) / 1000);
+    return Math.max(RESEND_COOLDOWN_SECONDS - elapsedSeconds, 0);
+  });
 
   const { verifyLoading, verifyError, resendLoading, resendError } =
     useAppSelector((state) => state.auth);
@@ -19,6 +33,16 @@ const VerifyOtp = () => {
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
+
+  useEffect(() => {
+    const registeredData = JSON.parse(
+      localStorage.getItem("registeredData") || "{}"
+    );
+
+    if (!registeredData.email) {
+      navigate("/register");
+    }
+  }, [navigate]);
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -64,10 +88,14 @@ const VerifyOtp = () => {
       return;
     }
 
+    if (resendCountdown > 0) {
+      return;
+    }
+
     const result = await dispatch(resendOtp({ email: registeredData.email }));
 
     if (resendOtp.fulfilled.match(result)) {
-      setResendCountdown(120); // 2 minute cooldown
+      setResendCountdown(RESEND_COOLDOWN_SECONDS);
     }
   };
 
