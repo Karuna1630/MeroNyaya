@@ -4,24 +4,31 @@ import {
   Users, 
   Scale, 
   Clock,
-  AlertCircle 
+  AlertCircle,
+  Banknote,
+  Wallet,
+  Eye,
+  ArrowRight
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import AdminDashHeader from './AdminDashHeader';
 import Statcard from './Statcard';
 import { fetchAdminStats, fetchKycList } from '../slices/adminSlice';
+import { fetchAdminRevenue } from '../slices/paymentSlice';
 
 
 const AdminDashboard = () => {
-  // Initialize dispatch and select necessary state from Redux store
   const dispatch = useDispatch();
-  // Destructure stats and loading states from the admin slice of the Redux store
+  const navigate = useNavigate();
+  
   const { stats, statsLoading, kycList, kycLoading } = useSelector((state) => state.admin);
+  const { revenue, revenueLoading } = useSelector((state) => state.payment);
 
-  // Fetch admin statistics and KYC list when the component mounts
   useEffect(() => {
     dispatch(fetchAdminStats());
     dispatch(fetchKycList());
+    dispatch(fetchAdminRevenue());
   }, [dispatch]);
 
   // Calculate pending KYC count
@@ -80,24 +87,24 @@ const AdminDashboard = () => {
             <Statcard
               icon={<Users size={20} />}
               title="Total Users"
-              value={statsLoading ? "..." : stats.totalUsers.toLocaleString()}
-              subtitle={`${stats.totalClients} Clients • ${stats.totalLawyers} Lawyers`}
+              value={statsLoading ? "..." : (stats?.totalUsers || 0).toLocaleString()}
+              subtitle={`${stats?.totalClients || 0} Clients • ${stats?.totalLawyers || 0} Lawyers`}
               color="blue"
             />
 
             <Statcard
-              icon={<Users size={20} />}
-              title="Total Clients"
-              value={statsLoading ? "..." : stats.totalClients.toLocaleString()}
-              subtitle="Active clients"
+              icon={<Banknote size={20} />}
+              title="Platform Revenue"
+              value={revenueLoading ? "..." : `Rs. ${parseFloat(revenue?.summary?.total_platform_revenue || 0).toLocaleString()}`}
+              subtitle={`${revenue?.summary?.commission_rate || 0}% platform commission`}
               color="cyan"
             />
 
             <Statcard
-              icon={<Scale size={20} />}
-              title="Total Lawyers"
-              value={statsLoading ? "..." : stats.totalLawyers}
-              subtitle="Verified professionals"
+              icon={<Wallet size={20} />}
+              title="Pending Payouts"
+              value={revenueLoading ? "..." : `Rs. ${parseFloat(revenue?.summary?.total_pending_payout || 0).toLocaleString()}`}
+              subtitle="Settlements awaiting processing"
               color="indigo"
             />
 
@@ -115,9 +122,11 @@ const AdminDashboard = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900">Recent KYC Requests</h2>
               <button 
-                className="text-blue-500 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
+                onClick={() => navigate('/admin/verification')}
+                className="group flex items-center gap-1 text-blue-500 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-blue-50 transition-all"
               >
-                View All →
+                View All 
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
 

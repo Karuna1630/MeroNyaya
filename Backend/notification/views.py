@@ -16,8 +16,15 @@ class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Notification.objects.none()
+
+        user = self.request.user
+        if not user.is_authenticated:
+            return Notification.objects.none()
+
         return Notification.objects.filter(
-            user=self.request.user
+            user=user
         ).order_by('-created_at')
 
 
@@ -30,7 +37,14 @@ class NotificationDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user)
+        if getattr(self, 'swagger_fake_view', False):
+            return Notification.objects.none()
+
+        user = self.request.user
+        if not user.is_authenticated:
+            return Notification.objects.none()
+
+        return Notification.objects.filter(user=user)
 
 
 class NotificationReadView(APIView):

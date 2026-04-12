@@ -91,10 +91,16 @@ class ConsultationDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Consultation.objects.none()
+
         user = self.request.user
+        if not user.is_authenticated:
+            return Consultation.objects.none()
+
         if user.is_superuser or user.is_staff:
             return Consultation.objects.all()
-        if user.is_lawyer:
+        if getattr(user, 'is_lawyer', False):
             return Consultation.objects.filter(lawyer=user)
         return Consultation.objects.filter(client=user)
 

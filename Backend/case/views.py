@@ -8,7 +8,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from authentication.models import User
-from notification.utils import send_notification
+from notification.utils import send_notification, notify_admins
 
 from .models import Case, CaseDocument, CaseTimeline, CaseAppointment
 from .serializers import (
@@ -162,6 +162,14 @@ class CaseListCreateView(generics.ListCreateAPIView):
                     link='/lawyerfindcases'
                 )
 
+        notify_admins(
+            title='New Case Created',
+            message=f'Client {request.user.name} created a new case: "{case.case_title}".',
+            notif_type='case',
+            link='/admin/cases',
+            exclude_user_ids=[request.user.id],
+        )
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -175,7 +183,13 @@ class CaseDetailView(generics.RetrieveUpdateDestroyAPIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Case.objects.none()
+
         user = self.request.user
+        if not user.is_authenticated:
+            return Case.objects.none()
+
         if user.is_superuser:
             return Case.objects.all().select_related('client', 'lawyer')
         if user.role == 'Client':

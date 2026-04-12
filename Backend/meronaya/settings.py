@@ -142,20 +142,20 @@ DATABASE_URL = _env_str('DATABASE_URL', '')
 if DATABASE_URL:
     parsed_db = urlparse(DATABASE_URL)
     query = parse_qs(parsed_db.query)
-    sslmode = query.get('sslmode', [_env_str('DB_SSLMODE', 'require')])[0]
+    sslmode = _env_str('DB_SSLMODE', query.get('sslmode', ['require'])[0])
 
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': unquote(parsed_db.path.lstrip('/')) or _env_str('DB_NAME', ''),
-            'USER': unquote(parsed_db.username or '') or _env_str('DB_USER', ''),
-            'PASSWORD': unquote(parsed_db.password or '') or _env_str('DB_PASSWORD', ''),
-            'HOST': parsed_db.hostname or _env_str('DB_HOST', ''),
-            'PORT': str(parsed_db.port or _env_str('DB_PORT', '5432')),
+            'NAME': _env_str('DB_NAME', unquote(parsed_db.path.lstrip('/'))),
+            'USER': _env_str('DB_USER', unquote(parsed_db.username or '')),
+            'PASSWORD': _env_str('DB_PASSWORD', unquote(parsed_db.password or '')),
+            'HOST': _env_str('DB_HOST', parsed_db.hostname or ''),
+            'PORT': _env_str('DB_PORT', str(parsed_db.port or 5432)),
             'OPTIONS': {
                 'sslmode': sslmode,
             },
-            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=0, cast=int),
             'CONN_HEALTH_CHECKS': True,
         }
     }
@@ -171,7 +171,7 @@ else:
             'OPTIONS': {
                 'sslmode': _env_str('DB_SSLMODE', 'require'),
             },
-            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=60, cast=int),
+            'CONN_MAX_AGE': config('DB_CONN_MAX_AGE', default=0, cast=int),
             'CONN_HEALTH_CHECKS': True,
         }
     }

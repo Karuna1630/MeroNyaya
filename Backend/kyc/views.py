@@ -16,6 +16,7 @@ from .serializers import (
 from .permissions import IsLawyer, IsOwnerOrAdmin, IsAdminReviewer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from notification.utils import notify_admins, send_notification
 
 
 class SubmitKYCView(generics.CreateAPIView):
@@ -35,7 +36,14 @@ class SubmitKYCView(generics.CreateAPIView):
         return super().post(request, *args, **kwargs)
     
     def perform_create(self, serializer):
-        serializer.save()
+        kyc = serializer.save()
+        notify_admins(
+            title='New KYC Submission',
+            message=f'Lawyer {kyc.user.name or kyc.user.email} submitted KYC for review.',
+            notif_type='alert',
+            link='/admin/verification',
+            exclude_user_ids=[kyc.user_id],
+        )
 
 
 class MyKYCView(generics.RetrieveAPIView):
@@ -84,6 +92,17 @@ class UpdateKYCView(generics.UpdateAPIView):
         kyc = get_object_or_404(LawyerKYC, user=self.request.user)
         # Serializer validation will check if status == 'rejected'
         return kyc
+
+    def perform_update(self, serializer):
+        # Force resubmissions back to pending so admins can review again.
+        kyc = serializer.save(status='pending')
+        notify_admins(
+            title='KYC Resubmitted',
+            message=f'Lawyer {kyc.user.name or kyc.user.email} updated and resubmitted KYC.',
+            notif_type='alert',
+            link='/admin/verification',
+            exclude_user_ids=[kyc.user_id],
+        )
 
 
 class KYCStatusView(APIView):
@@ -151,20 +170,36 @@ class AdminKYCReviewView(generics.UpdateAPIView):
     
     def update(self, request, *args, **kwargs):
         kyc = self.get_object()
-        new_status = request.data.get('status')
-        rejection_reason = request.data.get('rejection_reason')
-        
-        if new_status not in ['approved', 'rejected']:
-            return Response(
-                {"error": "Status must be 'approved' or 'rejected'"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        kyc.status = new_status
-        if new_status == 'rejected' and rejection_reason:
-            kyc.rejection_reason = rejection_reason
-        kyc.save()
-        
+        previous_status = kyc.status
+
+        serializer = self.get_serializer(kyc, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        kyc = serializer.save()
+
+        if previous_status != kyc.status:
+            if kyc.status == 'approved':
+                send_notification(
+                    user=kyc.user,
+                    title='KYC Approved',
+                    message='Your KYC has been approved. You now have full access to lawyer features.',
+                    notif_type='system',
+                    link='/lawyerdashboard',
+                )
+            elif kyc.status == 'rejected':
+                reason = (kyc.rejection_reason or '').strip()
+                rejection_message = (
+                    f'Your KYC was rejected. Reason: {reason}'
+                    if reason
+                    else 'Your KYC was rejected. Please review and resubmit your details.'
+                )
+                send_notification(
+                    user=kyc.user,
+                    title='KYC Rejected',
+                    message=rejection_message,
+                    notif_type='alert',
+                    link='/lawyerdashboard',
+                )
+
         serializer = self.get_serializer(kyc)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

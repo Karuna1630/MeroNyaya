@@ -33,22 +33,22 @@ const AdminKYCVerification = () => {
       case 'under_review':
       case 'in_review':
         return (
-          <span className={`${baseClasses} bg-indigo-50 text-indigo-700 border border-indigo-100`}>
-            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+          <span className={`${baseClasses} bg-[#1e3a5f] text-white border-transparent`}>
+            <span className="w-2 h-2 rounded-full bg-white"></span>
             Pending
           </span>
         );
       case 'approved':
         return (
-          <span className={`${baseClasses} bg-emerald-50 text-emerald-700 border border-emerald-100`}>
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span className={`${baseClasses} bg-green-500 text-white border-transparent`}>
+            <span className="w-2 h-2 rounded-full bg-white"></span>
             Approved
           </span>
         );
       case 'rejected':
         return (
-          <span className={`${baseClasses} bg-rose-50 text-rose-700 border border-rose-100`}>
-            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+          <span className={`${baseClasses} bg-red-500 text-white border-transparent`}>
+            <span className="w-2 h-2 rounded-full bg-white"></span>
             Rejected
           </span>
         );
@@ -151,8 +151,8 @@ const AdminKYCVerification = () => {
           subtitle="Review and manage lawyer identity verification requests"
         />
 
-        <main className="flex-1 p-8 bg-linear-to-b from-slate-50 to-slate-100">
-          <div className="mx-auto max-w-6xl space-y-6">
+        <main className="flex-1 p-8 bg-slate-50">
+          <div className="space-y-6">
             {/* Stats row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="relative overflow-hidden rounded-2xl p-5 text-white shadow-lg bg-linear-to-br from-blue-500 to-blue-600 ring-1 ring-blue-500/20">

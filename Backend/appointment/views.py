@@ -83,10 +83,16 @@ class AppointmentDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Appointment.objects.none()
+
         user = self.request.user
+        if not user.is_authenticated:
+            return Appointment.objects.none()
+
         if user.is_superuser or user.is_staff:
             return Appointment.objects.all()
-        if user.is_lawyer:
+        if getattr(user, 'is_lawyer', False):
             return Appointment.objects.filter(consultation__lawyer=user)
         return Appointment.objects.filter(consultation__client=user)
 

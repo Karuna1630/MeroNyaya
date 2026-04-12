@@ -152,7 +152,7 @@ const IdentityDocs = () => {
 
       {/* Optional Documents Section */}
       <div className="pt-4 border-t border-slate-200">
-        <h3 className="text-base font-semibold text-slate-700 mb-4">Optional Documents</h3>
+        <h3 className="text-base font-semibold text-slate-700 mb-4">Other Documents</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {renderUploadBox("lawDegree", "Law Degree Certificate", false)}
           {renderUploadBox("experienceCertificate", "Experience Certificate", false)}

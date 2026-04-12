@@ -9,7 +9,7 @@ import PersonalInfo from "./PersonalInfo";
 import ProfessionalInfo from "./ProfessionalInfo";
 import IdentityDocs from "./IdentityDocs";
 import Declaration from "./Declaration";
-import { submitKyc, updateKyc, clearKycState, fetchMyKyc } from "../slices/kycSlice";
+import { submitKyc, updateKyc, clearKycState, fetchMyKyc, fetchKycStatus } from "../slices/kycSlice";
 import { PersonalValidationSchema } from "../Utils/kyc/personalSchema";
 import { ProfessionalValidationSchema } from "../Utils/kyc/ProfessionalSchema";
 import { IdentityValidationSchema } from "../Utils/kyc/IdentitySchema";
@@ -122,6 +122,7 @@ const KYC = ({ onClose }) => {
   // Fetch existing KYC on component mount
   useEffect(() => {
     dispatch(fetchMyKyc());
+    dispatch(fetchKycStatus());
   }, [dispatch]);
 
   const loadDraft = () => {
@@ -221,7 +222,7 @@ const KYC = ({ onClose }) => {
     }
     try {
       // Check if KYC is being updated (rejected) or submitted for first time
-      const kycStatus = status?.status || status?.kyc_status || status?.state;
+      const kycStatus = (myKyc?.status || status?.status || status?.kyc_status || status?.state || "").toLowerCase();
       const isRejected = kycStatus === 'rejected';
       
       // Dispatch the appropriate action based on the KYC status
@@ -234,6 +235,8 @@ const KYC = ({ onClose }) => {
           ? "KYC resubmitted successfully!" 
           : "KYC application submitted successfully!";
         toast.success(message);
+        dispatch(fetchMyKyc());
+        dispatch(fetchKycStatus());
         localStorage.removeItem(KYC_DRAFT_KEY);
         // Close modal after successful submission
         setTimeout(() => {

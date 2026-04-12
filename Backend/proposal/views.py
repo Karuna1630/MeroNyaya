@@ -112,7 +112,13 @@ class ProposalDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProposalSerializer
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Proposal.objects.none()
+
         user = self.request.user
+        if not user.is_authenticated:
+            return Proposal.objects.none()
+
         if user.role == 'Lawyer':
             return Proposal.objects.filter(lawyer=user).select_related('case', 'lawyer')
         elif user.role == 'Client':
