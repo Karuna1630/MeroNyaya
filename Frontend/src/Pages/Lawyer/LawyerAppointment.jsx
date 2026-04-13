@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Sidebar from "./Sidebar";
 import LawyerDashHeader from "./LawyerDashHeader";
+import StatCard from "./Statcard";
 import { useTranslation } from "react-i18next";
 import { 
   Calendar, 
@@ -102,62 +103,61 @@ const LawyerAppointment = () => {
     const rejected = consultations.filter(c => c.status === "rejected").length;
     return [
       { 
-        value: pending, 
-        label: t('lawyerAppointment.pending'), 
-        gradient: "from-amber-500 to-orange-500", 
-        ring: "ring-amber-500/20",
-        icon: AlertCircle,
-        iconColor: "text-amber-100"
+        value: pending,
+        title: t('lawyerAppointment.pending'),
+        color: "amber",
+        icon: <AlertCircle size={20} />
       },
       { 
-        value: accepted, 
-        label: t('lawyerAppointment.accepted'), 
-        gradient: "from-cyan-500 to-teal-600", 
-        ring: "ring-cyan-500/20",
-        icon: Check,
-        iconColor: "text-cyan-100"
+        value: accepted,
+        title: t('lawyerAppointment.accepted'),
+        color: "cyan",
+        icon: <Check size={20} />
       },
       { 
-        value: completed, 
-        label: t('lawyerAppointment.completed'), 
-        gradient: "from-green-500 to-emerald-600", 
-        ring: "ring-green-500/20",
-        icon: CheckCircle,
-        iconColor: "text-green-100"
+        value: completed,
+        title: t('lawyerAppointment.completed'),
+        color: "emerald",
+        icon: <CheckCircle size={20} />
       },
       { 
-        value: rejected, 
-        label: t('lawyerAppointment.rejected'), 
-        gradient: "from-red-500 to-rose-600", 
-        ring: "ring-red-500/20",
-        icon: XCircle,
-        iconColor: "text-red-100"
+        value: rejected,
+        title: t('lawyerAppointment.rejected'),
+        color: "rose",
+        icon: <XCircle size={20} />
       },
     ];
   }, [consultations, t]);
 
   // Merge consultations and case appointments into a single list
   const mergedAppointments = useMemo(() => {
-    const consultationAppts = consultations.map(appt => ({
-      id: appt.id,
-      type: 'consultation',
-      status: appt.status,
-      client_name: appt.client?.name || "Client",
-      client_profile_image: appt.client?.profile_image,
-      title: appt.title,
-      mode: appt.mode,
-      requested_day: appt.requested_day,
-      requested_time: appt.requested_time,
-      scheduled_date: appt.scheduled_date,
-      scheduled_time: appt.scheduled_time,
-      meeting_location: appt.meeting_location,
-      phone_number: appt.phone_number,
-      meeting_link: appt.meeting_link,
-      case_title: appt.case?.title,
-      case_category: appt.case?.category,
-      payment_status: appt.payment_status || 'unpaid',
-      originalConsultation: appt
-    }));
+    const consultationAppts = consultations.map((appt) => {
+      const normalizedMode = String(appt.mode || '').trim().toLowerCase().replace(/[-\s]/g, '_');
+      const normalizedPaymentStatus = String(appt.payment_status || '').trim().toLowerCase();
+      const computedPaymentStatus =
+        normalizedPaymentStatus || (normalizedMode === 'in_person' && appt.status === 'completed' ? 'paid' : 'pending');
+
+      return {
+        id: appt.id,
+        type: 'consultation',
+        status: appt.status,
+        client_name: appt.client?.name || "Client",
+        client_profile_image: appt.client?.profile_image,
+        title: appt.title,
+        mode: appt.mode,
+        requested_day: appt.requested_day,
+        requested_time: appt.requested_time,
+        scheduled_date: appt.scheduled_date,
+        scheduled_time: appt.scheduled_time,
+        meeting_location: appt.meeting_location,
+        phone_number: appt.phone_number,
+        meeting_link: appt.meeting_link,
+        case_title: appt.case?.title,
+        case_category: appt.case?.category,
+        payment_status: computedPaymentStatus,
+        originalConsultation: appt
+      };
+    });
 
     const caseAppts = mergedCaseAppointments.map(appt => ({
       id: appt.id,
@@ -213,28 +213,37 @@ const LawyerAppointment = () => {
     return filteredAppointments.slice(startIndex, endIndex);
   }, [filteredAppointments, currentPage, itemsPerPage]);
 
+  const normalizeConsultationMode = (mode) => {
+    return String(mode || '').trim().toLowerCase().replace(/[-\s]/g, '_');
+  };
+
+  const isInPersonMode = (mode) => {
+    const normalizedMode = normalizeConsultationMode(mode);
+    return normalizedMode === 'in_person' || normalizedMode === 'inperson';
+  };
+
+  const isVideoMode = (mode) => normalizeConsultationMode(mode) === 'video';
+
   // Helper function to get the appropriate icon for the consultation mode (video, in-person, or default)
   const getModeIcon = (mode) => {
-    switch (mode) {
-      case "video":
-        return <Video size={16} className="text-blue-500" />;
-      case "in_person":
-        return <MapPin size={16} className="text-slate-400" />;
-      default:
-        return <Clock size={16} className="text-gray-500" />;
+    if (isVideoMode(mode)) {
+      return <Video size={16} className="text-blue-500" />;
     }
+    if (isInPersonMode(mode)) {
+      return <MapPin size={16} className="text-slate-400" />;
+    }
+    return <Clock size={16} className="text-gray-500" />;
   };
 
   // Helper function to format time strings into a more readable format for display in the consultations table
   const getModeLabel = (mode) => {
-    switch (mode) {
-      case "video":
-        return t('lawyerAppointment.videoCall');
-      case "in_person":
-        return t('lawyerAppointment.inPerson');
-      default:
-        return t('dashboard.notAvailable');
+    if (isVideoMode(mode)) {
+      return t('lawyerAppointment.videoCall');
     }
+    if (isInPersonMode(mode)) {
+      return t('lawyerAppointment.inPerson');
+    }
+    return t('dashboard.notAvailable');
   };
 
   // Helper function to determine if appointment is upcoming
@@ -378,7 +387,7 @@ const LawyerAppointment = () => {
         scheduled_time: values.scheduled_time,
       };
 
-      if (selectedCaseAppointment.mode === "video") {
+      if (isVideoMode(selectedCaseAppointment.mode)) {
         data.meeting_link = values.meeting_link?.trim();
       }
 
@@ -431,27 +440,10 @@ const LawyerAppointment = () => {
 
         <div className="flex-1 p-8 overflow-y-auto">
           {/* Stats Cards */}
-          <div className="grid grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => {
-              const IconComponent = stat.icon;
-              return (
-                <div 
-                  key={index} 
-                  className={`relative overflow-hidden rounded-2xl p-6 text-white shadow-lg bg-linear-to-br ${stat.gradient} ring-1 ${stat.ring} flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-2xl hover:scale-105 cursor-pointer group`}
-                >
-                  <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 group-hover:bg-white/20 transition-all duration-300" />
-                  <div className="absolute -right-2 -bottom-6 h-20 w-20 rounded-full bg-white/5 group-hover:bg-white/10 transition-all duration-300" />
-                  
-                  {/* Icon */}
-                  <div className="relative z-10 mb-3">
-                    <IconComponent size={32} className={`${stat.iconColor} group-hover:scale-110 transition-transform duration-300`} />
-                  </div>
-                  
-                  <span className="relative z-10 text-3xl font-extrabold mb-1 group-hover:text-white transition-all">{stat.value}</span>
-                  <span className="relative z-10 text-xs font-semibold text-white/70 uppercase tracking-widest group-hover:text-white/90 transition-all">{stat.label}</span>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+            {stats.map((stat, index) => (
+              <StatCard key={index} {...stat} />
+            ))}
           </div>
 
           {/* Main Content Section - Full Width */}
@@ -513,6 +505,12 @@ const LawyerAppointment = () => {
                           const dateStr = appointment.scheduled_date || appointment.requested_day;
                           const timeStr = appointment.scheduled_time || appointment.requested_time;
                           const isUpcoming = isUpcomingAppointment(dateStr, timeStr, appointment.status);
+                          const normalizedPaymentStatus = String(appointment.payment_status || '').trim().toLowerCase();
+                          const isPaymentPaid =
+                            appointment.type === 'case' ||
+                            normalizedPaymentStatus === 'paid' ||
+                            normalizedPaymentStatus === 'in_hand' ||
+                            (appointment.type === 'consultation' && isInPersonMode(appointment.mode) && appointment.status === 'completed');
                           
                           return (
                             <tr key={`${appointment.type}-${appointment.id}`} className="hover:bg-slate-50/50 transition-colors">
@@ -546,8 +544,8 @@ const LawyerAppointment = () => {
                                 </span>
                               </td>
                               <td className="px-6 py-5">
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${appointment.payment_status === 'paid' || appointment.type === 'case' ? "bg-green-50 text-green-600 border-green-100" : "bg-yellow-50 text-yellow-600 border-yellow-100"}`}>
-                                  {appointment.payment_status === 'paid' || appointment.type === 'case' ? "Paid" : "Pending"}
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border ${isPaymentPaid ? "bg-green-50 text-green-600 border-green-100" : "bg-yellow-50 text-yellow-600 border-yellow-100"}`}>
+                                  {isPaymentPaid ? "Paid" : "Pending"}
                                 </span>
                               </td>
                               <td className="px-6 py-5 text-right">
@@ -629,7 +627,7 @@ const LawyerAppointment = () => {
                   </div>
                 </div>
 
-                {selectedConsultation.mode === "video" ? (
+                {isVideoMode(selectedConsultation.mode) ? (
                   <div className="mb-6">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">
                        Meeting Link <span className="text-red-500">*</span>
@@ -822,7 +820,7 @@ const LawyerAppointment = () => {
               </div>
 
               {/* Conditional Fields - Only for In-Person */}
-              {selectedConsultation.mode === "in_person" && (
+              {isInPersonMode(selectedConsultation.mode) && (
                 <>
                   {/* Meeting Location */}
                   <div>
@@ -995,7 +993,7 @@ const LawyerAppointment = () => {
                 </div>
               </div>
 
-              {selectedCaseAppointmentView.mode === "in_person" && (
+              {isInPersonMode(selectedCaseAppointmentView.mode) && (
                 <>
                   <div>
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Location</label>
@@ -1012,7 +1010,7 @@ const LawyerAppointment = () => {
                 </>
               )}
 
-              {selectedCaseAppointmentView.mode === "video" && selectedCaseAppointmentView.meeting_link && (
+              {isVideoMode(selectedCaseAppointmentView.mode) && selectedCaseAppointmentView.meeting_link && (
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Meeting Link</label>
                   <a
@@ -1163,7 +1161,7 @@ const LawyerAppointment = () => {
                       />
                     </div>
 
-                    {selectedCaseAppointment.mode === "video" && (
+                    {isVideoMode(selectedCaseAppointment.mode) && (
                       <div className="col-span-2 bg-green-50 rounded-xl p-4 border border-green-200">
                         <label className="text-xs font-bold text-green-700 uppercase tracking-wide block mb-2">
                           Meeting Link <span className="text-red-500">*</span>
@@ -1186,7 +1184,7 @@ const LawyerAppointment = () => {
                       </div>
                     )}
 
-                    {selectedCaseAppointment.mode === "in_person" && (
+                    {isInPersonMode(selectedCaseAppointment.mode) && (
                       <div className="col-span-2 bg-blue-50 rounded-xl p-3 border border-blue-200">
                         <p className="text-xs text-blue-700 font-semibold">Client will visit you in person at the scheduled time.</p>
                       </div>

@@ -351,7 +351,9 @@
     "submitProposal": "Submit Proposal",
     "viewDetails": "View Details",
     "proposalSuccess": "Proposal submitted successfully",
-    "closedProposal": "Proposal Closed"
+    "closedProposal": "Proposal Closed",
+    "accepted": "Accepted",
+    "rejected": "Rejected"
   },
   "lawyerProposal": {
     "title": "Submit Proposal",

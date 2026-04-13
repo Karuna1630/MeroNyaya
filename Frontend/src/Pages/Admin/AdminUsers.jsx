@@ -12,7 +12,6 @@ import {
   Calendar,
   Shield,
   Trash2,
-  Eye,
   CheckCircle,
   XCircle,
   ToggleLeft,
@@ -205,10 +204,10 @@ const AdminUsers = () => {
                         <td className="py-4 px-6 text-right">
                           <button 
                             onClick={() => handleViewUser(user)}
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg hover:bg-[#0B1430] transition-all text-xs font-semibold shadow-sm"
                             title="View Details"
                           >
-                            <Eye size={18} />
+                            View
                           </button>
                         </td>
                       </tr>

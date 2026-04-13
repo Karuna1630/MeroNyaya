@@ -38,12 +38,8 @@ class AppointmentListCreateView(generics.ListCreateAPIView):
                 defaults = {
                     "scheduled_date": parse_date(consultation.scheduled_date) if consultation.scheduled_date else None,
                     "scheduled_time": parse_time(consultation.scheduled_time) if consultation.scheduled_time else None,
+                    "payment_status": Appointment.PAYMENT_PENDING,
                 }
-                # Set payment status based on mode
-                if consultation.mode == "in_person":
-                    defaults["payment_status"] = Appointment.PAYMENT_IN_HAND
-                else:
-                    defaults["payment_status"] = Appointment.PAYMENT_PENDING
 
                 Appointment.objects.get_or_create(
                     consultation=consultation,
@@ -60,12 +56,8 @@ class AppointmentListCreateView(generics.ListCreateAPIView):
             defaults = {
                 "scheduled_date": parse_date(consultation.scheduled_date) if consultation.scheduled_date else None,
                 "scheduled_time": parse_time(consultation.scheduled_time) if consultation.scheduled_time else None,
+                "payment_status": Appointment.PAYMENT_PENDING,
             }
-            # Set payment status based on mode
-            if consultation.mode == "in_person":
-                defaults["payment_status"] = Appointment.PAYMENT_IN_HAND
-            else:
-                defaults["payment_status"] = Appointment.PAYMENT_PENDING
 
             Appointment.objects.get_or_create(
                 consultation=consultation,

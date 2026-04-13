@@ -194,6 +194,8 @@ const LawyerFindCases = () => {
     return availableCases.slice(start, end);
   }, [availableCases, currentPage]);
 
+  const showingCount = activeTab === "proposed" ? proposedItems.length : availableCases.length;
+
 // function to get css classes for priority badge based on urgency level
   const getPriorityClasses = (priority) => {
     const upperPriority = (priority || "").toUpperCase();
@@ -201,7 +203,7 @@ const LawyerFindCases = () => {
       case "URGENT": return "bg-red-500 text-white shadow-sm";
       case "HIGH": return "bg-red-500 text-white shadow-sm";
       case "MEDIUM": return "bg-amber-100 text-amber-700 border border-amber-200";
-      case "LOW": return "bg-blue-100 text-blue-700 border border-blue-200";
+      case "LOW": return "bg-[#0F1A3D]/10 text-[#0F1A3D] border border-[#0F1A3D]/20";
       default: return "bg-gray-100 text-gray-700";
     }
   };
@@ -229,7 +231,7 @@ const LawyerFindCases = () => {
                 <input 
                   type="text" 
                   placeholder={t('lawyerFindCases.search')}
-                  className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#0F1A3D]/20 focus:border-[#0F1A3D] outline-none transition-all text-sm"
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                 />
@@ -238,7 +240,7 @@ const LawyerFindCases = () => {
               <div className="flex flex-wrap gap-3">
                 <div className="relative">
                   <select 
-                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-[#0F1A3D]/20 focus:border-[#0F1A3D] cursor-pointer"
                     value={categoryFilter}
                     onChange={(e) => handleCategoryChange(e.target.value)}
                   >
@@ -254,7 +256,7 @@ const LawyerFindCases = () => {
 
                 <div className="relative">
                   <select 
-                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                    className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium outline-none focus:ring-2 focus:ring-[#0F1A3D]/20 focus:border-[#0F1A3D] cursor-pointer"
                     value={priorityFilter}
                     onChange={(e) => handlePriorityChange(e.target.value)}
                   >
@@ -271,9 +273,7 @@ const LawyerFindCases = () => {
             </div>
             
             <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1">
-              {t('lawyerFindCases.showing')} <span className="text-blue-600">{filteredCases.length}</span> {t('lawyerFindCases.cases')}
-              <span className="mx-2 text-gray-200">|</span>
-              <span className="text-gray-600">{availableCases.length}</span> {t('lawyerFindCases.public')}
+              {t('lawyerFindCases.showing')} <span className="text-[#0F1A3D]">{showingCount}</span> {showingCount === 1 ? "case" : t('lawyerFindCases.cases')}
             </p>
           </div>
 
@@ -284,7 +284,7 @@ const LawyerFindCases = () => {
                 onClick={() => handleTabChange("public")}
                 className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${
                   activeTab === "public"
-                    ? "bg-white text-blue-600 shadow-sm"
+                    ? "bg-white text-[#0F1A3D] shadow-sm"
                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                 }`}
               >
@@ -294,7 +294,7 @@ const LawyerFindCases = () => {
                 onClick={() => handleTabChange("proposed")}
                 className={`px-6 py-2 rounded-md text-sm font-semibold transition-all ${
                   activeTab === "proposed"
-                    ? "bg-white text-blue-600 shadow-sm"
+                    ? "bg-white text-[#0F1A3D] shadow-sm"
                     : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
                 }`}
               >
@@ -307,7 +307,7 @@ const LawyerFindCases = () => {
           <div className="space-y-4 pb-12">
             {publicCasesLoading ? (
               <div className="bg-white py-24 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-gray-400 gap-4">
-                <div className="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-10 h-10 border-2 border-[#0F1A3D] border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-sm font-medium">{t('lawyerFindCases.loadingCases')}</p>
               </div>
             ) : publicCasesError ? (
@@ -317,14 +317,14 @@ const LawyerFindCases = () => {
                   <p className="text-xs text-gray-500 max-w-xs mx-auto">{publicCasesError}</p>
                   <button 
                     onClick={() => dispatch(fetchPublicCases())}
-                    className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all"
+                    className="mt-4 px-6 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-bold hover:bg-[#0B1430] transition-all"
                   >
                     {t('lawyerFindCases.retry')}
                   </button>
                 </div>
               </div>
-            ) : filteredCases.length > 0 ? (
-              activeTab === "public" ? (
+            ) : activeTab === "public" ? (
+              availableCases.length > 0 ? (
                 pagedPublicCases.length > 0 ? (
                   pagedPublicCases.map((item) => (
                     <div key={item.id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row overflow-hidden group">
@@ -332,7 +332,7 @@ const LawyerFindCases = () => {
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 
                             onClick={() => navigate(`/lawyercase/${item.id}`)}
-                            className="text-lg font-bold text-slate-800 group-hover:text-blue-600 cursor-pointer transition-colors"
+                            className="text-lg font-bold text-slate-800 group-hover:text-[#0F1A3D] cursor-pointer transition-colors"
                           >
                             {item.case_title}
                           </h2>
@@ -367,13 +367,13 @@ const LawyerFindCases = () => {
                       <div className="w-full md:w-52 bg-slate-50/50 border-l border-gray-100 p-6 flex flex-col justify-center gap-2.5">
                         <button 
                           onClick={() => navigate(`/lawyercase/${item.id}`)}
-                          className="w-full py-2.5 bg-white text-slate-700 border border-gray-200 rounded-lg text-xs font-bold hover:bg-white hover:border-blue-600 hover:text-blue-600 transition-all shadow-sm"
+                          className="w-full py-2.5 bg-white text-slate-700 border border-gray-200 rounded-lg text-xs font-bold hover:bg-white hover:border-[#0F1A3D] hover:text-[#0F1A3D] transition-all shadow-sm"
                         >
                           {t('lawyerFindCases.viewDetails')}
                         </button>
                         <button 
                           onClick={() => handleOpenProposal(item)}
-                          className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-sm"
+                          className="w-full py-2.5 bg-[#0F1A3D] text-white rounded-lg text-xs font-bold hover:bg-[#0B1430] transition-all shadow-sm"
                         >
                           {t('lawyerFindCases.submitProposal')}
                         </button>
@@ -387,8 +387,16 @@ const LawyerFindCases = () => {
                   </div>
                 )
               ) : (
-                proposedItems.length > 0 ? (
-                  proposedItems.map(({ caseData, proposal }) => (
+                <div className="bg-white py-24 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-gray-400 gap-4">
+                  <Search size={40} className="opacity-20" />
+                  <div className="text-center">
+                      <p className="text-lg font-bold text-slate-900">{t('lawyerFindCases.noCasesFound')}</p>
+                      <p className="text-sm">Try adjusting your filters or search terms</p>
+                  </div>
+                </div>
+              )
+            ) : proposedItems.length > 0 ? (
+              proposedItems.map(({ caseData, proposal }) => (
                     <div key={`proposal-${proposal.id}`} className="bg-white rounded-2xl border-2 border-gray-100 shadow-md hover:shadow-2xl hover:border-[#0F1A3D]/30 transition-all duration-300 overflow-hidden">
                       {/* Card Header with Status Badge */}
                       <div className="bg-gradient-to-r from-emerald-50 to-emerald-50/50 border-b-2 border-emerald-100 p-6">
@@ -453,20 +461,10 @@ const LawyerFindCases = () => {
                       </div>
                     </div>
                   ))
-                ) : (
-                  <div className="bg-white py-20 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 gap-3">
-                    <FileText size={40} className="opacity-20" />
-                    <p className="text-sm font-medium">{t('lawyerFindCases.noProposalsFound')}</p>
-                  </div>
-                )
-              )
             ) : (
-              <div className="bg-white py-24 rounded-xl border border-gray-100 flex flex-col items-center justify-center text-gray-400 gap-4">
-                <Search size={40} className="opacity-20" />
-                <div className="text-center">
-                    <p className="text-lg font-bold text-slate-900">{t('lawyerFindCases.noCasesFound')}</p>
-                    <p className="text-sm">Try adjusting your filters or search terms</p>
-                </div>
+              <div className="bg-white py-20 rounded-xl border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 gap-3">
+                <FileText size={40} className="opacity-20" />
+                <p className="text-sm font-medium">{t('lawyerFindCases.noProposalsFound')}</p>
               </div>
             )}
             {activeTab === "public" && availableCases.length > 0 && (
@@ -564,7 +562,7 @@ const LawyerFindCases = () => {
 
                 <div className="space-y-2 pt-4 border-t border-gray-100">
                   <label className="text-sm font-bold text-gray-900">Your Proposal</label>
-                  <div className="w-full p-4 bg-blue-50/50 border border-blue-100 rounded-xl text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  <div className="w-full p-4 bg-[#0F1A3D]/10 border border-[#0F1A3D]/20 rounded-xl text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                     {selectedProposal?.proposal_text || "No proposal text available."}
                   </div>
                 </div>

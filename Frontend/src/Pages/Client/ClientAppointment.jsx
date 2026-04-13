@@ -168,7 +168,9 @@ const ClientAppointment = () => {
   };
 
   const getModeIcon = (mode) => {
-    switch (mode) {
+    const normalizedMode =
+      typeof mode === "string" ? mode.trim().toLowerCase().replace(/[-\s]/g, "_") : "";
+    switch (normalizedMode) {
       case "video": return <Video size={16} className="text-blue-500" />;
       case "phone": return <Phone size={16} className="text-teal-500" />;
       case "in_person": return <MapPin size={16} className="text-indigo-500" />;
@@ -177,7 +179,9 @@ const ClientAppointment = () => {
   };
 
   const getModeLabel = (mode) => {
-    switch (mode) {
+    const normalizedMode =
+      typeof mode === "string" ? mode.trim().toLowerCase().replace(/[-\s]/g, "_") : "";
+    switch (normalizedMode) {
       case "video": return "Video Call";
       case "phone": return "Phone Call";
       case "in_person": return "In-Person";
@@ -233,15 +237,49 @@ const ClientAppointment = () => {
     return typeof rawLink === "string" ? rawLink.trim() : rawLink;
   };
 
+  const normalizeMode = (mode) =>
+    typeof mode === "string" ? mode.trim().toLowerCase().replace(/[-\s]/g, "_") : "";
+
+  const getAppointmentMode = (appointment) =>
+    normalizeMode(appointment?.consultation_details?.mode || appointment?.mode);
+
+  const isVideoMode = (mode) => normalizeMode(mode) === "video";
+
+  const isInPersonMode = (mode) => {
+    const normalizedMode = normalizeMode(mode);
+    return normalizedMode === "in_person" || normalizedMode === "inperson";
+  };
+
   const normalizePaymentStatus = (status) =>
     typeof status === "string" ? status.trim().toLowerCase() : "";
 
+  const getEffectivePaymentStatus = (appointment) => {
+    if (appointment?.appointmentType === "case") return "paid";
+
+    const rawPaymentStatus = normalizePaymentStatus(appointment?.payment_status);
+    const appointmentMode = getAppointmentMode(appointment);
+    const appointmentStatus = (appointment?.status || "").toLowerCase();
+
+    if (isInPersonMode(appointmentMode)) {
+      if (rawPaymentStatus === "paid" || appointmentStatus === "completed") {
+        return "paid";
+      }
+      return "pending";
+    }
+
+    return rawPaymentStatus === "paid" ? "paid" : "pending";
+  };
+
   const isPaymentPending = (appointment) =>
-    appointment?.appointmentType !== "case" &&
-    normalizePaymentStatus(appointment?.payment_status) === "pending";
+    getEffectivePaymentStatus(appointment) === "pending";
 
   const isPaymentCompleted = (appointment) =>
-    appointment?.appointmentType === "case" || !isPaymentPending(appointment);
+    getEffectivePaymentStatus(appointment) === "paid";
+
+  const canPayOnline = (appointment) => {
+    const appointmentMode = getAppointmentMode(appointment);
+    return isVideoMode(appointmentMode) && isPaymentPending(appointment);
+  };
 
   const handleConfirmPayment = () => {
     if (!appointmentToPay?.id) return;
@@ -342,10 +380,10 @@ const ClientAppointment = () => {
                     const consultation = item.consultation_details || {};
                     const lawyer = consultation.lawyer || {};
                     const meetingLink = getMeetingLink(item);
-                    const paymentLabel = item.appointmentType === "case" || !isPaymentPending(item) ? "Paid" : "Unpaid";
+                    const paymentLabel = isPaymentCompleted(item) ? "Paid" : "Pending";
                     const canShowJoinButton =
                       activeTab === "Upcoming" &&
-                      consultation.mode === "video" &&
+                      isVideoMode(consultation.mode) &&
                       item.status === "confirmed" &&
                       isPaymentCompleted(item);
                     return (
@@ -428,7 +466,7 @@ const ClientAppointment = () => {
                                 Join
                               </button>
                             )}
-                            {activeTab === "Upcoming" && isPaymentPending(item) && (
+                            {activeTab === "Upcoming" && canPayOnline(item) && (
                               <button
                                 onClick={() => handleOpenPayment(item)}
                                 className={`${actionButtonBaseClass} bg-emerald-600 text-white hover:bg-emerald-700`}
@@ -468,7 +506,7 @@ const ClientAppointment = () => {
                 <button onClick={() => setSelectedAppointment(null)}><X size={20}/></button>
              </div>
              <div className="p-6 space-y-4">
-                {selectedAppointment.consultation_details?.mode === "video" &&
+                {isVideoMode(selectedAppointment.consultation_details?.mode) &&
                   isPaymentCompleted(selectedAppointment) && (
                   <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
                     <p className="text-xs font-bold text-blue-700 uppercase">Meeting Link</p>

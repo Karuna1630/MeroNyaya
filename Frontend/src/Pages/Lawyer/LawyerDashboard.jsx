@@ -195,6 +195,11 @@ const LawyerDashboard = () => {
     }
   };
 
+  const isInPersonMode = (mode) => {
+    const normalizedMode = String(mode || '').trim().toLowerCase().replace(/[-\s]/g, '_');
+    return normalizedMode === 'in_person' || normalizedMode === 'inperson';
+  };
+
   // Dynamic stat cards from real data
   const statCards = [
     {
@@ -250,7 +255,7 @@ const LawyerDashboard = () => {
         id: apt.id,
         name: apt.client?.name || "Client",
         avatar: apt.client?.name?.charAt(0) || "C",
-        type: apt.mode === "in_person" ? "In-Person Consultation" : "Video Consultation",
+        type: isInPersonMode(apt.mode) ? "In-Person Consultation" : "Video Consultation",
         time: apt.scheduled_time || apt.requested_time || "N/A",
         status: "Accepted",
       }));

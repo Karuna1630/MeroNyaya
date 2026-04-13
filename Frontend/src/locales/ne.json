@@ -349,6 +349,8 @@
     "viewDetails": "विवरण हेर्नुहोस्",
     "proposalSuccess": "प्रस्ताव सफलतापूर्वक जमा गरिएको",
     "closedProposal": "प्रस्ताव बन्द",
+    "accepted": "स्वीकृत",
+    "rejected": "अस्वीकृत",
     "publicCases": "सार्वजनिक मामलाहरु",
     "myProposals": "मेरो प्रस्तावहरु",
     "allPriorities": "सबै",

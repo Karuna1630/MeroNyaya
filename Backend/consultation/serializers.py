@@ -10,6 +10,7 @@ class ConsultationSerializer(serializers.ModelSerializer):
 	lawyer = serializers.SerializerMethodField()
 	client = serializers.SerializerMethodField()
 	case_reference = serializers.SerializerMethodField()
+	payment_status = serializers.SerializerMethodField()
 	lawyer_id = serializers.PrimaryKeyRelatedField(
 		queryset=User.objects.filter(is_lawyer=True),
 		source="lawyer",
@@ -44,6 +45,7 @@ class ConsultationSerializer(serializers.ModelSerializer):
 			"scheduled_time",
 			"meeting_link",
 			"status",
+			"payment_status",
 			"created_at",
 			"updated_at",
 		]
@@ -99,6 +101,17 @@ class ConsultationSerializer(serializers.ModelSerializer):
 			"id": obj.case.id,
 			"title": obj.case.title,
 		}
+
+	def get_payment_status(self, obj):
+		appointment = obj.appointments.order_by("-updated_at").first()
+		if appointment:
+			return appointment.payment_status
+
+		# Fallback for legacy records where appointment may not exist yet.
+		if obj.mode == Consultation.MODE_IN_PERSON and obj.status == Consultation.STATUS_COMPLETED:
+			return "paid"
+
+		return "pending"
 
 	def validate(self, data):
 		if not data.get("title") or not data.get("title").strip():

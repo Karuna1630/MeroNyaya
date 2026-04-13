@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, Filter, Eye, Calendar, FileText, Clock, AlertCircle, CheckCircle } from "lucide-react";
+import { Search, Filter, Calendar, FileText, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import Sidebar from "./Sidebar";
 import LawyerDashHeader from "./LawyerDashHeader";
 import StatCard from "./Statcard";
@@ -283,9 +283,9 @@ const LawyerCase = () => {
                         <td className="px-6 py-4 text-right">
                           <button 
                             onClick={() => navigate(`/lawyercase/${caseItem.id}`)}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-gray-900"
+                            className="px-4 py-2 bg-[#0F1A3D] text-white rounded-lg text-sm font-semibold hover:bg-[#0B1430] transition-all shadow-sm"
                           >
-                            <Eye size={18} />
+                            View
                           </button>
                         </td>
                       </tr>

@@ -341,19 +341,80 @@ class CaseActionView(APIView):
             if case.lawyer != request.user:
                 return Response({'error': 'You can only update cases assigned to you'}, status=status.HTTP_403_FORBIDDEN)
 
-            for field in ['case_number', 'court_name', 'opposing_party', 'next_hearing_date', 'status', 'notes']:
-                if field in request.data:
-                    value = request.data[field]
-                    if field == 'next_hearing_date' and value == '':
-                        value = None
+            updatable_fields = ['case_number', 'court_name', 'opposing_party', 'next_hearing_date', 'status', 'notes']
+            field_labels = {
+                'case_number': 'case number',
+                'court_name': 'court name',
+                'opposing_party': 'opposing party',
+                'next_hearing_date': 'next hearing date',
+                'status': 'status',
+                'notes': 'notes',
+            }
+
+            changed_fields = []
+            for field in updatable_fields:
+                if field not in request.data:
+                    continue
+
+                value = request.data[field]
+                if field == 'next_hearing_date' and value == '':
+                    value = None
+
+                current_value = getattr(case, field)
+                current_normalized = current_value.isoformat() if hasattr(current_value, 'isoformat') and current_value else ''
+                incoming_normalized = str(value or '')
+
+                if current_normalized != incoming_normalized:
+                    changed_fields.append(field)
                     setattr(case, field, value)
 
+            if not changed_fields:
+                return Response(CaseSerializer(case).data)
+
             case.save()
+
             status_display = case.status.replace('_', ' ').title()
-            CaseTimeline.objects.create(case=case, event_type='status_changed', title=f'Status Changed to {status_display}', description=f'Case status changed to {status_display}', created_by=request.user)
-            
+            status_changed = 'status' in changed_fields
+            detail_fields = [field for field in changed_fields if field != 'status']
+
+            if status_changed and not detail_fields:
+                timeline_title = f'Status Changed to {status_display}'
+                timeline_description = f'Case status changed to {status_display}'
+                timeline_event_type = 'status_changed'
+                notification_title = 'Case Status Updated'
+                notification_message = f'Your case "{case.case_title}" is now {status_display}'
+            else:
+                detail_labels = [field_labels[field] for field in detail_fields if field in field_labels]
+                detail_text = ', '.join(detail_labels) if detail_labels else 'case details'
+
+                if status_changed:
+                    timeline_description = f'Case details updated: {detail_text}. Status changed to {status_display}.'
+                    notification_message = f'Your case "{case.case_title}" details were updated ({detail_text}). Status is now {status_display}.'
+                else:
+                    timeline_description = f'Case details updated: {detail_text}.'
+                    notification_message = f'Your case "{case.case_title}" details were updated ({detail_text}).'
+
+                timeline_title = 'Case Details Updated'
+                timeline_event_type = 'case_updated'
+                notification_title = 'Case Details Updated'
+
+            CaseTimeline.objects.create(
+                case=case,
+                event_type=timeline_event_type,
+                title=timeline_title,
+                description=timeline_description,
+                created_by=request.user,
+            )
+
             if case.client:
-                send_notification(user=case.client, title='Case Status Updated', message=f'Your case "{case.case_title}" is now {status_display}', notif_type='case', link=f'/client/case/{case.id}')
+                send_notification(
+                    user=case.client,
+                    title=notification_title,
+                    message=notification_message,
+                    notif_type='case',
+                    link=f'/client/case/{case.id}'
+                )
+
             return Response(CaseSerializer(case).data)
 
         return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)

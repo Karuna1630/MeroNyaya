@@ -191,11 +191,9 @@ class ConsultationAcceptView(APIView):
         if consultation.scheduled_time:
             appointment_defaults["scheduled_time"] = parse_time(consultation.scheduled_time)
 
-        # Set payment status based on consultation mode
-        if consultation.mode == "in_person":
-            appointment_defaults["payment_status"] = Appointment.PAYMENT_IN_HAND
-        else:
-            appointment_defaults["payment_status"] = Appointment.PAYMENT_PENDING
+        # Keep all consultation payments pending at accept.
+        # For in-person mode, payment is marked paid only after completion.
+        appointment_defaults["payment_status"] = Appointment.PAYMENT_PENDING
 
         appointment, created = Appointment.objects.get_or_create(
             consultation=consultation,
@@ -276,7 +274,11 @@ class ConsultationCompleteView(APIView):
         try:
             appointment = Appointment.objects.get(consultation=consultation)
             appointment.status = Appointment.STATUS_COMPLETED
-            appointment.save(update_fields=["status"])
+            update_fields = ["status", "updated_at"]
+            if consultation.mode == Consultation.MODE_IN_PERSON:
+                appointment.payment_status = Appointment.PAYMENT_PAID
+                update_fields.append("payment_status")
+            appointment.save(update_fields=update_fields)
         except Appointment.DoesNotExist:
             pass
 

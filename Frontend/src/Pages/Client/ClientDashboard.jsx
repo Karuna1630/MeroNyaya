@@ -74,6 +74,11 @@ const ClientDashboard = () => {
     return cases.filter(c => new Date(c.created_at) > recentDate).length;
   }, [cases]);
 
+  const isInPersonMode = (mode) => {
+    const normalizedMode = String(mode || '').trim().toLowerCase().replace(/[-\s]/g, '_');
+    return normalizedMode === 'in_person' || normalizedMode === 'inperson';
+  };
+
   // Recent cases (last 4)
   const recentCases = useMemo(() => {
     return [...cases]
@@ -138,7 +143,7 @@ const ClientDashboard = () => {
         return {
           id: apt.id,
           lawyer: apt.lawyer?.name || "Lawyer",
-          type: apt.mode === "in_person" ? "In-Person" : "Video Call",
+          type: isInPersonMode(apt.mode) ? "In-Person" : "Video Call",
           date: aptDate,
           time: aptTime,
           status: apt.status,
