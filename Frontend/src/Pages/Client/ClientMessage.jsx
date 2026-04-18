@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { AlertCircle, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getMessages } from '../../axios/chatAPI';
@@ -9,10 +10,12 @@ import DashHeader from './ClientDashHeader';
 
 const ClientMessage = () => {
   const { t } = useTranslation();
+  const location = useLocation();
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [conversation, setConversation] = useState(null);
   const [chatError, setChatError] = useState(null);
   const refreshConversations = false;
+  const hasAutoSelected = useRef(false);
 
   const currentUser = useMemo(
     () => JSON.parse(localStorage.getItem('user') || '{}'),
@@ -37,6 +40,15 @@ const ClientMessage = () => {
       }
     }
   }, [t]);
+
+  // Auto-select conversation when navigating from case detail with recipientId
+  useEffect(() => {
+    const recipientId = location.state?.recipientId;
+    if (recipientId && !hasAutoSelected.current) {
+      hasAutoSelected.current = true;
+      handleSelectConversation(recipientId);
+    }
+  }, [location.state, handleSelectConversation]);
 
   return (
     <div className="flex h-screen bg-slate-100 overflow-hidden">

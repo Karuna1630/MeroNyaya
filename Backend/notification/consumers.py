@@ -1,5 +1,6 @@
 import json
 import jwt
+from urllib.parse import parse_qs
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -101,8 +102,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         from authentication.models import User
 
         query_string = self.scope.get('query_string', b'').decode()
-        params = dict(param.split('=') for param in query_string.split('&') if '=' in param)
-        token = params.get('token')
+        token = parse_qs(query_string).get('token', [None])[0]
 
         if not token:
             return None
@@ -110,8 +110,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
             user_id = payload.get('user_id')
+            if user_id is None:
+                return None
+
             return User.objects.get(id=user_id)
-        except (jwt.ExpiredSignatureError, jwt.DecodeError, User.DoesNotExist):
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, User.DoesNotExist, TypeError, ValueError):
             return None
 
     @database_sync_to_async

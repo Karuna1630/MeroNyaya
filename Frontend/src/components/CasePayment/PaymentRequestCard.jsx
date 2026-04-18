@@ -81,8 +81,13 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
         const { esewa_url, params } = response.data.Result;
         redirectToEsewa(esewa_url, params);
       }
-    } catch {
-      toast.error(t("casePayment.errorInitiatingEsewa"));
+    } catch (error) {
+      const backendMessage =
+        error?.response?.data?.ErrorMessage?.error ||
+        error?.response?.data?.ErrorMessage?.[0] ||
+        error?.response?.data?.error ||
+        error?.message;
+      toast.error(backendMessage || t("casePayment.errorInitiatingEsewa"));
     } finally {
       setLoadingEsewa(false);
     }
@@ -96,8 +101,13 @@ const PaymentRequestCard = ({ paymentRequest, currentUser, onResponseSuccess }) 
         const { khalti_payment_url } = response.data.Result;
         window.location.href = khalti_payment_url;
       }
-    } catch {
-      toast.error(t("casePayment.errorInitiatingKhalti"));
+    } catch (error) {
+      const backendMessage =
+        error?.response?.data?.ErrorMessage?.error ||
+        error?.response?.data?.ErrorMessage?.[0] ||
+        error?.response?.data?.error ||
+        error?.message;
+      toast.error(backendMessage || t("casePayment.errorInitiatingKhalti"));
     } finally {
       setLoadingKhalti(false);
     }

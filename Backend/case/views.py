@@ -640,3 +640,105 @@ class CaseAppointmentActionView(APIView):
         )
 
         return Response(CaseAppointmentSerializer(appointment).data, status=status.HTTP_200_OK)
+
+
+class CaseDocumentDownloadView(APIView):
+    """
+    Proxy endpoint to download a case document.
+    GET /api/cases/documents/<pk>/download/
+    
+    Fetches the file from Cloudinary server-side and returns it with
+    Content-Disposition: attachment header so the browser downloads it.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        import requests as http_requests
+        from django.http import HttpResponse
+        import cloudinary
+        import cloudinary.utils
+        from django.conf import settings
+
+        # Ensure Cloudinary is configured for the SDK
+        cloudinary.config(
+            cloud_name=settings.CLOUDINARY_STORAGE.get('CLOUD_NAME', settings.CLOUDINARY_CLOUD_NAME),
+            api_key=settings.CLOUDINARY_STORAGE.get('API_KEY', settings.CLOUDINARY_API_KEY),
+            api_secret=settings.CLOUDINARY_STORAGE.get('API_SECRET', settings.CLOUDINARY_API_SECRET),
+            secure=True
+        )
+
+        try:
+            doc = CaseDocument.objects.select_related('case').get(pk=pk)
+        except CaseDocument.DoesNotExist:
+            return Response(
+                {'error': 'Document not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Only case participants can download
+        case = doc.case
+        if case.client != request.user and case.lawyer != request.user and not request.user.is_superuser:
+            return Response(
+                {'error': 'You do not have permission to download this document'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            public_id = doc.file.name
+            # Try to fetch using signed URL
+            # Cloudinary raw resources often need explicit resource_type='raw'
+            file_url, options = cloudinary.utils.cloudinary_url(
+                public_id,
+                resource_type="raw",
+                sign_url=True,
+                type="upload"
+            )
+
+            # Debug print (will appear in console)
+            print(f"DEBUG: Fetching from Cloudinary: {file_url}")
+
+            resp = http_requests.get(file_url, timeout=30, stream=True)
+            
+            # If still fails, try 'authenticated' and 'private' types
+            if resp.status_code != 200:
+                for try_type in ["authenticated", "private"]:
+                    file_url, _ = cloudinary.utils.cloudinary_url(
+                        public_id,
+                        resource_type="raw",
+                        sign_url=True,
+                        type=try_type
+                    )
+                    resp = http_requests.get(file_url, timeout=30, stream=True)
+                    if resp.status_code == 200:
+                        break
+
+            # Absolute fallback: try the direct URL stored in the model
+            if resp.status_code != 200:
+                 resp = http_requests.get(doc.file.url, timeout=30, stream=True)
+
+            if resp.status_code != 200:
+                error_body = resp.text[:100]
+                return Response(
+                    {'error': f'Cloudinary returned status {resp.status_code}: {error_body}. URL tried: {file_url}'},
+                    status=status.HTTP_502_BAD_GATEWAY
+                )
+
+            file_name = doc.file_name or f'document_{pk}'
+            content_type = resp.headers.get('Content-Type', 'application/octet-stream')
+            
+            # Forcing content into a response
+            response = HttpResponse(resp.content, content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+            return response
+
+        except Exception as e:
+            return Response(
+                {'error': f'Download failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        except Exception as e:
+            return Response(
+                {'error': f'Download failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

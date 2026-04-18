@@ -3,6 +3,7 @@ import { FileText, Upload, Download } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { uploadCaseDocuments, fetchCases } from "../../slices/caseSlice";
 import Pagination from "../../../components/Pagination";
+import axiosInstance from "../../../axios/axiosinstance";
 
 const ClientCaseDocumentCard = ({ caseId, documents = [] }) => {
   const dispatch = useDispatch();
@@ -52,15 +53,25 @@ const ClientCaseDocumentCard = ({ caseId, documents = [] }) => {
     });
   };
 
-  // Handle document download by creating a temporary link and triggering a click event
-  const handleDownload = (fileUrl, fileName) => {
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Handle document download via backend proxy to avoid Cloudinary CORS/Raw file issues
+  const handleDownload = async (docId, fileName) => {
+    try {
+      const response = await axiosInstance.get(`/cases/documents/${docId}/download/`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download document. Please try again.');
+    }
   };
 
   return (
@@ -118,7 +129,7 @@ const ClientCaseDocumentCard = ({ caseId, documents = [] }) => {
                     </div>
                   </div>
                   <button 
-                    onClick={() => handleDownload(doc.file, doc.file_name)}
+                    onClick={() => handleDownload(doc.id, doc.file_name)}
                     className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                   >
                     <Download size={18} className="text-slate-600" />

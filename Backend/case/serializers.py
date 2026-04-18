@@ -173,6 +173,8 @@ class CaseSerializer(serializers.ModelSerializer):
 
 class CaseListSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing cases"""
+    client_id = serializers.IntegerField(source='client.id', read_only=True)
+    lawyer_id = serializers.IntegerField(source='lawyer.id', read_only=True, allow_null=True)
     client_name = serializers.CharField(source='client.name', read_only=True)
     client_email = serializers.CharField(source='client.email', read_only=True)
     client_profile_image = serializers.SerializerMethodField()
@@ -189,10 +191,11 @@ class CaseListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Case
         fields = [
-            'id', 'case_title', 'case_category', 'case_description', 'status', 'urgency_level',
+            'id', 'client', 'client_id', 'lawyer', 'lawyer_id',
+            'case_title', 'case_category', 'case_description', 'status', 'urgency_level',
             'lawyer_selection', 'request_consultation',
             'client_name', 'client_email', 'client_profile_image', 
-            'lawyer', 'lawyer_name', 'lawyer_email', 'lawyer_phone', 'lawyer_profile_image',
+            'lawyer_name', 'lawyer_email', 'lawyer_phone', 'lawyer_profile_image',
             'proposal_count', 'document_count', 'documents', 'timeline',
             'case_number', 'court_name', 'opposing_party', 'next_hearing_date', 'is_rated',
             'created_at', 'updated_at', 'accepted_at', 'appointments'

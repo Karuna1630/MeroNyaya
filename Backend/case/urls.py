@@ -6,6 +6,7 @@ from .views import (
     PublicCasesView,
     CaseUploadDocumentsView,
     CaseActionView,
+    CaseDocumentDownloadView,
     # Case Appointment views
     CaseAppointmentListCreateView,
     CaseAppointmentActionView,
@@ -15,6 +16,9 @@ urlpatterns = [
     # Case Appointments
     path('appointments/', CaseAppointmentListCreateView.as_view(), name='case-appointment-list'),
     path('appointments/<int:pk>/<str:action>/', CaseAppointmentActionView.as_view(), name='case-appointment-action'),
+
+    # Document download proxy
+    path('documents/<int:pk>/download/', CaseDocumentDownloadView.as_view(), name='case-document-download'),
 
     # Cases
     path('', CaseListCreateView.as_view(), name='case-list'),

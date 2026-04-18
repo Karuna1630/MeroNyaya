@@ -54,11 +54,13 @@ const LawyerCaseDetail = () => {
   const { cases, casesLoading } = useSelector((state) => state.case);
   const { user } = useSelector((state) => state.auth);
   const caseData = cases?.find((c) => c.id === parseInt(id));
-  const hasAssignedClient = Boolean(caseData?.client_id || caseData?.client || caseData?.client_name);
+  const clientRecipientId = caseData?.client_id ?? caseData?.client ?? null;
+  const hasAssignedClient = Boolean(clientRecipientId || caseData?.client_name);
   const hasAssignedLawyer = Boolean(caseData?.lawyer_id || caseData?.lawyer || caseData?.lawyer_name);
   
   // Check if the current lawyer is assigned to this case
   const isAssignedLawyer = caseData?.lawyer === user?.id || caseData?.lawyer_id === user?.id;
+  const canMessageClient = Boolean(isAssignedLawyer && clientRecipientId);
   const canScheduleCaseMeeting = Boolean(
     isAssignedLawyer && (caseData?.status === "accepted" || caseData?.status === "in_progress")
   );
@@ -560,25 +562,24 @@ const LawyerCaseDetail = () => {
                     <div className="flex gap-2 mt-4">
                       <button 
                         onClick={() => {
-                          if (!isAssignedLawyer) {
-                            return;
-                          }
-                          if (!hasAssignedClient) {
+                          if (!canMessageClient) {
                             return;
                           }
                           navigate('/lawyermessage', { 
                             state: { 
                               caseId: caseData.id,
-                              recipientId: caseData.client_id || caseData.client,
+                              recipientId: clientRecipientId,
                               recipientName: caseData.client_name
                             } 
                           });
                         }}
-                        disabled={!isAssignedLawyer || !hasAssignedClient}
+                        disabled={!canMessageClient}
                         title={
                           !isAssignedLawyer
                             ? 'View-only mode: assign this case to message the client'
-                            : hasAssignedClient
+                            : !clientRecipientId
+                              ? 'Client account id unavailable for this case. Please refresh and try again.'
+                              : hasAssignedClient
                               ? 'Message the client'
                               : 'Chat unavailable until a client is assigned'
                         }

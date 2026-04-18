@@ -383,6 +383,23 @@ class SubmitReviewView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Notify the lawyer about the new rating
+        try:
+            from notification.utils import send_notification
+
+            star_text = "⭐" * rating
+            review_source = f"case '{case.case_title}'" if case else "a consultation appointment"
+            send_notification(
+                user=lawyer,
+                title="New Rating Received",
+                message=f"{request.user.name} rated you {rating}/5 {star_text} for {review_source}.",
+                notif_type="system",
+                link="/lawyerdashboard",
+            )
+        except Exception:
+            # Notification should never break the review flow
+            pass
+
         serializer = ReviewSerializer(review, context={'request': request})
         return Response(
             {

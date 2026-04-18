@@ -85,6 +85,8 @@ const NotificationDropdown = () => {
   const dropdownRef = useRef(null);
   const socketRef = useRef(null);
   const reconnectTimer = useRef(null);
+  const initialConnectTimer = useRef(null);
+  const isIntentionalClose = useRef(false);
   const navigate = useNavigate();
 
   const dispatch = useDispatch();
@@ -111,11 +113,19 @@ const NotificationDropdown = () => {
     let retryCount = 0;
     const maxRetries = 5;
 
-    dispatch(fetchNotifications());
+    isIntentionalClose.current = false;
 
     const connectWebSocket = () => {
       const token = localStorage.getItem("access_token");
       if (!token || !mounted) return;
+
+      if (
+        socketRef.current &&
+        (socketRef.current.readyState === WebSocket.OPEN ||
+          socketRef.current.readyState === WebSocket.CONNECTING)
+      ) {
+        return;
+      }
 
       const wsUrl = `${WS_BASE_URL}/ws/notifications/?token=${token}`;
       const socket = new WebSocket(wsUrl);
@@ -126,20 +136,29 @@ const NotificationDropdown = () => {
       };
 
       socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+        try {
+          const data = JSON.parse(event.data);
 
-        if (data.type === "new_notification") {
-          dispatch(addNotification(data.notification)); // Add new notification to store
+          if (data.type === "new_notification") {
+            dispatch(addNotification(data.notification)); // Add new notification to store
+          }
+        } catch {
+          // Ignore malformed payloads without breaking socket lifecycle.
         }
-        
       };
 
-      socket.onclose = () => {
-        if (!mounted) return; // Don't reconnect if component unmounted
+      socket.onclose = (event) => {
+        if (!mounted || isIntentionalClose.current) return; // Don't reconnect if component unmounted
+
         retryCount += 1;
         if (retryCount <= maxRetries) {
           const delay = Math.min(retryCount * 3000, 15000); // 3s, 6s, 9s... up to 15s
-          console.log(`WebSocket disconnected, retry ${retryCount}/${maxRetries} in ${delay / 1000}s`);
+
+          const closeCode = event?.code ?? "unknown";
+          const closeReason = event?.reason ? ` (${event.reason})` : "";
+          console.log(
+            `WebSocket disconnected (code: ${closeCode}${closeReason}), retry ${retryCount}/${maxRetries} in ${delay / 1000}s`
+          );
           reconnectTimer.current = setTimeout(connectWebSocket, delay);
         } else {
           console.log("WebSocket max retries reached, stopping reconnection");
@@ -147,22 +166,40 @@ const NotificationDropdown = () => {
       };
 
       socket.onerror = () => {
-        socket.close();
+        // Let onclose drive reconnect flow to avoid close-while-connecting warnings.
       };
 
       socketRef.current = socket;
     };
 
-    connectWebSocket();
+    dispatch(fetchNotifications()).finally(() => {
+      if (!mounted) return;
+
+      // Defer initial connect by one tick to avoid React StrictMode dev double-mount noise.
+      initialConnectTimer.current = setTimeout(connectWebSocket, 0);
+    });
 
     return () => {
       // Cleanup — prevent reconnections after unmount
       mounted = false;
+
+      isIntentionalClose.current = true;
+
       if (socketRef.current) {
+        socketRef.current.onclose = null;
+        socketRef.current.onerror = null;
+        socketRef.current.onmessage = null;
+        socketRef.current.onopen = null;
         socketRef.current.close();
+        socketRef.current = null;
       }
+
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current);
+      }
+
+      if (initialConnectTimer.current) {
+        clearTimeout(initialConnectTimer.current);
       }
     };
   }, [dispatch]);

@@ -17,7 +17,7 @@ from drf_yasg import openapi
 from appointment.models import Appointment
 from consultation.models import Consultation
 from authentication.permissions import IsSuperUser
-from notification.utils import send_notification
+from notification.utils import send_notification, notify_admins
 from meronaya.resonses import api_response
 from case.models import Case
 
@@ -291,6 +291,14 @@ class EsewaVerifyView(APIView):
                     message=f"{payment.user.name} has paid Rs. {payment.total_amount} for the consultation via eSewa. Your earning: Rs. {payment.lawyer_earning}",
                     notif_type="payment",
                     link="/lawyerearning",
+                )
+
+                # Notify admin about payment received (admin pays lawyer manually)
+                notify_admins(
+                    title="New Consultation Payment Received",
+                    message=f"Client {payment.user.name} paid Rs. {payment.total_amount} via eSewa for consultation with {appointment.consultation.lawyer.name}. Platform fee: Rs. {payment.platform_fee}. Lawyer payout pending: Rs. {payment.lawyer_earning}.",
+                    notif_type="payment",
+                    link="/admin/payments",
                 )
 
                 return api_response(
@@ -606,6 +614,14 @@ class KhaltiVerifyView(APIView):
                     message=f"{payment.user.name} has paid Rs. {payment.total_amount} for the consultation via Khalti. Your earning: Rs. {payment.lawyer_earning}",
                     notif_type="payment",
                     link="/lawyerearning",
+                )
+
+                # Notify admin about payment received (admin pays lawyer manually)
+                notify_admins(
+                    title="New Consultation Payment Received",
+                    message=f"Client {payment.user.name} paid Rs. {payment.total_amount} via Khalti for consultation with {appointment.consultation.lawyer.name}. Platform fee: Rs. {payment.platform_fee}. Lawyer payout pending: Rs. {payment.lawyer_earning}.",
+                    notif_type="payment",
+                    link="/admin/payments",
                 )
 
                 return api_response(
@@ -1497,46 +1513,58 @@ class EsewaInitiateCasePaymentView(APIView):
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Check if payment already initiated or completed for this request
-            existing_payment = Payment.objects.filter(
-                case_payment_request=payment_request
-            ).exclude(status=Payment.STATUS_FAILED).first()
-            
-            if existing_payment:
+            # Block only when this request is already completed.
+            existing_completed_payment = Payment.objects.filter(
+                case_payment_request=payment_request,
+                status=Payment.STATUS_COMPLETED,
+            ).first()
+            if existing_completed_payment:
                 return api_response(
                     is_success=False,
-                    error_message={"error": f"Payment already {existing_payment.status}. Cannot initiate another payment."},
+                    error_message={"error": "This payment request is already paid."},
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Amount to pay
-            amount = payment_request.current_agreed_amount or payment_request.proposed_amount
-
-            # Tax calculation (13% VAT)
-            tax_amount = Decimal("0")
-            total_amount = amount
-
-            # Create Payment record (like appointment does)
-            user = request.user
-            lawyer = payment_request.case.lawyer
-            
-            # Calculate commission
-            commission_percent = settings.PLATFORM_COMMISSION_PERCENT
-            platform_fee = (amount * commission_percent / Decimal("100")).quantize(Decimal("0.01"))
-            lawyer_earning = amount - platform_fee
-
-            payment = Payment.objects.create(
+            # Reuse existing initiated eSewa payment to make this endpoint idempotent.
+            payment = Payment.objects.filter(
                 case_payment_request=payment_request,
-                user=user,
-                lawyer=lawyer,
-                amount=amount,
-                tax_amount=tax_amount,
-                total_amount=total_amount,
-                platform_fee=platform_fee,
-                lawyer_earning=lawyer_earning,
                 payment_method="esewa",
                 status=Payment.STATUS_INITIATED,
-            )
+            ).order_by("-created_at").first()
+
+            if payment:
+                amount = payment.amount
+                tax_amount = payment.tax_amount
+                total_amount = payment.total_amount
+            else:
+                # Amount to pay
+                amount = payment_request.current_agreed_amount or payment_request.proposed_amount
+
+                # Tax calculation (13% VAT)
+                tax_amount = Decimal("0")
+                total_amount = amount
+
+                # Create Payment record (like appointment does)
+                user = request.user
+                lawyer = payment_request.case.lawyer
+
+                # Calculate commission
+                commission_percent = settings.PLATFORM_COMMISSION_PERCENT
+                platform_fee = (amount * commission_percent / Decimal("100")).quantize(Decimal("0.01"))
+                lawyer_earning = amount - platform_fee
+
+                payment = Payment.objects.create(
+                    case_payment_request=payment_request,
+                    user=user,
+                    lawyer=lawyer,
+                    amount=amount,
+                    tax_amount=tax_amount,
+                    total_amount=total_amount,
+                    platform_fee=platform_fee,
+                    lawyer_earning=lawyer_earning,
+                    payment_method="esewa",
+                    status=Payment.STATUS_INITIATED,
+                )
 
             # Generate eSewa signature
             message = build_esewa_signature_message(
@@ -1718,6 +1746,14 @@ class EsewaVerifyCasePaymentView(APIView):
                     message=f"Your payment of Rs. {payment.total_amount} for case '{case.case_title}' was successful. The case is now completed.",
                     notif_type="payment",
                     link=f"/client/case/{case.id}",
+                )
+
+                # Notify admin about case payment (admin pays lawyer manually)
+                notify_admins(
+                    title="New Case Payment Received",
+                    message=f"Client {case.client.name} paid Rs. {payment.total_amount} via eSewa for case '{case.case_title}' (Lawyer: {case.lawyer.name}). Platform fee: Rs. {payment.platform_fee}. Lawyer payout pending: Rs. {payment.lawyer_earning}.",
+                    notif_type="payment",
+                    link="/admin/payments",
                 )
 
                 return api_response(
@@ -2046,6 +2082,14 @@ class KhaltiVerifyCasePaymentView(APIView):
                         message=f"Your payment for case '{case.case_title}' was successful. The case is now completed.",
                         notif_type="payment",
                         link=f"/client/case/{case.id}",
+                    )
+
+                    # Notify admin about case payment (admin pays lawyer manually)
+                    notify_admins(
+                        title="New Case Payment Received",
+                        message=f"Client {case.client.name} paid Rs. {payment.total_amount} via Khalti for case '{case.case_title}' (Lawyer: {case.lawyer.name}). Platform fee: Rs. {payment.platform_fee}. Lawyer payout pending: Rs. {payment.lawyer_earning}.",
+                        notif_type="payment",
+                        link="/admin/payments",
                     )
 
                     return api_response(
