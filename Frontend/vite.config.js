@@ -9,4 +9,16 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  test: {
+    globals: true,
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    setupFiles: ['./src/test/setup.js'],
+    clearMocks: true,
+    restoreMocks: true,
+    coverage: {
+      reporter: ['text', 'html'],
+      reportsDirectory: './coverage',
+    },
+  },
 })
